@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-lyra",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@hhuacm-dashboard/ui/components",
+    "utils": "@hhuacm-dashboard/ui/lib/utils",
+    "hooks": "@hhuacm-dashboard/ui/hooks",
+    "lib": "@hhuacm-dashboard/ui/lib",
+    "ui": "@hhuacm-dashboard/ui/components"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}

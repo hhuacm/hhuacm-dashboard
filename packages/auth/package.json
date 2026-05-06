@@ -1,0 +1,24 @@
+{
+  "name": "@hhuacm-dashboard/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@hhuacm-dashboard/db": "workspace:*",
+    "@hhuacm-dashboard/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@hhuacm-dashboard/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
