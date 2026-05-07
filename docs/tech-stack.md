@@ -10,7 +10,7 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **API layer:** tRPC for end-to-end typed client/server procedures
 - **Database:** SQLite-compatible libSQL/Turso
 - **ORM:** Drizzle ORM and Drizzle Kit
-- **Authentication:** Better Auth scaffold is present, but the current welcome page does not wire auth routes yet
+- **Authentication:** Better Auth with username/password sign-in for local accounts
 - **Styling:** Tailwind CSS
 - **UI primitives:** shared shadcn-style components in `packages/ui`
 - **Client data fetching:** TanStack Query with tRPC
@@ -42,15 +42,17 @@ The main request flow is:
 Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router
 ```
 
-The current placeholder frontend calls the `health` tRPC procedure to verify the web app and API server are connected. Database and Better Auth packages remain in the scaffold for later product features, but they are not required for the welcome page.
+Authentication uses Better Auth HTTP endpoints mounted under `Hono /api/auth/*`. The frontend also calls the `health` tRPC procedure to verify the web app and API server are connected.
 
 ## Local Services
 
 - Web app: `http://localhost:3001`
 - API server: `http://localhost:3000`
 - tRPC endpoint: `http://localhost:3000/trpc`
+- Auth endpoint: `http://localhost:3000/api/auth`
+- Local libSQL server: `http://127.0.0.1:8080`
 
-The web app reads `NEXT_PUBLIC_SERVER_URL` from `apps/web/.env`. The server reads `CORS_ORIGIN` from `apps/server/.env` and falls back to `http://localhost:3001` during local development.
+The web app reads `NEXT_PUBLIC_SERVER_URL` from `apps/web/.env`. The server reads `CORS_ORIGIN`, `BETTER_AUTH_URL`, `DATABASE_URL`, and `DATABASE_AUTH_TOKEN` from `apps/server/.env`. For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATABASE_AUTH_TOKEN` empty.
 
 ## Common Scripts
 
@@ -97,6 +99,12 @@ bun run fix
 ```
 
 ## Database Scripts
+
+Install the Turso CLI on macOS:
+
+```bash
+brew install tursodatabase/tap/turso
+```
 
 Start a local Turso/libSQL database:
 

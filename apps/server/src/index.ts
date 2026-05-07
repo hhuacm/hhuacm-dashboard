@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createContext } from "@hhuacm-dashboard/api/context";
 import { appRouter } from "@hhuacm-dashboard/api/routers/index";
+import { auth } from "@hhuacm-dashboard/auth";
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -19,6 +20,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.all("/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.use(
   "/trpc/*",

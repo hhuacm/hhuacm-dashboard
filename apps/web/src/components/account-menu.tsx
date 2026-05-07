@@ -10,15 +10,21 @@ import {
   DropdownMenuTrigger,
 } from "@hhuacm-dashboard/ui/components/dropdown-menu";
 import { LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 interface AccountMenuProps {
   displayName: string;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
 }
 
 export function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
+
+  const handleLogoutClick = () => {
+    setOpen(false);
+    onLogout().catch(() => undefined);
+  };
 
   return (
     <DropdownMenu onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
@@ -42,12 +48,15 @@ export function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
         className="min-w-40 bg-popover/95 backdrop-blur"
       >
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setOpen(false)}
+            render={<Link href={{ pathname: "/profile" }} />}
+          >
             <UserRound className="size-4" />
             个人信息
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onLogout} variant="destructive">
+          <DropdownMenuItem onClick={handleLogoutClick} variant="destructive">
             <LogOut className="size-4" />
             注销
           </DropdownMenuItem>

@@ -20,10 +20,23 @@ By default, the web app runs at [http://localhost:3001](http://localhost:3001) a
 
 ## Database
 
-Start a local Turso/libSQL database when needed:
+Install the Turso CLI when needed:
+
+```bash
+brew install tursodatabase/tap/turso
+```
+
+Start a local Turso/libSQL database:
 
 ```bash
 bun run db:local
+```
+
+Use this local server URL in `apps/server/.env`:
+
+```bash
+DATABASE_URL=http://127.0.0.1:8080
+DATABASE_AUTH_TOKEN=
 ```
 
 Apply the current Drizzle schema:

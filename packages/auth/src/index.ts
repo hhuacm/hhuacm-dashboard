@@ -11,6 +11,7 @@ import {
 import { env } from "@hhuacm-dashboard/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { username } from "better-auth/plugins";
 
 const authSchema = {
   account,
@@ -26,6 +27,7 @@ export function createAuth() {
   const db = createDb();
 
   return betterAuth({
+    basePath: "/api/auth",
     database: drizzleAdapter(db, {
       provider: "sqlite",
 
@@ -34,17 +36,18 @@ export function createAuth() {
     trustedOrigins: [env.CORS_ORIGIN],
     emailAndPassword: {
       enabled: true,
+      requireEmailVerification: false,
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
       defaultCookieAttributes: {
-        sameSite: "none",
-        secure: true,
+        sameSite: "lax",
+        secure: env.NODE_ENV === "production",
         httpOnly: true,
       },
     },
-    plugins: [],
+    plugins: [username()],
   });
 }
 

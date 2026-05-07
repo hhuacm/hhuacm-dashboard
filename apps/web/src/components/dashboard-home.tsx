@@ -3,14 +3,14 @@
 import { Button } from "@hhuacm-dashboard/ui/components/button";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, Database, ShieldCheck, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 import { AccountMenu } from "./account-menu";
-import { AuthDialog, type AuthMode, type MockUser } from "./auth-dialog";
+import { AuthDialog, type AuthMode } from "./auth-dialog";
 
-const SESSION_USER_KEY = "hhuacm-dashboard:user";
 const USERNAME_VISIBLE_LENGTH = 20;
 
 const statusLabel = (isLoading: boolean, isError: boolean) => {
@@ -37,31 +37,6 @@ const statusClassName = (isLoading: boolean, isError: boolean) => {
   return "bg-emerald-100 text-emerald-700";
 };
 
-const readStoredUser = () => {
-  const storedValue = sessionStorage.getItem(SESSION_USER_KEY);
-
-  if (!storedValue) {
-    return null;
-  }
-
-  try {
-    const parsedValue: unknown = JSON.parse(storedValue);
-
-    if (
-      typeof parsedValue === "object" &&
-      parsedValue !== null &&
-      "username" in parsedValue &&
-      typeof parsedValue.username === "string"
-    ) {
-      return { username: parsedValue.username };
-    }
-  } catch {
-    sessionStorage.removeItem(SESSION_USER_KEY);
-  }
-
-  return null;
-};
-
 const formatDisplayName = (username: string) => {
   if (username.length <= USERNAME_VISIBLE_LENGTH) {
     return username;
@@ -70,30 +45,40 @@ const formatDisplayName = (username: string) => {
   return `${username.slice(0, USERNAME_VISIBLE_LENGTH)}…`;
 };
 
+const getAuthStatus = (isPending: boolean, isSignedIn: boolean) => {
+  if (isPending) {
+    return "Checking";
+  }
+
+  if (isSignedIn) {
+    return "Signed in";
+  }
+
+  return "Guest";
+};
+
 export function DashboardHome() {
   const health = useQuery(trpc.health.queryOptions());
-  const [user, setUser] = useState<MockUser | null>(null);
+  const session = authClient.useSession();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [authOpen, setAuthOpen] = useState(false);
+  const user = session.data?.user ?? null;
+  const username = user ? getPreferredUsername(user) : "";
   const status = statusLabel(health.isLoading, health.isError);
-
-  useEffect(() => {
-    setUser(readStoredUser());
-  }, []);
+  const authStatus = getAuthStatus(session.isPending, Boolean(user));
 
   const openAuth = (mode: AuthMode) => {
     setAuthMode(mode);
     setAuthOpen(true);
   };
 
-  const handleAuthSuccess = (nextUser: MockUser) => {
-    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(nextUser));
-    setUser(nextUser);
+  const handleAuthSuccess = async () => {
+    await session.refetch();
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem(SESSION_USER_KEY);
-    setUser(null);
+  const handleLogout = async () => {
+    await authClient.signOut();
+    await session.refetch();
   };
 
   return (
@@ -118,7 +103,7 @@ export function DashboardHome() {
           <div className="flex items-center gap-2">
             {user ? (
               <AccountMenu
-                displayName={formatDisplayName(user.username)}
+                displayName={formatDisplayName(username)}
                 onLogout={handleLogout}
               />
             ) : (
@@ -154,7 +139,7 @@ export function DashboardHome() {
               {[
                 { label: "Members", value: "Ready" },
                 { label: "Health", value: status },
-                { label: "Auth", value: user ? "Signed in" : "Mock" },
+                { label: "Auth", value: authStatus },
               ].map((item) => (
                 <div
                   className="border border-sky-100 bg-card/80 p-4 shadow-sm"
@@ -186,8 +171,8 @@ export function DashboardHome() {
                   { icon: Activity, title: "Contest pulse", value: "Stable" },
                   {
                     icon: ShieldCheck,
-                    title: "Mock session",
-                    value: user ? user.username : "Guest",
+                    title: "Session",
+                    value: user ? username : "Guest",
                   },
                   { icon: Database, title: "Service health", value: status },
                 ].map((item) => {

@@ -13,21 +13,21 @@ import {
 import { Input } from "@hhuacm-dashboard/ui/components/input";
 import { Label } from "@hhuacm-dashboard/ui/components/label";
 import { X } from "lucide-react";
-import { useId, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
+
+import { authClient } from "@/utils/auth-client";
 
 export type AuthMode = "login" | "register";
-
-export interface MockUser {
-  username: string;
-}
 
 interface AuthDialogProps {
   mode: AuthMode;
   onModeChange: (mode: AuthMode) => void;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (user: MockUser) => void;
+  onSuccess: () => Promise<void> | void;
   open: boolean;
 }
+
+const INTERNAL_EMAIL_DOMAIN = "hhuacm.local";
 
 const authCopy = {
   login: {
@@ -39,12 +39,45 @@ const authCopy = {
   },
   register: {
     title: "创建账号",
-    description: "先用一个用户名和密码占位，后续再接入真实认证。",
+    description: "使用用户名和密码创建本地开发账号。",
     submit: "注册",
     switchPrompt: "已经有账号？",
     switchAction: "去登录",
   },
 } as const;
+
+const getInternalEmail = (username: string) =>
+  `${username.toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`;
+
+const getAuthErrorMessage = (message: string | undefined, mode: AuthMode) => {
+  if (!message) {
+    return mode === "login"
+      ? "登录失败，请稍后再试。"
+      : "注册失败，请稍后再试。";
+  }
+
+  if (message.includes("Invalid username or password")) {
+    return "用户名或密码不正确。";
+  }
+
+  if (message.includes("Username is already taken")) {
+    return "这个用户名已经被使用。";
+  }
+
+  if (message.includes("too short")) {
+    return "用户名至少需要 3 个字符，密码至少需要 8 个字符。";
+  }
+
+  if (message.includes("too long")) {
+    return "用户名最多 30 个字符。";
+  }
+
+  if (message.includes("invalid")) {
+    return "用户名只能包含字母、数字、下划线或点。";
+  }
+
+  return message;
+};
 
 export function AuthDialog({
   mode,
@@ -58,9 +91,25 @@ export function AuthDialog({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const copy = authCopy[mode];
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const resetForm = () => {
+    setUsername("");
+    setPassword("");
+    setError("");
+    setSubmitting(false);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetForm();
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const normalizedUsername = username.trim();
@@ -75,11 +124,36 @@ export function AuthDialog({
       return;
     }
 
-    onSuccess({ username: normalizedUsername });
-    setUsername("");
-    setPassword("");
     setError("");
-    onOpenChange(false);
+    setSubmitting(true);
+
+    try {
+      const response =
+        mode === "login"
+          ? await authClient.signIn.username({
+              password,
+              username: normalizedUsername,
+            })
+          : await authClient.signUp.email({
+              displayUsername: normalizedUsername,
+              email: getInternalEmail(normalizedUsername),
+              name: normalizedUsername,
+              password,
+              username: normalizedUsername,
+            });
+
+      if (response.error) {
+        setError(getAuthErrorMessage(response.error.message, mode));
+        return;
+      }
+
+      await onSuccess();
+      handleOpenChange(false);
+    } catch {
+      setError("认证服务暂时不可用，请确认后端和数据库已启动。");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleModeSwitch = () => {
@@ -88,7 +162,7 @@ export function AuthDialog({
   };
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent className="relative">
         <DialogClose
           render={
@@ -114,6 +188,7 @@ export function AuthDialog({
             <Label htmlFor={usernameId}>用户名</Label>
             <Input
               autoComplete="username"
+              disabled={submitting}
               id={usernameId}
               name="username"
               onChange={(event) => setUsername(event.target.value)}
@@ -128,6 +203,7 @@ export function AuthDialog({
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
+              disabled={submitting}
               id={passwordId}
               name="password"
               onChange={(event) => setPassword(event.target.value)}
@@ -144,11 +220,18 @@ export function AuthDialog({
           ) : null}
 
           <DialogFooter className="items-stretch sm:items-center">
-            <Button onClick={handleModeSwitch} type="button" variant="ghost">
+            <Button
+              disabled={submitting}
+              onClick={handleModeSwitch}
+              type="button"
+              variant="ghost"
+            >
               {copy.switchPrompt}
               <span className="text-primary">{copy.switchAction}</span>
             </Button>
-            <Button type="submit">{copy.submit}</Button>
+            <Button disabled={submitting} type="submit">
+              {submitting ? "处理中" : copy.submit}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

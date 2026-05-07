@@ -37,6 +37,10 @@ lerna-debug.log*
 .turbo
 .nx
 
+# Databases
+*.db
+*.db-*
+
 # Better-T-Stack
 .alchemy
 
