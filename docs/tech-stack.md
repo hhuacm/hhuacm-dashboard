@@ -42,7 +42,7 @@ The main request flow is:
 Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router
 ```
 
-The current placeholder frontend calls the `runtimeInfo` tRPC procedure to verify the web app and API server are connected. Database and Better Auth packages remain in the scaffold for later product features, but they are not required for the welcome page.
+The current placeholder frontend calls the `health` tRPC procedure to verify the web app and API server are connected. Database and Better Auth packages remain in the scaffold for later product features, but they are not required for the welcome page.
 
 ## Local Services
 

@@ -1,3 +1,5 @@
+import { arch, platform, release } from "node:os";
+
 import { publicProcedure, router } from "../index";
 
 const serverStartedAt = new Date();
@@ -37,13 +39,25 @@ const getRuntimeVersion = () => {
 };
 
 export const appRouter = router({
-  runtimeInfo: publicProcedure.query(() => ({
-    service: "hhuacm-dashboard API",
-    runtime: getRuntimeName(),
-    version: getRuntimeVersion(),
-    environment: process.env.NODE_ENV ?? "development",
-    startedAt: serverStartedAt.toISOString(),
-    checkedAt: new Date().toISOString(),
-  })),
+  health: publicProcedure.query(() => {
+    const checkedAt = new Date();
+
+    return {
+      status: "ok",
+      service: "hhuacm-dashboard API",
+      checkedAt: checkedAt.toISOString(),
+      uptimeMs: checkedAt.getTime() - serverStartedAt.getTime(),
+      environment: process.env.NODE_ENV ?? "development",
+      runtime: {
+        name: getRuntimeName(),
+        version: getRuntimeVersion(),
+      },
+      system: {
+        platform: platform(),
+        arch: arch(),
+        release: release(),
+      },
+    };
+  }),
 });
 export type AppRouter = typeof appRouter;
