@@ -10,7 +10,7 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **API layer:** tRPC for end-to-end typed client/server procedures
 - **Database:** SQLite-compatible libSQL/Turso
 - **ORM:** Drizzle ORM and Drizzle Kit
-- **Authentication:** Better Auth with email/password enabled
+- **Authentication:** Better Auth scaffold is present, but the current welcome page does not wire auth routes yet
 - **Styling:** Tailwind CSS
 - **UI primitives:** shared shadcn-style components in `packages/ui`
 - **Client data fetching:** TanStack Query with tRPC
@@ -39,19 +39,18 @@ hhuacm-dashboard/
 The main request flow is:
 
 ```text
-Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router -> Drizzle/libSQL
+Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router
 ```
 
-Authentication is served by Hono through Better Auth at `/api/auth/*`. tRPC procedures receive the Better Auth session through the API context and can use protected procedures for authenticated routes.
+The current placeholder frontend calls the `runtimeInfo` tRPC procedure to verify the web app and API server are connected. Database and Better Auth packages remain in the scaffold for later product features, but they are not required for the welcome page.
 
 ## Local Services
 
 - Web app: `http://localhost:3001`
 - API server: `http://localhost:3000`
 - tRPC endpoint: `http://localhost:3000/trpc`
-- Better Auth endpoint: `http://localhost:3000/api/auth/*`
 
-The web app reads `NEXT_PUBLIC_SERVER_URL` from `apps/web/.env`. The server reads database, auth, and CORS settings from `apps/server/.env`.
+The web app reads `NEXT_PUBLIC_SERVER_URL` from `apps/web/.env`. The server reads `CORS_ORIGIN` from `apps/server/.env` and falls back to `http://localhost:3001` during local development.
 
 ## Common Scripts
 

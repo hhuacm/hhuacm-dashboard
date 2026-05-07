@@ -1,8 +1,26 @@
 import { createDb } from "@hhuacm-dashboard/db";
-import * as schema from "@hhuacm-dashboard/db/schema/auth";
+import {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  userRelations,
+  verification,
+} from "@hhuacm-dashboard/db/schema/auth";
 import { env } from "@hhuacm-dashboard/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+
+const authSchema = {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  userRelations,
+  verification,
+} as const;
 
 export function createAuth() {
   const db = createDb();
@@ -11,7 +29,7 @@ export function createAuth() {
     database: drizzleAdapter(db, {
       provider: "sqlite",
 
-      schema: schema,
+      schema: authSchema,
     }),
     trustedOrigins: [env.CORS_ORIGIN],
     emailAndPassword: {

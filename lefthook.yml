@@ -1,10 +1,17 @@
-# Lefthook configuration
-# https://github.com/evilmartians/lefthook
-
 pre-commit:
   parallel: true
   jobs:
-    # Add your pre-commit commands here
-    # Example:
-    # - name: lint
-    #   run:  lint
+    - name: ultracite
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css,md}"
+      run: bun x ultracite check {staged_files}
+    - name: lefthook-config
+      glob: "lefthook.yml"
+      run: bun x lefthook validate
+
+pre-push:
+  parallel: false
+  jobs:
+    - name: check-types
+      run: bun run check-types
+    - name: build
+      run: bun run build

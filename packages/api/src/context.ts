@@ -1,18 +1,5 @@
-import { auth } from "@hhuacm-dashboard/auth";
-import type { Context as HonoContext } from "hono";
-
-export type CreateContextOptions = {
-  context: HonoContext;
-};
-
-export async function createContext({ context }: CreateContextOptions) {
-  const session = await auth.api.getSession({
-    headers: context.req.raw.headers,
-  });
-  return {
-    auth: null,
-    session,
-  };
+export function createContext() {
+  return {};
 }
 
-export type Context = Awaited<ReturnType<typeof createContext>>;
+export type Context = ReturnType<typeof createContext>;

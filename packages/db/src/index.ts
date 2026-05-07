@@ -2,7 +2,25 @@ import { env } from "@hhuacm-dashboard/env/server";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
-import * as schema from "./schema";
+import {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  userRelations,
+  verification,
+} from "./schema/auth";
+
+const schema = {
+  account,
+  accountRelations,
+  session,
+  sessionRelations,
+  user,
+  userRelations,
+  verification,
+} as const;
 
 export function createDb() {
   const client = createClient({
