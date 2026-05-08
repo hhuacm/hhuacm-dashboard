@@ -10,7 +10,7 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **API layer:** tRPC for end-to-end typed client/server procedures
 - **Database:** SQLite-compatible libSQL/Turso
 - **ORM:** Drizzle ORM and Drizzle Kit
-- **Authentication:** Better Auth with username/password sign-in for local accounts
+- **Authentication:** Better Auth with email or username sign-in for local accounts
 - **Styling:** Tailwind CSS
 - **UI primitives:** shared shadcn-style components in `packages/ui`
 - **Client data fetching:** TanStack Query with tRPC

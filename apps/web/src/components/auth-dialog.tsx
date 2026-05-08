@@ -27,27 +27,22 @@ interface AuthDialogProps {
   open: boolean;
 }
 
-const INTERNAL_EMAIL_DOMAIN = "hhuacm.local";
-
 const authCopy = {
   login: {
     title: "欢迎回来",
-    description: "使用你的 HHUACM Dashboard 账号进入工作台。",
+    description: "使用邮箱或用户名进入 HHUACM Dashboard。",
     submit: "登录",
     switchPrompt: "还没有账号？",
     switchAction: "注册一个",
   },
   register: {
     title: "创建账号",
-    description: "使用用户名和密码创建本地开发账号。",
+    description: "使用用户名、邮箱和密码创建本地开发账号。",
     submit: "注册",
     switchPrompt: "已经有账号？",
     switchAction: "去登录",
   },
 } as const;
-
-const getInternalEmail = (username: string) =>
-  `${username.toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`;
 
 const getAuthErrorMessage = (message: string | undefined, mode: AuthMode) => {
   if (!message) {
@@ -56,12 +51,20 @@ const getAuthErrorMessage = (message: string | undefined, mode: AuthMode) => {
       : "注册失败，请稍后再试。";
   }
 
+  if (message.includes("Invalid email or password")) {
+    return "邮箱或密码不正确。";
+  }
+
   if (message.includes("Invalid username or password")) {
     return "用户名或密码不正确。";
   }
 
   if (message.includes("Username is already taken")) {
     return "这个用户名已经被使用。";
+  }
+
+  if (message.includes("already exists") || message.includes("already taken")) {
+    return "这个邮箱或用户名已经被使用。";
   }
 
   if (message.includes("too short")) {
@@ -79,6 +82,22 @@ const getAuthErrorMessage = (message: string | undefined, mode: AuthMode) => {
   return message;
 };
 
+const isEmailIdentifier = (value: string) => value.includes("@");
+
+const signInWithIdentifier = (identifier: string, password: string) => {
+  if (isEmailIdentifier(identifier)) {
+    return authClient.signIn.email({
+      email: identifier.toLowerCase(),
+      password,
+    });
+  }
+
+  return authClient.signIn.username({
+    password,
+    username: identifier,
+  });
+};
+
 export function AuthDialog({
   mode,
   open,
@@ -86,16 +105,19 @@ export function AuthDialog({
   onOpenChange,
   onSuccess,
 }: AuthDialogProps) {
-  const usernameId = useId();
+  const identifierId = useId();
+  const emailId = useId();
   const passwordId = useId();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const copy = authCopy[mode];
 
   const resetForm = () => {
-    setUsername("");
+    setIdentifier("");
+    setEmail("");
     setPassword("");
     setError("");
     setSubmitting(false);
@@ -112,10 +134,16 @@ export function AuthDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedUsername = username.trim();
+    const normalizedIdentifier = identifier.trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!normalizedUsername) {
-      setError("请输入用户名。");
+    if (!normalizedIdentifier) {
+      setError(mode === "login" ? "请输入邮箱或用户名。" : "请输入用户名。");
+      return;
+    }
+
+    if (mode === "register" && !normalizedEmail) {
+      setError("请输入邮箱。");
       return;
     }
 
@@ -130,16 +158,13 @@ export function AuthDialog({
     try {
       const response =
         mode === "login"
-          ? await authClient.signIn.username({
-              password,
-              username: normalizedUsername,
-            })
+          ? await signInWithIdentifier(normalizedIdentifier, password)
           : await authClient.signUp.email({
-              displayUsername: normalizedUsername,
-              email: getInternalEmail(normalizedUsername),
-              name: normalizedUsername,
+              displayUsername: normalizedIdentifier,
+              email: normalizedEmail,
+              name: normalizedIdentifier,
               password,
-              username: normalizedUsername,
+              username: normalizedIdentifier,
             });
 
       if (response.error) {
@@ -185,17 +210,37 @@ export function AuthDialog({
 
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
-            <Label htmlFor={usernameId}>用户名</Label>
+            <Label htmlFor={identifierId}>
+              {mode === "login" ? "邮箱或用户名" : "用户名"}
+            </Label>
             <Input
               autoComplete="username"
               disabled={submitting}
-              id={usernameId}
-              name="username"
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="例如 hhuacmer"
-              value={username}
+              id={identifierId}
+              name={mode === "login" ? "identifier" : "username"}
+              onChange={(event) => setIdentifier(event.target.value)}
+              placeholder={
+                mode === "login" ? "邮箱或 hhuacmer" : "例如 hhuacmer"
+              }
+              value={identifier}
             />
           </div>
+
+          {mode === "register" ? (
+            <div className="grid gap-2">
+              <Label htmlFor={emailId}>邮箱</Label>
+              <Input
+                autoComplete="email"
+                disabled={submitting}
+                id={emailId}
+                name="email"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@example.com"
+                type="email"
+                value={email}
+              />
+            </div>
+          ) : null}
 
           <div className="grid gap-2">
             <Label htmlFor={passwordId}>密码</Label>

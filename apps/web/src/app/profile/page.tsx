@@ -36,12 +36,16 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-4 sm:grid-cols-3">
           <div className="border border-sky-100 bg-sky-50/45 p-4">
             <dt className="text-muted-foreground text-sm">用户名</dt>
             <dd className="mt-2 break-all font-medium text-lg">
               {getPreferredUsername(user)}
             </dd>
+          </div>
+          <div className="border border-sky-100 bg-sky-50/45 p-4">
+            <dt className="text-muted-foreground text-sm">邮箱</dt>
+            <dd className="mt-2 break-all font-medium text-lg">{user.email}</dd>
           </div>
           <div className="border border-sky-100 bg-sky-50/45 p-4">
             <dt className="text-muted-foreground text-sm">用户 ID</dt>
@@ -60,7 +64,7 @@ export default function ProfilePage() {
           </p>
         </div>
         <div>
-          <Button render={<Link href="/" />} size="lg">
+          <Button nativeButton={false} render={<Link href="/" />} size="lg">
             返回首页
           </Button>
         </div>
@@ -85,7 +89,12 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <Button render={<Link href="/" />} size="lg" variant="outline">
+          <Button
+            nativeButton={false}
+            render={<Link href="/" />}
+            size="lg"
+            variant="outline"
+          >
             <ArrowLeft className="size-4" />
             返回首页
           </Button>
