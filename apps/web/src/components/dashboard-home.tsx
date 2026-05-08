@@ -1,40 +1,58 @@
 "use client";
 
 import { Button } from "@hhuacm-dashboard/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@hhuacm-dashboard/ui/components/card";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Database, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  Server,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 import { AccountMenu } from "./account-menu";
+import { AppShell } from "./app-shell";
 import { AuthDialog, type AuthMode } from "./auth-dialog";
+import { PageHeader } from "./page-header";
+import { ServiceHealthPanel } from "./service-health-panel";
+import { StatusCard } from "./status-card";
 
 const USERNAME_VISIBLE_LENGTH = 20;
 
-const statusLabel = (isLoading: boolean, isError: boolean) => {
+const getHealthStatus = (isLoading: boolean, isError: boolean) => {
   if (isLoading) {
-    return "Connecting";
+    return "连接中";
   }
 
   if (isError) {
-    return "Unavailable";
+    return "不可用";
   }
 
-  return "Online";
+  return "在线";
 };
 
-const statusClassName = (isLoading: boolean, isError: boolean) => {
+const getHealthTone = (isLoading: boolean, isError: boolean) => {
   if (isLoading) {
-    return "bg-sky-100 text-sky-700";
+    return "warning" as const;
   }
 
   if (isError) {
-    return "bg-rose-100 text-rose-700";
+    return "danger" as const;
   }
 
-  return "bg-emerald-100 text-emerald-700";
+  return "success" as const;
 };
 
 const formatDisplayName = (username: string) => {
@@ -47,14 +65,24 @@ const formatDisplayName = (username: string) => {
 
 const getAuthStatus = (isPending: boolean, isSignedIn: boolean) => {
   if (isPending) {
-    return "Checking";
+    return "检查中";
   }
 
   if (isSignedIn) {
-    return "Signed in";
+    return "已登录";
   }
 
-  return "Guest";
+  return "访客";
+};
+
+const formatCheckedAt = (checkedAt: string | undefined) => {
+  if (!checkedAt) {
+    return "-";
+  }
+
+  return new Date(checkedAt).toLocaleString("zh-CN", {
+    hour12: false,
+  });
 };
 
 export function DashboardHome() {
@@ -64,7 +92,8 @@ export function DashboardHome() {
   const [authOpen, setAuthOpen] = useState(false);
   const user = session.data?.user ?? null;
   const username = user ? getPreferredUsername(user) : "";
-  const status = statusLabel(health.isLoading, health.isError);
+  const status = getHealthStatus(health.isLoading, health.isError);
+  const healthTone = getHealthTone(health.isLoading, health.isError);
   const authStatus = getAuthStatus(session.isPending, Boolean(user));
 
   const openAuth = (mode: AuthMode) => {
@@ -81,182 +110,129 @@ export function DashboardHome() {
     await session.refetch();
   };
 
+  const headerAction = user ? (
+    <AccountMenu
+      displayName={formatDisplayName(username)}
+      onLogout={handleLogout}
+    />
+  ) : (
+    <div className="flex items-center gap-2">
+      <Button onClick={() => openAuth("login")} variant="ghost">
+        登录
+      </Button>
+      <Button onClick={() => openAuth("register")}>注册</Button>
+    </div>
+  );
+
+  const mainAction = user ? (
+    <Button nativeButton={false} render={<Link href="/profile" />} size="lg">
+      <UserRound className="size-4" />
+      进入个人信息
+    </Button>
+  ) : undefined;
+
   return (
-    <main className="relative min-h-svh overflow-hidden bg-[linear-gradient(180deg,#f8fdff_0%,#edf8ff_48%,#ffffff_100%)] text-foreground">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(14,165,233,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.055)_1px,transparent_1px)] bg-[size:56px_56px]" />
-      <div className="relative mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 py-5 sm:px-8 lg:px-10">
-        <header className="flex items-center justify-between gap-4 border-sky-100/80 border-b bg-background/70 py-4 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center border border-sky-200 bg-sky-50 text-sky-700 shadow-sky-100 shadow-sm">
-              <Sparkles className="size-4" />
-            </div>
-            <div>
-              <p className="font-semibold text-base leading-none">
-                HHUACM Dashboard
-              </p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                Contest Operations Console
-              </p>
-            </div>
-          </div>
+    <AppShell
+      action={headerAction}
+      description="竞赛与团队运营后台"
+      icon={<Sparkles className="size-4" />}
+      title="HHUACM Dashboard"
+    >
+      <div className="grid gap-8">
+        <PageHeader
+          action={mainAction}
+          description="用于队内账号入口、个人信息维护和服务连通状态检查。后续业务模块接入后，这里将成为队务操作的统一入口。"
+          eyebrow="河海大学 ACM 队"
+          title="清晰可靠的队务工作台"
+        />
 
-          <div className="flex items-center gap-2">
-            {user ? (
-              <AccountMenu
-                displayName={formatDisplayName(username)}
-                onLogout={handleLogout}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+          <div className="grid content-start gap-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <StatusCard
+                description={
+                  user ? "当前会话可访问个人信息页。" : "登录后可维护个人信息。"
+                }
+                icon={<UserRound className="size-4" />}
+                title="账号状态"
+                tone={user ? "success" : "neutral"}
+                value={authStatus}
               />
-            ) : (
-              <>
-                <Button
-                  onClick={() => openAuth("login")}
-                  size="lg"
-                  variant="ghost"
-                >
-                  登录
-                </Button>
-                <Button onClick={() => openAuth("register")} size="lg">
-                  注册
-                </Button>
-              </>
-            )}
-          </div>
-        </header>
-
-        <section className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.02fr_0.98fr] lg:py-16">
-          <div className="max-w-2xl">
-            <p className="font-medium text-sky-700 text-sm uppercase tracking-[0.18em]">
-              HHU ACM
-            </p>
-            <h1 className="mt-5 text-pretty font-semibold text-5xl leading-[1.02] tracking-normal sm:text-6xl">
-              Elegant control room for team operations.
-            </h1>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-8">
-              一处清爽的竞赛工作台入口。现在先完成账号入口、登录态导航和后端连通状态，后续再接入真实认证与数据。
-            </p>
-
-            <div className="mt-10 grid max-w-xl gap-3 sm:grid-cols-3">
-              {[
-                { label: "Members", value: "Ready" },
-                { label: "Health", value: status },
-                { label: "Auth", value: authStatus },
-              ].map((item) => (
-                <div
-                  className="border border-sky-100 bg-card/80 p-4 shadow-sm"
-                  key={item.label}
-                >
-                  <p className="text-muted-foreground text-xs">{item.label}</p>
-                  <p className="mt-2 font-semibold text-lg">{item.value}</p>
-                </div>
-              ))}
+              <StatusCard
+                description={
+                  health.isError
+                    ? "无法连接 API 服务。"
+                    : "用于确认前后端连通。"
+                }
+                icon={<Server className="size-4" />}
+                title="API 状态"
+                tone={healthTone}
+                value={status}
+              />
+              <StatusCard
+                description={
+                  user
+                    ? "可查看并更新姓名、年级、学号和专业。"
+                    : "登录后启用个人信息维护。"
+                }
+                icon={<ShieldCheck className="size-4" />}
+                title="个人信息"
+                tone={user ? "info" : "neutral"}
+                value={user ? "可维护" : "未启用"}
+              />
             </div>
-          </div>
 
-          <div className="grid gap-4">
-            <div className="border border-sky-100 bg-card/90 p-5 shadow-sky-950/5 shadow-xl backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-[0.16em]">
-                    Dashboard Preview
-                  </p>
-                  <h2 className="mt-2 font-semibold text-2xl">Overview</h2>
-                </div>
-                <span className="border border-sky-200 bg-sky-50 px-3 py-1 font-medium text-sky-700 text-xs">
-                  Ice Blue
-                </span>
-              </div>
-
-              <div className="mt-6 grid gap-3">
+            <Card>
+              <CardHeader>
+                <CardDescription>当前可用功能</CardDescription>
+                <CardTitle>基础工作流</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3">
                 {[
-                  { icon: Activity, title: "Contest pulse", value: "Stable" },
-                  {
-                    icon: ShieldCheck,
-                    title: "Session",
-                    value: user ? username : "Guest",
-                  },
-                  { icon: Database, title: "Service health", value: status },
-                ].map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <div
-                      className="flex items-center justify-between gap-4 border border-sky-100 bg-sky-50/45 p-4"
-                      key={item.title}
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="grid size-9 shrink-0 place-items-center border border-sky-200 bg-white text-sky-700">
-                          <Icon className="size-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium">{item.title}</p>
-                          <p className="truncate text-muted-foreground text-sm">
-                            {item.value}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="h-2 w-20 bg-sky-100">
-                        <div className="h-full w-2/3 bg-sky-400" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border border-sky-100 bg-card/80 p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="font-medium text-lg">Service Health</h2>
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    Fetched from the API server.
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 font-medium text-sm ${statusClassName(health.isLoading, health.isError)}`}
-                >
-                  {status}
-                </span>
-              </div>
-
-              <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <dt className="text-muted-foreground text-sm">Service</dt>
-                  <dd className="mt-1 font-medium">
-                    {health.data?.service ?? "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground text-sm">Runtime</dt>
-                  <dd className="mt-1 font-medium">
-                    {health.data
-                      ? `${health.data.runtime.name} ${health.data.runtime.version}`
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground text-sm">System</dt>
-                  <dd className="mt-1 font-medium">
-                    {health.data
-                      ? `${health.data.system.platform} ${health.data.system.arch}`
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground text-sm">Checked At</dt>
-                  <dd className="mt-1 font-medium">
-                    {health.data?.checkedAt ?? "-"}
-                  </dd>
-                </div>
-              </dl>
-
-              {health.isError ? (
-                <p className="mt-5 border border-destructive/25 bg-destructive/10 px-3 py-2 text-destructive text-sm">
-                  后端暂时不可用。启动 API 服务后这里会自动恢复。
-                </p>
-              ) : null}
-            </div>
+                  "使用邮箱或用户名登录本地账号。",
+                  "注册账号时可补充基础个人信息。",
+                  "在个人信息页查看并维护队内基础资料。",
+                  "在首页确认 API 服务连接状态。",
+                ].map((item) => (
+                  <div className="flex gap-3 text-sm leading-6" key={item}>
+                    <CheckCircle2 className="mt-1 size-4 shrink-0 text-primary" />
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
-        </section>
+
+          <ServiceHealthPanel
+            details={[
+              { label: "服务", value: health.data?.service ?? "-" },
+              {
+                label: "运行时",
+                value: health.data
+                  ? `${health.data.runtime.name} ${health.data.runtime.version}`
+                  : "-",
+              },
+              {
+                label: "系统",
+                value: health.data
+                  ? `${health.data.system.platform} ${health.data.system.arch}`
+                  : "-",
+              },
+              {
+                label: "检查时间",
+                mono: true,
+                value: formatCheckedAt(health.data?.checkedAt),
+              },
+            ]}
+            message={
+              health.isError
+                ? "后端暂时不可用。启动 API 服务后这里会自动恢复。"
+                : undefined
+            }
+            status={status}
+            tone={healthTone}
+          />
+        </div>
       </div>
 
       <AuthDialog
@@ -266,6 +242,6 @@ export function DashboardHome() {
         onSuccess={handleAuthSuccess}
         open={authOpen}
       />
-    </main>
+    </AppShell>
   );
 }

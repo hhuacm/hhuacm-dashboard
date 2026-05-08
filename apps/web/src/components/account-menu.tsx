@@ -31,8 +31,7 @@ export function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
       <DropdownMenuTrigger
         render={
           <Button
-            onFocus={() => setOpen(true)}
-            onMouseEnter={() => setOpen(true)}
+            className="max-w-56 justify-start"
             size="lg"
             variant="outline"
           />
@@ -43,10 +42,7 @@ export function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
           {displayName}
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="min-w-40 bg-popover/95 backdrop-blur"
-      >
+      <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuGroup>
           <DropdownMenuItem
             onClick={() => setOpen(false)}

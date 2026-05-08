@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@hhuacm-dashboard/ui/components/alert";
 import { Button } from "@hhuacm-dashboard/ui/components/button";
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
 } from "@hhuacm-dashboard/ui/components/dialog";
 import { Input } from "@hhuacm-dashboard/ui/components/input";
 import { Label } from "@hhuacm-dashboard/ui/components/label";
+import { Separator } from "@hhuacm-dashboard/ui/components/separator";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
@@ -264,7 +266,7 @@ export function AuthDialog({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="relative">
+      <DialogContent className="max-w-lg">
         <DialogClose
           render={
             <Button
@@ -284,7 +286,7 @@ export function AuthDialog({
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+        <form className="grid gap-5" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor={identifierId}>
               {mode === "login" ? "邮箱或用户名" : "用户名"}
@@ -319,9 +321,11 @@ export function AuthDialog({
           ) : null}
 
           {mode === "register" ? (
-            <fieldset className="grid gap-3 border-sky-100 border-t pt-4">
-              <legend className="font-medium text-sm">个人信息（可选）</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
+            <fieldset className="grid gap-4 rounded-lg border bg-muted/40 p-4">
+              <legend className="px-1 font-medium text-sm">
+                个人信息（可选）
+              </legend>
+              <div className="grid gap-4 sm:grid-cols-2">
                 {profileFieldConfigs.map((field) => {
                   const fieldId = `${profileFieldIdPrefix}-${field.key}`;
 
@@ -349,6 +353,8 @@ export function AuthDialog({
             </fieldset>
           ) : null}
 
+          {mode === "register" ? <Separator /> : null}
+
           <div className="grid gap-2">
             <Label htmlFor={passwordId}>密码</Label>
             <Input
@@ -365,13 +371,9 @@ export function AuthDialog({
             />
           </div>
 
-          {error ? (
-            <p className="border border-destructive/25 bg-destructive/10 px-3 py-2 text-destructive text-sm">
-              {error}
-            </p>
-          ) : null}
+          {error ? <Alert variant="destructive">{error}</Alert> : null}
 
-          <DialogFooter className="items-stretch sm:items-center">
+          <DialogFooter className="items-stretch gap-3 sm:items-center">
             <Button
               disabled={submitting}
               onClick={handleModeSwitch}

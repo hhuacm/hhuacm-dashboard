@@ -39,27 +39,25 @@ HHUACM Dashboard 是面向竞赛与团队运营的后台产品。
 
 ## 组件策略
 
-基础控件默认采用 shadcn/ui 风格：成熟结构、完整状态、键盘可用、尺寸稳定、语义清晰。
+基础控件优先通过 shadcn/ui CLI 引入，再按本项目的 design tokens 收敛颜色、圆角、尺寸和状态。
 
-不要手搓这些基础控件：
+这里的目标不是模仿 shadcn/ui 的视觉风格，而是复用成熟的结构、语义、键盘交互和状态处理。
+
+只保留当前界面实际使用的基础控件。
+
+当前需要的基础控件：
 
 - Button
 - Input
-- Textarea
 - Label
-- Checkbox
-- Radio
-- Select
 - Dialog
 - Dropdown Menu
-- Tooltip
-- Tabs
-- Table
 - Card
 - Badge
-- Form
-- Skeleton
-- Toast
+- Alert
+- Separator
+
+Textarea、Checkbox、Radio、Select、Tooltip、Tabs、Table、Form、Skeleton、Toast 等组件在真实功能需要时再添加。
 
 扩展基础控件时，优先添加 design tokens、variant 或 size，不在页面中堆一次性 Tailwind class。
 
