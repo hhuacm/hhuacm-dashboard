@@ -1,0 +1,46 @@
+{
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+
+  // Explorer 只隐藏这个 Bun/Turbo monorepo 会反复生成的内容。
+  "files.exclude": {
+    "**/node_modules": true,
+    // Turborepo 任务缓存：根目录和各 workspace 都会出现。
+    "**/.turbo": true,
+    // Next.js 前端构建与开发缓存，只存在于 apps/web。
+    "apps/web/.next": true,
+    // tsdown / TypeScript 输出；Drizzle schema 和 migrations 保持可见。
+    "apps/*/dist": true,
+    "packages/*/dist": true,
+    "**/*.tsbuildinfo": true,
+    // `bun run db:local` 产生的本地 libSQL/Turso 数据文件。
+    "packages/db/local.db": true,
+    "packages/db/local.db-*": true,
+    // `bun run compile` 可能产生的单文件 server 可执行产物。
+    "apps/server/server": true,
+    "apps/server/server.map": true,
+    // 测试报告和工具缓存。
+    "**/coverage": true,
+    "**/.cache": true
+  },
+  // 搜索排除同一批生成内容，额外跳过 lockfile 的噪声。
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.turbo": true,
+    "apps/web/.next": true,
+    "apps/*/dist": true,
+    "packages/*/dist": true,
+    "**/*.tsbuildinfo": true,
+    "packages/db/local.db": true,
+    "packages/db/local.db-*": true,
+    "apps/server/server": true,
+    "apps/server/server.map": true,
+    "**/coverage": true,
+    "**/.cache": true,
+    "bun.lock": true
+  }
+}
