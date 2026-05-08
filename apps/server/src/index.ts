@@ -27,7 +27,7 @@ app.use(
   "/trpc/*",
   trpcServer({
     router: appRouter,
-    createContext: () => createContext(),
+    createContext: ({ req }) => createContext({ headers: req.headers }),
   })
 );
 

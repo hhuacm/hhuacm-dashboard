@@ -11,7 +11,7 @@ const isLocalLibsqlServer =
   databaseUrl.startsWith("http://localhost");
 
 export default defineConfig({
-  schema: "./src/schema/auth.ts",
+  schema: ["./src/schema/auth.ts", "./src/schema/profile.ts"],
   out: "./src/migrations",
   dialect: "turso",
   dbCredentials: {

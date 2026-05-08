@@ -1,16 +1,114 @@
 "use client";
 
 import { Button } from "@hhuacm-dashboard/ui/components/button";
-import { ArrowLeft, BadgeCheck, UserRound } from "lucide-react";
+import { Input } from "@hhuacm-dashboard/ui/components/input";
+import { Label } from "@hhuacm-dashboard/ui/components/label";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, BadgeCheck, Save, UserRound } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
+import { trpc } from "@/utils/trpc";
+
+const profileFieldConfigs = [
+  { autoComplete: "name", key: "realName", label: "姓名" },
+  { autoComplete: "off", key: "grade", label: "年级" },
+  { autoComplete: "off", key: "studentId", label: "学号" },
+  { autoComplete: "organization-title", key: "major", label: "专业" },
+] as const;
+
+type ProfileFieldKey = (typeof profileFieldConfigs)[number]["key"];
+type ProfileFormValues = Record<ProfileFieldKey, string>;
+type ProfileData = Partial<Record<ProfileFieldKey, null | string>>;
+
+const emptyProfileFormValues: ProfileFormValues = {
+  grade: "",
+  major: "",
+  realName: "",
+  studentId: "",
+};
+
+const buildProfileFormValues = (
+  profile: null | ProfileData | undefined
+): ProfileFormValues => ({
+  grade: profile?.grade ?? "",
+  major: profile?.major ?? "",
+  realName: profile?.realName ?? "",
+  studentId: profile?.studentId ?? "",
+});
+
+const getProfileDisplayValue = (value: null | string | undefined) =>
+  value ? value : "未填写";
 
 export default function ProfilePage() {
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
+  const userId = user?.id ?? null;
+  const queryClient = useQueryClient();
+  const realNameId = useId();
+  const gradeId = useId();
+  const studentIdId = useId();
+  const majorId = useId();
+  const [formValues, setFormValues] = useState<ProfileFormValues>(
+    emptyProfileFormValues
+  );
+  const [profileMessage, setProfileMessage] = useState<null | string>(null);
+  const profileQuery = useQuery(
+    trpc.profile.get.queryOptions(undefined, {
+      enabled: Boolean(userId),
+    })
+  );
+  const updateProfile = useMutation(
+    trpc.profile.update.mutationOptions({
+      onError: () => {
+        setProfileMessage("保存失败，请稍后再试。");
+      },
+      onSuccess: (profile) => {
+        queryClient.setQueryData(trpc.profile.get.queryKey(), profile);
+        setFormValues(buildProfileFormValues(profile));
+        setProfileMessage("个人信息已保存。");
+      },
+    })
+  );
+  const fieldIds: Record<ProfileFieldKey, string> = {
+    grade: gradeId,
+    major: majorId,
+    realName: realNameId,
+    studentId: studentIdId,
+  };
   let profileContent: ReactNode;
+
+  useEffect(() => {
+    if (!userId) {
+      setFormValues(emptyProfileFormValues);
+      return;
+    }
+
+    if (profileQuery.data) {
+      setFormValues(buildProfileFormValues(profileQuery.data));
+    }
+  }, [profileQuery.data, userId]);
+
+  const handleProfileInputChange = (field: ProfileFieldKey, value: string) => {
+    setProfileMessage(null);
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [field]: value,
+    }));
+  };
+
+  const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProfileMessage(null);
+    updateProfile.mutate(formValues);
+  };
 
   if (session.isPending) {
     profileContent = (
@@ -52,6 +150,77 @@ export default function ProfilePage() {
             <dd className="mt-2 break-all font-medium text-lg">{user.id}</dd>
           </div>
         </dl>
+
+        <section className="grid gap-5 border-sky-100 border-t pt-7">
+          <div>
+            <h2 className="font-semibold text-xl">个人信息</h2>
+            {profileQuery.isPending ? (
+              <p className="mt-2 text-muted-foreground text-sm">
+                正在读取个人信息。
+              </p>
+            ) : null}
+            {profileQuery.isError ? (
+              <p className="mt-2 text-destructive text-sm" role="alert">
+                个人信息加载失败，请刷新页面重试。
+              </p>
+            ) : null}
+          </div>
+
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {profileFieldConfigs.map((field) => (
+              <div
+                className="border border-sky-100 bg-sky-50/45 p-4"
+                key={field.key}
+              >
+                <dt className="text-muted-foreground text-sm">{field.label}</dt>
+                <dd className="mt-2 break-all font-medium text-lg">
+                  {getProfileDisplayValue(profileQuery.data?.[field.key])}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          <form className="grid gap-5" onSubmit={handleProfileSubmit}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {profileFieldConfigs.map((field) => (
+                <div className="grid gap-2" key={field.key}>
+                  <Label htmlFor={fieldIds[field.key]}>{field.label}</Label>
+                  <Input
+                    autoComplete={field.autoComplete}
+                    disabled={profileQuery.isPending || updateProfile.isPending}
+                    id={fieldIds[field.key]}
+                    name={field.key}
+                    onChange={(event) =>
+                      handleProfileInputChange(field.key, event.target.value)
+                    }
+                    placeholder="未填写"
+                    value={formValues[field.key]}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                disabled={profileQuery.isPending || updateProfile.isPending}
+                size="lg"
+                type="submit"
+              >
+                <Save className="size-4" />
+                {updateProfile.isPending ? "保存中" : "保存"}
+              </Button>
+              {profileMessage ? (
+                <p
+                  aria-live="polite"
+                  className="text-muted-foreground text-sm"
+                  role="status"
+                >
+                  {profileMessage}
+                </p>
+              ) : null}
+            </div>
+          </form>
+        </section>
       </div>
     );
   } else {
