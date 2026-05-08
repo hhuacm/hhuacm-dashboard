@@ -12,10 +12,18 @@ import {
 } from "@hhuacm-dashboard/ui/components/dialog";
 import { Input } from "@hhuacm-dashboard/ui/components/input";
 import { Label } from "@hhuacm-dashboard/ui/components/label";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 
 import { authClient } from "@/utils/auth-client";
+import {
+  emptyProfileFormValues,
+  type ProfileFieldKey,
+  type ProfileFormValues,
+  profileFieldConfigs,
+} from "@/utils/profile-fields";
+import { trpc } from "@/utils/trpc";
 
 export type AuthMode = "login" | "register";
 
@@ -98,6 +106,36 @@ const signInWithIdentifier = (identifier: string, password: string) => {
   });
 };
 
+const signUpWithEmail = (username: string, email: string, password: string) =>
+  authClient.signUp.email({
+    displayUsername: username,
+    email,
+    name: username,
+    password,
+    username,
+  });
+
+const getValidationError = (
+  mode: AuthMode,
+  identifier: string,
+  email: string,
+  password: string
+) => {
+  if (!identifier) {
+    return mode === "login" ? "请输入邮箱或用户名。" : "请输入用户名。";
+  }
+
+  if (mode === "register" && !email) {
+    return "请输入邮箱。";
+  }
+
+  if (!password) {
+    return "请输入密码。";
+  }
+
+  return "";
+};
+
 export function AuthDialog({
   mode,
   open,
@@ -108,19 +146,39 @@ export function AuthDialog({
   const identifierId = useId();
   const emailId = useId();
   const passwordId = useId();
+  const profileFieldIdPrefix = useId();
+  const queryClient = useQueryClient();
   const [identifier, setIdentifier] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [profileFormValues, setProfileFormValues] = useState<ProfileFormValues>(
+    emptyProfileFormValues
+  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const updateProfile = useMutation(
+    trpc.profile.update.mutationOptions({
+      onSuccess: (profile) => {
+        queryClient.setQueryData(trpc.profile.get.queryKey(), profile);
+      },
+    })
+  );
   const copy = authCopy[mode];
 
   const resetForm = () => {
     setIdentifier("");
     setEmail("");
     setPassword("");
+    setProfileFormValues(emptyProfileFormValues);
     setError("");
     setSubmitting(false);
+  };
+
+  const handleProfileInputChange = (field: ProfileFieldKey, value: string) => {
+    setProfileFormValues((currentValues) => ({
+      ...currentValues,
+      [field]: value,
+    }));
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -131,24 +189,39 @@ export function AuthDialog({
     onOpenChange(nextOpen);
   };
 
+  const submitAuthCredentials = (identifier: string, email: string) => {
+    if (mode === "login") {
+      return signInWithIdentifier(identifier, password);
+    }
+
+    return signUpWithEmail(identifier, email, password);
+  };
+
+  const saveRegistrationProfile = async () => {
+    try {
+      await updateProfile.mutateAsync(profileFormValues);
+      return true;
+    } catch {
+      await onSuccess();
+      setError("账号已创建，但个人信息保存失败，可稍后在个人信息页补填。");
+      return false;
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const normalizedIdentifier = identifier.trim();
     const normalizedEmail = email.trim().toLowerCase();
+    const validationError = getValidationError(
+      mode,
+      normalizedIdentifier,
+      normalizedEmail,
+      password
+    );
 
-    if (!normalizedIdentifier) {
-      setError(mode === "login" ? "请输入邮箱或用户名。" : "请输入用户名。");
-      return;
-    }
-
-    if (mode === "register" && !normalizedEmail) {
-      setError("请输入邮箱。");
-      return;
-    }
-
-    if (!password) {
-      setError("请输入密码。");
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -156,20 +229,22 @@ export function AuthDialog({
     setSubmitting(true);
 
     try {
-      const response =
-        mode === "login"
-          ? await signInWithIdentifier(normalizedIdentifier, password)
-          : await authClient.signUp.email({
-              displayUsername: normalizedIdentifier,
-              email: normalizedEmail,
-              name: normalizedIdentifier,
-              password,
-              username: normalizedIdentifier,
-            });
+      const response = await submitAuthCredentials(
+        normalizedIdentifier,
+        normalizedEmail
+      );
 
       if (response.error) {
         setError(getAuthErrorMessage(response.error.message, mode));
         return;
+      }
+
+      if (mode === "register") {
+        const profileSaved = await saveRegistrationProfile();
+
+        if (!profileSaved) {
+          return;
+        }
       }
 
       await onSuccess();
@@ -183,6 +258,7 @@ export function AuthDialog({
 
   const handleModeSwitch = () => {
     setError("");
+    setProfileFormValues(emptyProfileFormValues);
     onModeChange(mode === "login" ? "register" : "login");
   };
 
@@ -240,6 +316,37 @@ export function AuthDialog({
                 value={email}
               />
             </div>
+          ) : null}
+
+          {mode === "register" ? (
+            <fieldset className="grid gap-3 border-sky-100 border-t pt-4">
+              <legend className="font-medium text-sm">个人信息（可选）</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {profileFieldConfigs.map((field) => {
+                  const fieldId = `${profileFieldIdPrefix}-${field.key}`;
+
+                  return (
+                    <div className="grid gap-2" key={field.key}>
+                      <Label htmlFor={fieldId}>{field.label}</Label>
+                      <Input
+                        autoComplete={field.autoComplete}
+                        disabled={submitting}
+                        id={fieldId}
+                        name={field.key}
+                        onChange={(event) =>
+                          handleProfileInputChange(
+                            field.key,
+                            event.target.value
+                          )
+                        }
+                        placeholder="可不填"
+                        value={profileFormValues[field.key]}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
           ) : null}
 
           <div className="grid gap-2">

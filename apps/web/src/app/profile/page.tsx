@@ -15,37 +15,15 @@ import {
 } from "react";
 
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
+import {
+  buildProfileFormValues,
+  emptyProfileFormValues,
+  getProfileDisplayValue,
+  type ProfileFieldKey,
+  type ProfileFormValues,
+  profileFieldConfigs,
+} from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
-
-const profileFieldConfigs = [
-  { autoComplete: "name", key: "realName", label: "姓名" },
-  { autoComplete: "off", key: "grade", label: "年级" },
-  { autoComplete: "off", key: "studentId", label: "学号" },
-  { autoComplete: "organization-title", key: "major", label: "专业" },
-] as const;
-
-type ProfileFieldKey = (typeof profileFieldConfigs)[number]["key"];
-type ProfileFormValues = Record<ProfileFieldKey, string>;
-type ProfileData = Partial<Record<ProfileFieldKey, null | string>>;
-
-const emptyProfileFormValues: ProfileFormValues = {
-  grade: "",
-  major: "",
-  realName: "",
-  studentId: "",
-};
-
-const buildProfileFormValues = (
-  profile: null | ProfileData | undefined
-): ProfileFormValues => ({
-  grade: profile?.grade ?? "",
-  major: profile?.major ?? "",
-  realName: profile?.realName ?? "",
-  studentId: profile?.studentId ?? "",
-});
-
-const getProfileDisplayValue = (value: null | string | undefined) =>
-  value ? value : "未填写";
 
 export default function ProfilePage() {
   const session = authClient.useSession();
