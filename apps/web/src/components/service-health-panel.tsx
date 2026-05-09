@@ -1,4 +1,4 @@
-import { Alert } from "@hhuacm-dashboard/ui/components/alert";
+import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
 import { Badge } from "@hhuacm-dashboard/ui/components/badge";
 import {
   Card,
@@ -64,8 +64,8 @@ export function ServiceHealthPanel({
         </dl>
 
         {message ? (
-          <Alert variant={tone === "danger" ? "destructive" : "info"}>
-            {message}
+          <Alert variant={tone === "danger" ? "destructive" : "default"}>
+            <AlertDescription>{message}</AlertDescription>
           </Alert>
         ) : null}
       </CardContent>

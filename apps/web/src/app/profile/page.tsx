@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert } from "@hhuacm-dashboard/ui/components/alert";
+import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
 import { Badge } from "@hhuacm-dashboard/ui/components/badge";
 import { Button } from "@hhuacm-dashboard/ui/components/button";
 import {
@@ -10,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@hhuacm-dashboard/ui/components/card";
+import { Field, FieldLabel } from "@hhuacm-dashboard/ui/components/field";
 import { Input } from "@hhuacm-dashboard/ui/components/input";
-import { Label } from "@hhuacm-dashboard/ui/components/label";
 import { Separator } from "@hhuacm-dashboard/ui/components/separator";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BadgeCheck, Loader2, Save, UserRound } from "lucide-react";
@@ -35,7 +35,7 @@ import { trpc } from "@/utils/trpc";
 
 interface ProfileMessage {
   text: string;
-  tone: "destructive" | "success";
+  tone: "default" | "destructive";
 }
 
 export default function ProfilePage() {
@@ -71,7 +71,7 @@ export default function ProfilePage() {
         setFormValues(buildProfileFormValues(profile));
         setProfileMessage({
           text: "个人信息已保存。",
-          tone: "success",
+          tone: "default",
         });
       },
     })
@@ -220,11 +220,15 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             {profileQuery.isPending ? (
-              <Alert variant="info">正在读取个人信息。</Alert>
+              <Alert>
+                <AlertDescription>正在读取个人信息。</AlertDescription>
+              </Alert>
             ) : null}
             {profileQuery.isError ? (
               <Alert variant="destructive">
-                个人信息加载失败，请刷新页面重试。
+                <AlertDescription>
+                  个人信息加载失败，请刷新页面重试。
+                </AlertDescription>
               </Alert>
             ) : null}
 
@@ -249,8 +253,10 @@ export default function ProfilePage() {
               <form className="grid gap-5" onSubmit={handleProfileSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profileFieldConfigs.map((field) => (
-                    <div className="grid gap-2" key={field.key}>
-                      <Label htmlFor={fieldIds[field.key]}>{field.label}</Label>
+                    <Field key={field.key}>
+                      <FieldLabel htmlFor={fieldIds[field.key]}>
+                        {field.label}
+                      </FieldLabel>
                       <Input
                         autoComplete={field.autoComplete}
                         disabled={
@@ -267,7 +273,7 @@ export default function ProfilePage() {
                         placeholder="未填写"
                         value={formValues[field.key]}
                       />
-                    </div>
+                    </Field>
                   ))}
                 </div>
 
@@ -289,7 +295,7 @@ export default function ProfilePage() {
                       role="status"
                       variant={profileMessage.tone}
                     >
-                      {profileMessage.text}
+                      <AlertDescription>{profileMessage.text}</AlertDescription>
                     </Alert>
                   ) : null}
                 </div>

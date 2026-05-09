@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert } from "@hhuacm-dashboard/ui/components/alert";
+import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
 import { Button } from "@hhuacm-dashboard/ui/components/button";
 import {
   Dialog,
@@ -11,8 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@hhuacm-dashboard/ui/components/dialog";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@hhuacm-dashboard/ui/components/field";
 import { Input } from "@hhuacm-dashboard/ui/components/input";
-import { Label } from "@hhuacm-dashboard/ui/components/label";
 import { Separator } from "@hhuacm-dashboard/ui/components/separator";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
@@ -287,10 +293,10 @@ export function AuthDialog({
         </DialogHeader>
 
         <form className="grid gap-5" onSubmit={handleSubmit}>
-          <div className="grid gap-2">
-            <Label htmlFor={identifierId}>
+          <Field>
+            <FieldLabel htmlFor={identifierId}>
               {mode === "login" ? "邮箱或用户名" : "用户名"}
-            </Label>
+            </FieldLabel>
             <Input
               autoComplete="username"
               disabled={submitting}
@@ -302,11 +308,11 @@ export function AuthDialog({
               }
               value={identifier}
             />
-          </div>
+          </Field>
 
           {mode === "register" ? (
-            <div className="grid gap-2">
-              <Label htmlFor={emailId}>邮箱</Label>
+            <Field>
+              <FieldLabel htmlFor={emailId}>邮箱</FieldLabel>
               <Input
                 autoComplete="email"
                 disabled={submitting}
@@ -317,21 +323,19 @@ export function AuthDialog({
                 type="email"
                 value={email}
               />
-            </div>
+            </Field>
           ) : null}
 
           {mode === "register" ? (
-            <fieldset className="grid gap-4 rounded-lg border bg-muted/40 p-4">
-              <legend className="px-1 font-medium text-sm">
-                个人信息（可选）
-              </legend>
-              <div className="grid gap-4 sm:grid-cols-2">
+            <FieldSet className="rounded-lg border bg-muted/40 p-4">
+              <FieldLegend className="px-1">个人信息（可选）</FieldLegend>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
                 {profileFieldConfigs.map((field) => {
                   const fieldId = `${profileFieldIdPrefix}-${field.key}`;
 
                   return (
-                    <div className="grid gap-2" key={field.key}>
-                      <Label htmlFor={fieldId}>{field.label}</Label>
+                    <Field key={field.key}>
+                      <FieldLabel htmlFor={fieldId}>{field.label}</FieldLabel>
                       <Input
                         autoComplete={field.autoComplete}
                         disabled={submitting}
@@ -346,17 +350,17 @@ export function AuthDialog({
                         placeholder="可不填"
                         value={profileFormValues[field.key]}
                       />
-                    </div>
+                    </Field>
                   );
                 })}
-              </div>
-            </fieldset>
+              </FieldGroup>
+            </FieldSet>
           ) : null}
 
           {mode === "register" ? <Separator /> : null}
 
-          <div className="grid gap-2">
-            <Label htmlFor={passwordId}>密码</Label>
+          <Field>
+            <FieldLabel htmlFor={passwordId}>密码</FieldLabel>
             <Input
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
@@ -369,9 +373,13 @@ export function AuthDialog({
               type="password"
               value={password}
             />
-          </div>
+          </Field>
 
-          {error ? <Alert variant="destructive">{error}</Alert> : null}
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
 
           <DialogFooter className="items-stretch gap-3 sm:items-center">
             <Button
