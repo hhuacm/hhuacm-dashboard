@@ -15,11 +15,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BadgeCheck, Save, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState } from "@/components/empty-state";
-import { FormSection } from "@/components/form-section";
-import { InfoItem } from "@/components/info-item";
 import { PageHeader } from "@/components/page-header";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
@@ -35,6 +32,27 @@ import { trpc } from "@/utils/trpc";
 interface ProfileMessage {
   text: string;
   tone: "danger" | "success";
+}
+
+interface ProfileInfoItemProps {
+  label: string;
+  mono?: boolean;
+  value: ReactNode;
+}
+
+function ProfileInfoItem({ label, mono = false, value }: ProfileInfoItemProps) {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <dt className="text-muted text-sm">{label}</dt>
+      <dd
+        className={`mt-2 break-all font-medium text-foreground ${
+          mono ? "font-mono text-sm" : "text-base"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -116,11 +134,19 @@ export default function ProfilePage() {
       >
         <Card>
           <Card.Content>
-            <EmptyState
-              description="请稍候，正在从认证服务读取当前会话。"
-              icon={<Spinner color="current" size="sm" />}
-              title="正在确认登录状态"
-            />
+            <div className="grid gap-5 py-4">
+              <div className="flex items-start gap-4">
+                <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
+                  <Spinner color="current" size="sm" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-xl">正在确认登录状态</h2>
+                  <p className="mt-2 text-muted text-sm leading-6">
+                    请稍候，正在从认证服务读取当前会话。
+                  </p>
+                </div>
+              </div>
+            </div>
           </Card.Content>
         </Card>
       </AppShell>
@@ -138,16 +164,22 @@ export default function ProfilePage() {
       >
         <Card>
           <Card.Content>
-            <EmptyState
-              action={
-                <Button onPress={() => router.push("/login")} size="lg">
-                  前往登录
-                </Button>
-              }
-              description="完成登录后，这里会显示账号摘要和个人信息表单。"
-              icon={<UserRound className="size-5" />}
-              title="尚未登录"
-            />
+            <div className="grid gap-5 py-4">
+              <div className="flex items-start gap-4">
+                <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
+                  <UserRound className="size-5" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-xl">尚未登录</h2>
+                  <p className="mt-2 text-muted text-sm leading-6">
+                    完成登录后，这里会显示账号摘要和个人信息表单。
+                  </p>
+                </div>
+              </div>
+              <Button onPress={() => router.push("/login")} size="lg">
+                前往登录
+              </Button>
+            </div>
           </Card.Content>
         </Card>
       </AppShell>
@@ -191,9 +223,9 @@ export default function ProfilePage() {
           </Card.Header>
           <Card.Content>
             <dl className="grid gap-3 sm:grid-cols-3">
-              <InfoItem label="用户名" value={username} />
-              <InfoItem label="邮箱" value={user.email} />
-              <InfoItem label="用户 ID" mono value={user.id} />
+              <ProfileInfoItem label="用户名" value={username} />
+              <ProfileInfoItem label="邮箱" value={user.email} />
+              <ProfileInfoItem label="用户 ID" mono value={user.id} />
             </dl>
           </Card.Content>
         </Card>
@@ -225,7 +257,7 @@ export default function ProfilePage() {
 
             <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {profileFieldConfigs.map((field) => (
-                <InfoItem
+                <ProfileInfoItem
                   key={field.key}
                   label={field.label}
                   value={getProfileDisplayValue(profileQuery.data?.[field.key])}
@@ -237,10 +269,14 @@ export default function ProfilePage() {
 
         <Card>
           <Card.Content>
-            <FormSection
-              description="这些信息用于队内统计和后续业务模块识别。"
-              title="编辑资料"
-            >
+            <section className="grid gap-5">
+              <div>
+                <h2 className="font-semibold text-xl">编辑资料</h2>
+                <p className="mt-2 text-muted text-sm leading-6">
+                  这些信息用于队内统计和后续业务模块识别。
+                </p>
+              </div>
+
               <Form className="grid gap-5" onSubmit={handleProfileSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profileFieldConfigs.map((field) => (
@@ -298,7 +334,7 @@ export default function ProfilePage() {
                   ) : null}
                 </div>
               </Form>
-            </FormSection>
+            </section>
           </Card.Content>
         </Card>
       </div>

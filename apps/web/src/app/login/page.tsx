@@ -1,5 +1,218 @@
-import { AuthPage } from "@/components/auth-page";
+"use client";
+
+import {
+  Alert,
+  Button,
+  Card,
+  Chip,
+  Form,
+  Input,
+  Label,
+  Spinner,
+  TextField,
+} from "@heroui/react";
+import { ArrowLeft, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
+
+import { AppShell } from "@/components/app-shell";
+import { PageHeader } from "@/components/page-header";
+import { authClient, getPreferredUsername } from "@/utils/auth-client";
+
+const getLoginErrorMessage = (message: string | undefined) => {
+  if (!message) {
+    return "登录失败，请稍后再试。";
+  }
+
+  if (message.includes("Invalid email or password")) {
+    return "邮箱或密码不正确。";
+  }
+
+  if (message.includes("Invalid username or password")) {
+    return "用户名或密码不正确。";
+  }
+
+  return message;
+};
+
+const isEmailIdentifier = (value: string) => value.includes("@");
 
 export default function LoginPage() {
-  return <AuthPage mode="login" />;
+  const router = useRouter();
+  const session = authClient.useSession();
+  const user = session.data?.user ?? null;
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const shellAction = (
+    <Button onPress={() => router.push("/")} size="sm" variant="outline">
+      <ArrowLeft className="size-4" />
+      返回首页
+    </Button>
+  );
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedIdentifier = identifier.trim();
+
+    if (!normalizedIdentifier) {
+      setError("请输入邮箱或用户名。");
+      return;
+    }
+
+    if (!password) {
+      setError("请输入密码。");
+      return;
+    }
+
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const response = isEmailIdentifier(normalizedIdentifier)
+        ? await authClient.signIn.email({
+            email: normalizedIdentifier.toLowerCase(),
+            password,
+          })
+        : await authClient.signIn.username({
+            password,
+            username: normalizedIdentifier,
+          });
+
+      if (response.error) {
+        setError(getLoginErrorMessage(response.error.message));
+        return;
+      }
+
+      await session.refetch();
+      router.push("/profile");
+    } catch {
+      setError("认证服务暂时不可用，请确认后端和数据库已启动。");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AppShell
+      action={shellAction}
+      description="账号与个人资料入口"
+      icon={<UserRound className="size-4" />}
+      maxWidth="4xl"
+      title="账号"
+    >
+      <div className="mx-auto grid w-full max-w-xl gap-6 py-4 sm:py-8">
+        <PageHeader
+          action={
+            user ? (
+              <Chip color="success" size="sm" variant="soft">
+                已登录
+              </Chip>
+            ) : null
+          }
+          description="登录后可以维护个人信息，并进入后续队务模块。"
+          title="登录 HHUACM Dashboard"
+        />
+
+        {user ? (
+          <Card>
+            <Card.Header>
+              <Card.Description>当前账号</Card.Description>
+              <Card.Title className="break-all">
+                {getPreferredUsername(user)}
+              </Card.Title>
+              <Card.Description>
+                你已经登录，可以直接进入个人信息页。
+              </Card.Description>
+            </Card.Header>
+            <Card.Footer>
+              <Button onPress={() => router.push("/profile")}>
+                <UserRound className="size-4" />
+                进入个人信息
+              </Button>
+            </Card.Footer>
+          </Card>
+        ) : (
+          <Card>
+            <Card.Header>
+              <Card.Description>账号入口</Card.Description>
+              <Card.Title className="text-xl">欢迎回来</Card.Title>
+              <Card.Description>
+                使用邮箱或用户名进入 HHUACM Dashboard。
+              </Card.Description>
+            </Card.Header>
+
+            <Form className="contents" onSubmit={handleSubmit}>
+              <Card.Content>
+                <div className="flex flex-col gap-4">
+                  <TextField
+                    fullWidth
+                    isDisabled={submitting}
+                    name="identifier"
+                    onChange={setIdentifier}
+                    value={identifier}
+                  >
+                    <Label>邮箱或用户名</Label>
+                    <Input
+                      autoComplete="username"
+                      placeholder="邮箱或 hhuacmer"
+                      variant="secondary"
+                    />
+                  </TextField>
+
+                  <TextField
+                    fullWidth
+                    isDisabled={submitting}
+                    name="password"
+                    onChange={setPassword}
+                    type="password"
+                    value={password}
+                  >
+                    <Label>密码</Label>
+                    <Input
+                      autoComplete="current-password"
+                      placeholder="输入密码"
+                      variant="secondary"
+                    />
+                  </TextField>
+
+                  {error ? (
+                    <Alert status="danger">
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Description>{error}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
+                  ) : null}
+                </div>
+              </Card.Content>
+
+              <Card.Footer className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                  isDisabled={submitting}
+                  onPress={() => router.push("/register")}
+                  type="button"
+                  variant="ghost"
+                >
+                  还没有账号？
+                  <span className="text-accent">注册一个</span>
+                </Button>
+                <Button isPending={submitting} type="submit">
+                  {({ isPending }) => (
+                    <>
+                      {isPending ? <Spinner color="current" size="sm" /> : null}
+                      {isPending ? "处理中" : "登录"}
+                    </>
+                  )}
+                </Button>
+              </Card.Footer>
+            </Form>
+          </Card>
+        )}
+      </div>
+    </AppShell>
+  );
 }
