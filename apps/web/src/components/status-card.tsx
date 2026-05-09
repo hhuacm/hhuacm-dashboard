@@ -1,21 +1,12 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@hhuacm-dashboard/ui/components/card";
-import { cn } from "@hhuacm-dashboard/ui/lib/utils";
+import { Card } from "@heroui/react";
 import type { ReactNode } from "react";
 
 const toneClassNames = {
-  danger: "bg-destructive/10 text-destructive",
-  info: "bg-primary/10 text-primary",
-  neutral: "bg-muted text-muted-foreground",
-  success:
-    "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-  warning:
-    "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  danger: "bg-danger-soft text-danger",
+  info: "bg-accent-soft text-accent",
+  neutral: "bg-default text-muted",
+  success: "bg-success-soft text-success",
+  warning: "bg-warning-soft text-warning",
 } as const;
 
 interface StatusCardProps {
@@ -34,28 +25,25 @@ export function StatusCard({
   value,
 }: StatusCardProps) {
   return (
-    <Card size="sm">
-      <CardHeader className="gap-3">
+    <Card>
+      <Card.Header className="gap-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardDescription>{title}</CardDescription>
-            <CardTitle className="mt-1 text-xl">{value}</CardTitle>
+            <Card.Description>{title}</Card.Description>
+            <Card.Title className="mt-1 text-xl">{value}</Card.Title>
           </div>
           {icon ? (
             <div
-              className={cn(
-                "grid size-9 shrink-0 place-items-center rounded-md",
-                toneClassNames[tone]
-              )}
+              className={`grid size-9 shrink-0 place-items-center rounded-md ${toneClassNames[tone]}`}
             >
               {icon}
             </div>
           ) : null}
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-sm leading-6">{description}</p>
-      </CardContent>
+      </Card.Header>
+      <Card.Content>
+        <p className="text-muted text-sm leading-6">{description}</p>
+      </Card.Content>
     </Card>
   );
 }

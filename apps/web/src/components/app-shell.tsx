@@ -1,4 +1,3 @@
-import { cn } from "@hhuacm-dashboard/ui/lib/utils";
 import type { ReactNode } from "react";
 
 const maxWidthClassNames = {
@@ -27,23 +26,18 @@ export function AppShell({
   return (
     <main className="min-h-svh bg-background text-foreground">
       <div
-        className={cn(
-          "mx-auto flex min-h-svh w-full flex-col px-4 py-4 sm:px-6 lg:px-8",
-          maxWidthClassNames[maxWidth]
-        )}
+        className={`mx-auto flex min-h-svh w-full flex-col px-4 py-4 sm:px-6 lg:px-8 ${maxWidthClassNames[maxWidth]}`}
       >
         <header className="flex min-h-16 items-center justify-between gap-4 border-b py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-lg border bg-card text-primary shadow-sm">
+            <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-surface text-accent shadow-surface">
               {icon}
             </div>
             <div className="min-w-0">
               <p className="truncate font-semibold text-base leading-none">
                 {title}
               </p>
-              <p className="mt-1 truncate text-muted-foreground text-sm">
-                {description}
-              </p>
+              <p className="mt-1 truncate text-muted text-sm">{description}</p>
             </div>
           </div>
 

@@ -1,12 +1,4 @@
-import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
-import { Badge } from "@hhuacm-dashboard/ui/components/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@hhuacm-dashboard/ui/components/card";
+import { Alert, Card, Chip } from "@heroui/react";
 import type { ReactNode } from "react";
 
 import { InfoItem } from "./info-item";
@@ -26,9 +18,9 @@ interface ServiceHealthPanelProps {
   tone: HealthTone;
 }
 
-const badgeVariant = {
-  danger: "destructive",
-  default: "outline",
+const chipColor = {
+  danger: "danger",
+  default: "default",
   success: "success",
   warning: "warning",
 } as const;
@@ -41,17 +33,19 @@ export function ServiceHealthPanel({
 }: ServiceHealthPanelProps) {
   return (
     <Card>
-      <CardHeader>
+      <Card.Header>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardDescription>服务状态</CardDescription>
-            <CardTitle className="mt-1">API 连接</CardTitle>
+            <Card.Description>服务状态</Card.Description>
+            <Card.Title className="mt-1">API 连接</Card.Title>
           </div>
-          <Badge variant={badgeVariant[tone]}>{status}</Badge>
+          <Chip color={chipColor[tone]} size="sm" variant="soft">
+            {status}
+          </Chip>
         </div>
-      </CardHeader>
+      </Card.Header>
 
-      <CardContent className="grid gap-4">
+      <Card.Content className="grid gap-4">
         <dl className="grid gap-3 sm:grid-cols-2">
           {details.map((detail) => (
             <InfoItem
@@ -64,11 +58,14 @@ export function ServiceHealthPanel({
         </dl>
 
         {message ? (
-          <Alert variant={tone === "danger" ? "destructive" : "default"}>
-            <AlertDescription>{message}</AlertDescription>
+          <Alert status={tone === "danger" ? "danger" : "default"}>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>{message}</Alert.Description>
+            </Alert.Content>
           </Alert>
         ) : null}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

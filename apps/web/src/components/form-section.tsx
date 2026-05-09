@@ -16,9 +16,7 @@ export function FormSection({
       <div>
         <h2 className="font-semibold text-xl">{title}</h2>
         {description ? (
-          <p className="mt-2 text-muted-foreground text-sm leading-6">
-            {description}
-          </p>
+          <p className="mt-2 text-muted text-sm leading-6">{description}</p>
         ) : null}
       </div>
 

@@ -1,13 +1,6 @@
 "use client";
 
-import { Button } from "@hhuacm-dashboard/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@hhuacm-dashboard/ui/components/card";
+import { Button, Card } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -16,15 +9,13 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 import { AccountMenu } from "./account-menu";
 import { AppShell } from "./app-shell";
-import { AuthDialog, type AuthMode } from "./auth-dialog";
 import { PageHeader } from "./page-header";
 import { ServiceHealthPanel } from "./service-health-panel";
 import { StatusCard } from "./status-card";
@@ -86,24 +77,14 @@ const formatCheckedAt = (checkedAt: string | undefined) => {
 };
 
 export function DashboardHome() {
+  const router = useRouter();
   const health = useQuery(trpc.health.queryOptions());
   const session = authClient.useSession();
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [authOpen, setAuthOpen] = useState(false);
   const user = session.data?.user ?? null;
   const username = user ? getPreferredUsername(user) : "";
   const status = getHealthStatus(health.isLoading, health.isError);
   const healthTone = getHealthTone(health.isLoading, health.isError);
   const authStatus = getAuthStatus(session.isPending, Boolean(user));
-
-  const openAuth = (mode: AuthMode) => {
-    setAuthMode(mode);
-    setAuthOpen(true);
-  };
-
-  const handleAuthSuccess = async () => {
-    await session.refetch();
-  };
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -117,15 +98,15 @@ export function DashboardHome() {
     />
   ) : (
     <div className="flex items-center gap-2">
-      <Button onClick={() => openAuth("login")} variant="ghost">
+      <Button onPress={() => router.push("/login")} variant="ghost">
         登录
       </Button>
-      <Button onClick={() => openAuth("register")}>注册</Button>
+      <Button onPress={() => router.push("/register")}>注册</Button>
     </div>
   );
 
   const mainAction = user ? (
-    <Button nativeButton={false} render={<Link href="/profile" />} size="lg">
+    <Button onPress={() => router.push("/profile")} size="lg">
       <UserRound className="size-4" />
       进入个人信息
     </Button>
@@ -183,11 +164,11 @@ export function DashboardHome() {
             </div>
 
             <Card>
-              <CardHeader>
-                <CardDescription>当前可用功能</CardDescription>
-                <CardTitle>基础工作流</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3">
+              <Card.Header>
+                <Card.Description>当前可用功能</Card.Description>
+                <Card.Title>基础工作流</Card.Title>
+              </Card.Header>
+              <Card.Content className="grid gap-3">
                 {[
                   "使用邮箱或用户名登录本地账号。",
                   "注册账号时可补充基础个人信息。",
@@ -195,53 +176,47 @@ export function DashboardHome() {
                   "在首页确认 API 服务连接状态。",
                 ].map((item) => (
                   <div className="flex gap-3 text-sm leading-6" key={item}>
-                    <CheckCircle2 className="mt-1 size-4 shrink-0 text-primary" />
+                    <CheckCircle2 className="mt-1 size-4 shrink-0 text-accent" />
                     <p>{item}</p>
                   </div>
                 ))}
-              </CardContent>
+              </Card.Content>
             </Card>
           </div>
 
-          <ServiceHealthPanel
-            details={[
-              { label: "服务", value: health.data?.service ?? "-" },
-              {
-                label: "运行时",
-                value: health.data
-                  ? `${health.data.runtime.name} ${health.data.runtime.version}`
-                  : "-",
-              },
-              {
-                label: "系统",
-                value: health.data
-                  ? `${health.data.system.platform} ${health.data.system.arch}`
-                  : "-",
-              },
-              {
-                label: "检查时间",
-                mono: true,
-                value: formatCheckedAt(health.data?.checkedAt),
-              },
-            ]}
-            message={
-              health.isError
-                ? "后端暂时不可用。启动 API 服务后这里会自动恢复。"
-                : undefined
-            }
-            status={status}
-            tone={healthTone}
-          />
+          <div className="grid content-start gap-6">
+            <ServiceHealthPanel
+              details={[
+                { label: "服务", value: health.data?.service ?? "-" },
+                {
+                  label: "运行时",
+                  value: health.data
+                    ? `${health.data.runtime.name} ${health.data.runtime.version}`
+                    : "-",
+                },
+                {
+                  label: "系统",
+                  value: health.data
+                    ? `${health.data.system.platform} ${health.data.system.arch}`
+                    : "-",
+                },
+                {
+                  label: "检查时间",
+                  mono: true,
+                  value: formatCheckedAt(health.data?.checkedAt),
+                },
+              ]}
+              message={
+                health.isError
+                  ? "后端暂时不可用。启动 API 服务后这里会自动恢复。"
+                  : undefined
+              }
+              status={status}
+              tone={healthTone}
+            />
+          </div>
         </div>
       </div>
-
-      <AuthDialog
-        mode={authMode}
-        onModeChange={setAuthMode}
-        onOpenChange={setAuthOpen}
-        onSuccess={handleAuthSuccess}
-        open={authOpen}
-      />
     </AppShell>
   );
 }

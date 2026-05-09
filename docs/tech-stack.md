@@ -11,8 +11,8 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **Database:** SQLite-compatible libSQL/Turso
 - **ORM:** Drizzle ORM and Drizzle Kit
 - **Authentication:** Better Auth with email or username sign-in for local accounts
-- **Styling:** Tailwind CSS
-- **UI primitives:** shared shadcn-style components in `packages/ui`
+- **Styling:** Tailwind CSS v4 with shared theme CSS in `packages/ui`
+- **UI primitives:** HeroUI V3 components imported from `@heroui/react`
 - **Client data fetching:** TanStack Query with tRPC
 - **Forms and validation:** TanStack Form and Zod
 - **Monorepo tooling:** Bun workspaces and Turborepo
@@ -33,7 +33,7 @@ hhuacm-dashboard/
     |-- config/      # Shared TypeScript configuration
     |-- db/          # Drizzle database client and schema
     |-- env/         # Runtime environment validation
-    |-- ui/          # Shared UI components and styles
+    |-- ui/          # Shared HeroUI/Tailwind theme styles
 ```
 
 The main request flow is:
@@ -136,22 +136,41 @@ Open Drizzle Studio:
 bun run db:studio
 ```
 
-## UI Package
+## UI and Theme
 
-Shared UI primitives live in `packages/ui`.
+The web app uses HeroUI V3 React components directly from `@heroui/react`. The shared `packages/ui` workspace owns global Tailwind and HeroUI theme CSS only.
 
 - Design tokens and global styles: `packages/ui/src/styles/globals.css`
-- Shared primitives: `packages/ui/src/components/*`
-- shadcn configuration: `packages/ui/components.json` and `apps/web/components.json`
+- HeroUI styles import: `@import "@heroui/styles";`
+- Application CSS entry: `apps/web/src/index.css`
 
-Add shared shadcn primitives from the repository root:
-
-```bash
-bun x shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components from application code:
+Use HeroUI compound components in application code:
 
 ```tsx
-import { Button } from "@hhuacm-dashboard/ui/components/button";
+import { Button, Card, Form, Input, Label, TextField } from "@heroui/react";
+
+export function ExampleForm() {
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>Example</Card.Title>
+      </Card.Header>
+      <Form>
+        <Card.Content>
+          <TextField name="name">
+            <Label>Name</Label>
+            <Input />
+          </TextField>
+        </Card.Content>
+        <Card.Footer>
+          <Button type="submit">Save</Button>
+        </Card.Footer>
+      </Form>
+    </Card>
+  );
+}
 ```
+
+When adding or changing UI, use the HeroUI MCP or official documentation for V3 component APIs and BEM class names. Keep custom styling on top of HeroUI semantic tokens such as `background`, `foreground`, `surface`, `accent`, `success`, `warning`, `danger`, `field-*`, `border`, and `focus`.
+
+HeroUI V3 currently does not provide a Dialog/Modal component in this project, so login and registration are implemented as dedicated `/login` and `/register` pages using `Card + Form` composition.

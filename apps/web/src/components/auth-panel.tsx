@@ -1,28 +1,19 @@
 "use client";
 
-import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
-import { Button } from "@hhuacm-dashboard/ui/components/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@hhuacm-dashboard/ui/components/dialog";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@hhuacm-dashboard/ui/components/field";
-import { Input } from "@hhuacm-dashboard/ui/components/input";
-import { Separator } from "@hhuacm-dashboard/ui/components/separator";
+  Alert,
+  Button,
+  Card,
+  Fieldset,
+  Form,
+  Input,
+  Label,
+  Separator,
+  Spinner,
+  TextField,
+} from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { authClient } from "@/utils/auth-client";
 import {
@@ -35,28 +26,27 @@ import { trpc } from "@/utils/trpc";
 
 export type AuthMode = "login" | "register";
 
-interface AuthDialogProps {
+interface AuthPanelProps {
+  className?: string;
   mode: AuthMode;
   onModeChange: (mode: AuthMode) => void;
-  onOpenChange: (open: boolean) => void;
   onSuccess: () => Promise<void> | void;
-  open: boolean;
 }
 
 const authCopy = {
   login: {
-    title: "欢迎回来",
     description: "使用邮箱或用户名进入 HHUACM Dashboard。",
     submit: "登录",
-    switchPrompt: "还没有账号？",
     switchAction: "注册一个",
+    switchPrompt: "还没有账号？",
+    title: "欢迎回来",
   },
   register: {
-    title: "创建账号",
     description: "使用用户名、邮箱和密码创建本地开发账号。",
     submit: "注册",
-    switchPrompt: "已经有账号？",
     switchAction: "去登录",
+    switchPrompt: "已经有账号？",
+    title: "创建账号",
   },
 } as const;
 
@@ -144,17 +134,12 @@ const getValidationError = (
   return "";
 };
 
-export function AuthDialog({
+export function AuthPanel({
+  className,
   mode,
-  open,
   onModeChange,
-  onOpenChange,
   onSuccess,
-}: AuthDialogProps) {
-  const identifierId = useId();
-  const emailId = useId();
-  const passwordId = useId();
-  const profileFieldIdPrefix = useId();
+}: AuthPanelProps) {
   const queryClient = useQueryClient();
   const [identifier, setIdentifier] = useState("");
   const [email, setEmail] = useState("");
@@ -173,6 +158,14 @@ export function AuthDialog({
   );
   const copy = authCopy[mode];
 
+  useEffect(() => {
+    setError("");
+    setProfileFormValues(emptyProfileFormValues);
+    if (mode === "login") {
+      setEmail("");
+    }
+  }, [mode]);
+
   const resetForm = () => {
     setIdentifier("");
     setEmail("");
@@ -187,14 +180,6 @@ export function AuthDialog({
       ...currentValues,
       [field]: value,
     }));
-  };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      resetForm();
-    }
-
-    onOpenChange(nextOpen);
   };
 
   const submitAuthCredentials = (identifier: string, email: string) => {
@@ -256,7 +241,7 @@ export function AuthDialog({
       }
 
       await onSuccess();
-      handleOpenChange(false);
+      resetForm();
     } catch {
       setError("认证服务暂时不可用，请确认后端和数据库已启动。");
     } finally {
@@ -265,138 +250,137 @@ export function AuthDialog({
   };
 
   const handleModeSwitch = () => {
-    setError("");
-    setProfileFormValues(emptyProfileFormValues);
     onModeChange(mode === "login" ? "register" : "login");
   };
 
+  const rootClassName = ["w-full", className].filter(Boolean).join(" ");
+
   return (
-    <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogContent className="max-w-lg">
-        <DialogClose
-          render={
-            <Button
-              aria-label="关闭"
-              className="absolute top-4 right-4"
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            />
-          }
-        >
-          <X className="size-4" />
-        </DialogClose>
+    <Card className={rootClassName}>
+      <Card.Header>
+        <Card.Description>账号入口</Card.Description>
+        <Card.Title className="text-xl">{copy.title}</Card.Title>
+        <Card.Description>{copy.description}</Card.Description>
+      </Card.Header>
 
-        <DialogHeader>
-          <DialogTitle>{copy.title}</DialogTitle>
-          <DialogDescription>{copy.description}</DialogDescription>
-        </DialogHeader>
-
-        <form className="grid gap-5" onSubmit={handleSubmit}>
-          <Field>
-            <FieldLabel htmlFor={identifierId}>
-              {mode === "login" ? "邮箱或用户名" : "用户名"}
-            </FieldLabel>
-            <Input
-              autoComplete="username"
-              disabled={submitting}
-              id={identifierId}
+      <Form className="contents" onSubmit={handleSubmit}>
+        <Card.Content>
+          <div className="flex flex-col gap-4">
+            <TextField
+              fullWidth
+              isDisabled={submitting}
               name={mode === "login" ? "identifier" : "username"}
-              onChange={(event) => setIdentifier(event.target.value)}
-              placeholder={
-                mode === "login" ? "邮箱或 hhuacmer" : "例如 hhuacmer"
-              }
+              onChange={setIdentifier}
               value={identifier}
-            />
-          </Field>
-
-          {mode === "register" ? (
-            <Field>
-              <FieldLabel htmlFor={emailId}>邮箱</FieldLabel>
+            >
+              <Label>{mode === "login" ? "邮箱或用户名" : "用户名"}</Label>
               <Input
-                autoComplete="email"
-                disabled={submitting}
-                id={emailId}
+                autoComplete="username"
+                placeholder={
+                  mode === "login" ? "邮箱或 hhuacmer" : "例如 hhuacmer"
+                }
+                variant="secondary"
+              />
+            </TextField>
+
+            {mode === "register" ? (
+              <TextField
+                fullWidth
+                isDisabled={submitting}
                 name="email"
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="name@example.com"
+                onChange={setEmail}
                 type="email"
                 value={email}
-              />
-            </Field>
-          ) : null}
+              >
+                <Label>邮箱</Label>
+                <Input
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  variant="secondary"
+                />
+              </TextField>
+            ) : null}
 
-          {mode === "register" ? (
-            <FieldSet className="rounded-lg border bg-muted/40 p-4">
-              <FieldLegend className="px-1">个人信息（可选）</FieldLegend>
-              <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                {profileFieldConfigs.map((field) => {
-                  const fieldId = `${profileFieldIdPrefix}-${field.key}`;
-
-                  return (
-                    <Field key={field.key}>
-                      <FieldLabel htmlFor={fieldId}>{field.label}</FieldLabel>
+            {mode === "register" ? (
+              <Fieldset className="rounded-xl border border-border bg-surface-secondary p-4">
+                <Fieldset.Legend className="px-1">
+                  个人信息（可选）
+                </Fieldset.Legend>
+                <Fieldset.Group className="grid gap-4 sm:grid-cols-2">
+                  {profileFieldConfigs.map((field) => (
+                    <TextField
+                      fullWidth
+                      isDisabled={submitting}
+                      key={field.key}
+                      name={field.key}
+                      onChange={(value) =>
+                        handleProfileInputChange(field.key, value)
+                      }
+                      value={profileFormValues[field.key]}
+                    >
+                      <Label>{field.label}</Label>
                       <Input
                         autoComplete={field.autoComplete}
-                        disabled={submitting}
-                        id={fieldId}
-                        name={field.key}
-                        onChange={(event) =>
-                          handleProfileInputChange(
-                            field.key,
-                            event.target.value
-                          )
-                        }
                         placeholder="可不填"
-                        value={profileFormValues[field.key]}
+                        variant="secondary"
                       />
-                    </Field>
-                  );
-                })}
-              </FieldGroup>
-            </FieldSet>
-          ) : null}
+                    </TextField>
+                  ))}
+                </Fieldset.Group>
+              </Fieldset>
+            ) : null}
 
-          {mode === "register" ? <Separator /> : null}
+            {mode === "register" ? <Separator /> : null}
 
-          <Field>
-            <FieldLabel htmlFor={passwordId}>密码</FieldLabel>
-            <Input
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-              disabled={submitting}
-              id={passwordId}
+            <TextField
+              fullWidth
+              isDisabled={submitting}
               name="password"
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="输入密码"
+              onChange={setPassword}
               type="password"
               value={password}
-            />
-          </Field>
-
-          {error ? (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <DialogFooter className="items-stretch gap-3 sm:items-center">
-            <Button
-              disabled={submitting}
-              onClick={handleModeSwitch}
-              type="button"
-              variant="ghost"
             >
-              {copy.switchPrompt}
-              <span className="text-primary">{copy.switchAction}</span>
-            </Button>
-            <Button disabled={submitting} type="submit">
-              {submitting ? "处理中" : copy.submit}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <Label>密码</Label>
+              <Input
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                placeholder="输入密码"
+                variant="secondary"
+              />
+            </TextField>
+
+            {error ? (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            ) : null}
+          </div>
+        </Card.Content>
+
+        <Card.Footer className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button
+            isDisabled={submitting}
+            onPress={handleModeSwitch}
+            type="button"
+            variant="ghost"
+          >
+            {copy.switchPrompt}
+            <span className="text-accent">{copy.switchAction}</span>
+          </Button>
+          <Button isPending={submitting} type="submit">
+            {({ isPending }) => (
+              <>
+                {isPending ? <Spinner color="current" size="sm" /> : null}
+                {isPending ? "处理中" : copy.submit}
+              </>
+            )}
+          </Button>
+        </Card.Footer>
+      </Form>
+    </Card>
   );
 }

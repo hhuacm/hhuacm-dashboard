@@ -1,22 +1,21 @@
 "use client";
 
-import { Alert, AlertDescription } from "@hhuacm-dashboard/ui/components/alert";
-import { Badge } from "@hhuacm-dashboard/ui/components/badge";
-import { Button } from "@hhuacm-dashboard/ui/components/button";
 import {
+  Alert,
+  Button,
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@hhuacm-dashboard/ui/components/card";
-import { Field, FieldLabel } from "@hhuacm-dashboard/ui/components/field";
-import { Input } from "@hhuacm-dashboard/ui/components/input";
-import { Separator } from "@hhuacm-dashboard/ui/components/separator";
+  Chip,
+  Form,
+  Input,
+  Label,
+  Separator,
+  Spinner,
+  TextField,
+} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BadgeCheck, Loader2, Save, UserRound } from "lucide-react";
-import Link from "next/link";
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { ArrowLeft, BadgeCheck, Save, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { FormSection } from "@/components/form-section";
@@ -35,18 +34,15 @@ import { trpc } from "@/utils/trpc";
 
 interface ProfileMessage {
   text: string;
-  tone: "default" | "destructive";
+  tone: "danger" | "success";
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const userId = user?.id ?? null;
   const queryClient = useQueryClient();
-  const realNameId = useId();
-  const gradeId = useId();
-  const studentIdId = useId();
-  const majorId = useId();
   const [formValues, setFormValues] = useState<ProfileFormValues>(
     emptyProfileFormValues
   );
@@ -63,7 +59,7 @@ export default function ProfilePage() {
       onError: () => {
         setProfileMessage({
           text: "保存失败，请稍后再试。",
-          tone: "destructive",
+          tone: "danger",
         });
       },
       onSuccess: (profile) => {
@@ -71,17 +67,11 @@ export default function ProfilePage() {
         setFormValues(buildProfileFormValues(profile));
         setProfileMessage({
           text: "个人信息已保存。",
-          tone: "default",
+          tone: "success",
         });
       },
     })
   );
-  const fieldIds: Record<ProfileFieldKey, string> = {
-    grade: gradeId,
-    major: majorId,
-    realName: realNameId,
-    studentId: studentIdId,
-  };
 
   useEffect(() => {
     if (!userId) {
@@ -109,12 +99,7 @@ export default function ProfilePage() {
   };
 
   const shellAction = (
-    <Button
-      nativeButton={false}
-      render={<Link href="/" />}
-      size="sm"
-      variant="outline"
-    >
+    <Button onPress={() => router.push("/")} size="sm" variant="outline">
       <ArrowLeft className="size-4" />
       返回首页
     </Button>
@@ -130,13 +115,13 @@ export default function ProfilePage() {
         title="个人信息"
       >
         <Card>
-          <CardContent>
+          <Card.Content>
             <EmptyState
               description="请稍候，正在从认证服务读取当前会话。"
-              icon={<Loader2 className="size-5 animate-spin" />}
+              icon={<Spinner color="current" size="sm" />}
               title="正在确认登录状态"
             />
-          </CardContent>
+          </Card.Content>
         </Card>
       </AppShell>
     );
@@ -152,22 +137,18 @@ export default function ProfilePage() {
         title="个人信息"
       >
         <Card>
-          <CardContent>
+          <Card.Content>
             <EmptyState
               action={
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/" />}
-                  size="lg"
-                >
-                  返回首页登录
+                <Button onPress={() => router.push("/login")} size="lg">
+                  前往登录
                 </Button>
               }
-              description="回到首页完成登录后，这里会显示账号摘要和个人信息表单。"
+              description="完成登录后，这里会显示账号摘要和个人信息表单。"
               icon={<UserRound className="size-5" />}
               title="尚未登录"
             />
-          </CardContent>
+          </Card.Content>
         </Card>
       </AppShell>
     );
@@ -185,50 +166,60 @@ export default function ProfilePage() {
     >
       <div className="grid gap-8">
         <PageHeader
-          action={<Badge variant="success">已登录</Badge>}
+          action={
+            <Chip color="success" size="sm" variant="soft">
+              已登录
+            </Chip>
+          }
           description="这里展示账号摘要和队内基础信息。更新后会同步保存到当前账号。"
           title="个人信息"
         />
 
         <Card>
-          <CardHeader>
+          <Card.Header>
             <div className="flex items-start gap-4">
-              <div className="grid size-11 shrink-0 place-items-center rounded-lg border bg-muted text-primary">
+              <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
                 <BadgeCheck className="size-5" />
               </div>
               <div>
-                <CardDescription>当前账号</CardDescription>
-                <CardTitle className="mt-1 break-all text-2xl">
+                <Card.Description>当前账号</Card.Description>
+                <Card.Title className="mt-1 break-all text-2xl">
                   {username}
-                </CardTitle>
+                </Card.Title>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <dl className="grid gap-3 sm:grid-cols-3">
               <InfoItem label="用户名" value={username} />
               <InfoItem label="邮箱" value={user.email} />
               <InfoItem label="用户 ID" mono value={user.id} />
             </dl>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardDescription>资料状态</CardDescription>
-            <CardTitle>队内基础信息</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+          <Card.Header>
+            <Card.Description>资料状态</Card.Description>
+            <Card.Title>队内基础信息</Card.Title>
+          </Card.Header>
+          <Card.Content className="grid gap-4">
             {profileQuery.isPending ? (
               <Alert>
-                <AlertDescription>正在读取个人信息。</AlertDescription>
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>正在读取个人信息。</Alert.Description>
+                </Alert.Content>
               </Alert>
             ) : null}
             {profileQuery.isError ? (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  个人信息加载失败，请刷新页面重试。
-                </AlertDescription>
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>
+                    个人信息加载失败，请刷新页面重试。
+                  </Alert.Description>
+                </Alert.Content>
               </Alert>
             ) : null}
 
@@ -241,39 +232,37 @@ export default function ProfilePage() {
                 />
               ))}
             </dl>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardContent>
+          <Card.Content>
             <FormSection
               description="这些信息用于队内统计和后续业务模块识别。"
               title="编辑资料"
             >
-              <form className="grid gap-5" onSubmit={handleProfileSubmit}>
+              <Form className="grid gap-5" onSubmit={handleProfileSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profileFieldConfigs.map((field) => (
-                    <Field key={field.key}>
-                      <FieldLabel htmlFor={fieldIds[field.key]}>
-                        {field.label}
-                      </FieldLabel>
+                    <TextField
+                      fullWidth
+                      isDisabled={
+                        profileQuery.isPending || updateProfile.isPending
+                      }
+                      key={field.key}
+                      name={field.key}
+                      onChange={(value) =>
+                        handleProfileInputChange(field.key, value)
+                      }
+                      value={formValues[field.key]}
+                    >
+                      <Label>{field.label}</Label>
                       <Input
                         autoComplete={field.autoComplete}
-                        disabled={
-                          profileQuery.isPending || updateProfile.isPending
-                        }
-                        id={fieldIds[field.key]}
-                        name={field.key}
-                        onChange={(event) =>
-                          handleProfileInputChange(
-                            field.key,
-                            event.target.value
-                          )
-                        }
                         placeholder="未填写"
-                        value={formValues[field.key]}
+                        variant="secondary"
                       />
-                    </Field>
+                    </TextField>
                   ))}
                 </div>
 
@@ -281,27 +270,36 @@ export default function ProfilePage() {
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button
-                    disabled={profileQuery.isPending || updateProfile.isPending}
+                    isDisabled={profileQuery.isPending}
+                    isPending={updateProfile.isPending}
                     type="submit"
                   >
-                    <Save className="size-4" />
-                    {updateProfile.isPending ? "保存中" : "保存"}
+                    {({ isPending }) => (
+                      <>
+                        {isPending ? (
+                          <Spinner color="current" size="sm" />
+                        ) : (
+                          <Save className="size-4" />
+                        )}
+                        {isPending ? "保存中" : "保存"}
+                      </>
+                    )}
                   </Button>
 
                   {profileMessage ? (
-                    <Alert
-                      aria-live="polite"
-                      className="sm:max-w-sm"
-                      role="status"
-                      variant={profileMessage.tone}
-                    >
-                      <AlertDescription>{profileMessage.text}</AlertDescription>
+                    <Alert className="sm:max-w-sm" status={profileMessage.tone}>
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Description>
+                          {profileMessage.text}
+                        </Alert.Description>
+                      </Alert.Content>
                     </Alert>
                   ) : null}
                 </div>
-              </form>
+              </Form>
             </FormSection>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     </AppShell>

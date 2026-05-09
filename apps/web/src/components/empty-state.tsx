@@ -17,15 +17,13 @@ export function EmptyState({
     <div className="grid gap-5 py-4">
       <div className="flex items-start gap-4">
         {icon ? (
-          <div className="grid size-11 shrink-0 place-items-center rounded-lg border bg-muted text-primary">
+          <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
             {icon}
           </div>
         ) : null}
         <div>
           <h2 className="font-semibold text-2xl">{title}</h2>
-          <p className="mt-2 max-w-xl text-muted-foreground leading-7">
-            {description}
-          </p>
+          <p className="mt-2 max-w-xl text-muted leading-7">{description}</p>
         </div>
       </div>
 
