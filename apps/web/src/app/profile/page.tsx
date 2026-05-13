@@ -46,6 +46,31 @@ interface ProfileMessage {
   tone: "danger" | "success";
 }
 
+const memberStatusConfig = {
+  active: {
+    className: "bg-success-soft text-success",
+    label: "服役中",
+  },
+  frozen: {
+    className: "bg-black text-white",
+    label: "已冻结",
+  },
+  retired: {
+    className: "bg-default text-muted",
+    label: "已退役",
+  },
+  selection: {
+    className: "bg-accent-soft text-accent",
+    label: "选拔中",
+  },
+} as const;
+
+type MemberStatus = keyof typeof memberStatusConfig;
+
+const isMemberStatus = (
+  status: null | string | undefined
+): status is MemberStatus => Boolean(status && status in memberStatusConfig);
+
 interface ProfileInfoItemProps {
   label: string;
   mono?: boolean;
@@ -74,6 +99,18 @@ function ProfileInfoItem({ label, mono = false, value }: ProfileInfoItemProps) {
         {value}
       </dd>
     </div>
+  );
+}
+
+function MemberStatusBadge({ status }: { status: null | string | undefined }) {
+  const config = isMemberStatus(status)
+    ? memberStatusConfig[status]
+    : memberStatusConfig.selection;
+
+  return (
+    <Chip className={config.className} size="md" variant="soft">
+      {config.label}
+    </Chip>
   );
 }
 
@@ -394,7 +431,13 @@ export default function ProfilePage() {
               </Alert>
             ) : null}
 
-            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <ProfileInfoItem
+                label="状态"
+                value={
+                  <MemberStatusBadge status={profileQuery.data?.memberStatus} />
+                }
+              />
               {profileFieldConfigs.map((field) => (
                 <ProfileInfoItem
                   key={field.key}

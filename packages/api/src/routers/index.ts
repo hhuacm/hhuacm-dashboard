@@ -5,7 +5,10 @@ import {
   ojPlatforms,
   userOjAccount,
 } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import {
+  memberStatuses,
+  userProfile,
+} from "@hhuacm-dashboard/db/schema/profile";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -13,10 +16,12 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../index";
 
 const serverStartedAt = new Date();
+const defaultMemberStatus = memberStatuses[0];
 
 const profileFields = {
   grade: userProfile.grade,
   major: userProfile.major,
+  memberStatus: userProfile.memberStatus,
   realName: userProfile.realName,
   studentId: userProfile.studentId,
 } as const;
@@ -224,6 +229,7 @@ export const appRouter = router({
       return {
         grade: profile.grade,
         major: profile.major,
+        memberStatus: profile.memberStatus ?? defaultMemberStatus,
         realName: profile.realName,
         studentId: profile.studentId,
       };

@@ -3,6 +3,13 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
 
+export const memberStatuses = [
+  "selection",
+  "active",
+  "retired",
+  "frozen",
+] as const;
+
 export const userProfile = sqliteTable("user_profile", {
   userId: text("user_id")
     .primaryKey()
@@ -11,6 +18,9 @@ export const userProfile = sqliteTable("user_profile", {
   grade: text("grade"),
   studentId: text("student_id"),
   major: text("major"),
+  memberStatus: text("member_status", { enum: memberStatuses })
+    .default("selection")
+    .notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .notNull(),
