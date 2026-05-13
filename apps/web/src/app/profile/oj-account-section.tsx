@@ -17,14 +17,35 @@ import {
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Code2, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { type FormEvent, type Key, useMemo, useState } from "react";
 import { trpc } from "@/utils/trpc";
 
 const ojPlatformConfigs = [
-  { key: "luogu", label: "洛谷", name: "Luogu" },
-  { key: "codeforces", label: "Codeforces", name: "Codeforces" },
-  { key: "atcoder", label: "AtCoder", name: "AtCoder" },
-  { key: "nowcoder", label: "牛客", name: "Nowcoder" },
+  {
+    iconSrc: "/oj-icons/luogu.png",
+    key: "luogu",
+    label: "洛谷",
+    name: "Luogu",
+  },
+  {
+    iconSrc: "/oj-icons/codeforces.svg",
+    key: "codeforces",
+    label: "Codeforces",
+    name: "Codeforces",
+  },
+  {
+    iconSrc: "/oj-icons/atcoder.png",
+    key: "atcoder",
+    label: "AtCoder",
+    name: "AtCoder",
+  },
+  {
+    iconSrc: "/oj-icons/nowcoder.png",
+    key: "nowcoder",
+    label: "牛客",
+    name: "Nowcoder",
+  },
 ] as const;
 
 type OjPlatform = (typeof ojPlatformConfigs)[number]["key"];
@@ -337,8 +358,14 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                   key={platform.key}
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
-                      <Code2 className="size-5" />
+                    <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-default">
+                      <Image
+                        alt={`${platform.label} logo`}
+                        className="size-6 object-contain"
+                        height={24}
+                        src={platform.iconSrc}
+                        width={24}
+                      />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">
