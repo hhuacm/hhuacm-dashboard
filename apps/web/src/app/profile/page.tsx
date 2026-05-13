@@ -8,6 +8,8 @@ import {
   Form,
   Input,
   Label,
+  ListBox,
+  Select,
   Separator,
   Spinner,
   TextField,
@@ -15,14 +17,23 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BadgeCheck, Save, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  type Key,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
   buildProfileFormValues,
   emptyProfileFormValues,
+  getChangedProfileValues,
+  getGradeOptionsWithCurrentValue,
   getProfileDisplayValue,
+  hasProfileUpdateValues,
   type ProfileFieldKey,
   type ProfileFormValues,
   profileFieldConfigs,
@@ -41,6 +52,16 @@ interface ProfileInfoItemProps {
   value: ReactNode;
 }
 
+interface ProfileFieldInputProps {
+  field: (typeof profileFieldConfigs)[number];
+  gradeOptions: string[];
+  isChanged?: boolean;
+  isDisabled?: boolean;
+  onChange: (field: ProfileFieldKey, value: string) => void;
+  placeholder: string;
+  value: string;
+}
+
 function ProfileInfoItem({ label, mono = false, value }: ProfileInfoItemProps) {
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
@@ -56,6 +77,95 @@ function ProfileInfoItem({ label, mono = false, value }: ProfileInfoItemProps) {
   );
 }
 
+function ProfileFieldLabel({
+  isChanged = false,
+  label,
+}: {
+  isChanged?: boolean;
+  label: string;
+}) {
+  return (
+    <Label
+      className={
+        isChanged
+          ? "inline-flex items-center gap-2 font-semibold text-accent"
+          : "font-medium text-foreground"
+      }
+    >
+      {label}
+      {isChanged ? (
+        <Chip color="accent" size="sm" variant="soft">
+          已修改
+        </Chip>
+      ) : null}
+    </Label>
+  );
+}
+
+function ProfileFieldInput({
+  field,
+  gradeOptions,
+  isChanged = false,
+  isDisabled = false,
+  onChange,
+  placeholder,
+  value,
+}: ProfileFieldInputProps) {
+  if (field.key === "grade") {
+    const handleGradeChange = (key: Key | null) => {
+      onChange(field.key, typeof key === "string" ? key : "");
+    };
+
+    return (
+      <Select
+        fullWidth
+        isDisabled={isDisabled}
+        onSelectionChange={handleGradeChange}
+        placeholder={placeholder}
+        selectedKey={value || null}
+        variant="secondary"
+      >
+        <ProfileFieldLabel isChanged={isChanged} label={field.label} />
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            <ListBox.Item id="" textValue="未填写">
+              未填写
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+            {gradeOptions.map((option) => (
+              <ListBox.Item id={option} key={option} textValue={option}>
+                {option}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
+    );
+  }
+
+  return (
+    <TextField
+      fullWidth
+      isDisabled={isDisabled}
+      name={field.key}
+      onChange={(nextValue) => onChange(field.key, nextValue)}
+      value={value}
+    >
+      <ProfileFieldLabel isChanged={isChanged} label={field.label} />
+      <Input
+        autoComplete={field.autoComplete}
+        placeholder={placeholder}
+        variant="secondary"
+      />
+    </TextField>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const session = authClient.useSession();
@@ -65,6 +175,8 @@ export default function ProfilePage() {
   const [formValues, setFormValues] = useState<ProfileFormValues>(
     emptyProfileFormValues
   );
+  const [originalFormValues, setOriginalFormValues] =
+    useState<ProfileFormValues>(emptyProfileFormValues);
   const [profileMessage, setProfileMessage] = useState<null | ProfileMessage>(
     null
   );
@@ -83,7 +195,9 @@ export default function ProfilePage() {
       },
       onSuccess: (profile) => {
         queryClient.setQueryData(trpc.profile.get.queryKey(), profile);
-        setFormValues(buildProfileFormValues(profile));
+        const nextFormValues = buildProfileFormValues(profile);
+        setFormValues(nextFormValues);
+        setOriginalFormValues(nextFormValues);
         setProfileMessage({
           text: "个人信息已保存。",
           tone: "success",
@@ -95,11 +209,14 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!userId) {
       setFormValues(emptyProfileFormValues);
+      setOriginalFormValues(emptyProfileFormValues);
       return;
     }
 
     if (profileQuery.data) {
-      setFormValues(buildProfileFormValues(profileQuery.data));
+      const nextFormValues = buildProfileFormValues(profileQuery.data);
+      setFormValues(nextFormValues);
+      setOriginalFormValues(nextFormValues);
     }
   }, [profileQuery.data, userId]);
 
@@ -114,7 +231,21 @@ export default function ProfilePage() {
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setProfileMessage(null);
-    updateProfile.mutate(formValues);
+
+    const changedValues = getChangedProfileValues(
+      formValues,
+      originalFormValues
+    );
+
+    if (!hasProfileUpdateValues(changedValues)) {
+      setProfileMessage({
+        text: "没有需要保存的修改。",
+        tone: "success",
+      });
+      return;
+    }
+
+    updateProfile.mutate(changedValues);
   };
 
   const shellAction = (
@@ -189,6 +320,14 @@ export default function ProfilePage() {
 
   const username = getPreferredUsername(user);
   const authUsername = user.username ?? null;
+  const changedProfileValues = getChangedProfileValues(
+    formValues,
+    originalFormValues
+  );
+  const hasProfileChanges = hasProfileUpdateValues(changedProfileValues);
+  const gradeOptions = getGradeOptionsWithCurrentValue(
+    originalFormValues.grade
+  );
 
   return (
     <AppShell
@@ -277,25 +416,18 @@ export default function ProfilePage() {
               <Form className="grid gap-5" onSubmit={handleProfileSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profileFieldConfigs.map((field) => (
-                    <TextField
-                      fullWidth
+                    <ProfileFieldInput
+                      field={field}
+                      gradeOptions={gradeOptions}
+                      isChanged={field.key in changedProfileValues}
                       isDisabled={
                         profileQuery.isPending || updateProfile.isPending
                       }
                       key={field.key}
-                      name={field.key}
-                      onChange={(value) =>
-                        handleProfileInputChange(field.key, value)
-                      }
+                      onChange={handleProfileInputChange}
+                      placeholder="未填写"
                       value={formValues[field.key]}
-                    >
-                      <Label>{field.label}</Label>
-                      <Input
-                        autoComplete={field.autoComplete}
-                        placeholder="未填写"
-                        variant="secondary"
-                      />
-                    </TextField>
+                    />
                   ))}
                 </div>
 
@@ -303,7 +435,7 @@ export default function ProfilePage() {
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button
-                    isDisabled={profileQuery.isPending}
+                    isDisabled={profileQuery.isPending || !hasProfileChanges}
                     isPending={updateProfile.isPending}
                     type="submit"
                   >

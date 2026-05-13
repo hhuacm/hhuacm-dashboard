@@ -21,12 +21,38 @@ const profileFields = {
   studentId: userProfile.studentId,
 } as const;
 
+const gradeOtherOption = "其他";
+const gradeLookbackYears = 7;
+
+const getGradeOptions = (currentDate = new Date()) => {
+  const currentYear = currentDate.getFullYear();
+  const startYear = currentYear - gradeLookbackYears;
+  const yearOptions = Array.from(
+    { length: gradeLookbackYears + 1 },
+    (_, index) => `${startYear + index}级`
+  );
+
+  return [...yearOptions, gradeOtherOption];
+};
+
+const gradeSchema = z
+  .string()
+  .refine((grade) => !grade || getGradeOptions().includes(grade), {
+    message: "Invalid grade",
+  });
+
 const profileInputSchema = z.object({
-  grade: z.string(),
+  grade: gradeSchema,
   major: z.string(),
   realName: z.string(),
   studentId: z.string(),
 });
+
+const profileUpdateInputSchema = profileInputSchema
+  .partial()
+  .refine((input) => Object.keys(input).length > 0, {
+    message: "Profile update requires at least one field",
+  });
 
 const ojAccountFields = {
   handle: userOjAccount.handle,
@@ -136,7 +162,7 @@ export const appRouter = router({
       };
     }),
     update: protectedProcedure
-      .input(profileInputSchema)
+      .input(profileUpdateInputSchema)
       .mutation(async ({ ctx, input }) => {
         const [currentUser] = await ctx.db
           .select({ id: user.id })

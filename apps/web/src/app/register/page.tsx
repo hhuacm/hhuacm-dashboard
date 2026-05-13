@@ -9,6 +9,8 @@ import {
   Form,
   Input,
   Label,
+  ListBox,
+  Select,
   Separator,
   Spinner,
   TextField,
@@ -16,12 +18,15 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type Key, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
+  getChangedProfileValues,
+  getGradeOptions,
+  hasProfileUpdateValues,
   type ProfileFieldKey,
   type ProfileFormValues,
   profileFieldConfigs,
@@ -56,6 +61,77 @@ const getRegisterErrorMessage = (message: string | undefined) => {
   return message;
 };
 
+interface RegisterProfileFieldInputProps {
+  field: (typeof profileFieldConfigs)[number];
+  gradeOptions: string[];
+  isDisabled?: boolean;
+  onChange: (field: ProfileFieldKey, value: string) => void;
+  value: string;
+}
+
+function RegisterProfileFieldInput({
+  field,
+  gradeOptions,
+  isDisabled = false,
+  onChange,
+  value,
+}: RegisterProfileFieldInputProps) {
+  if (field.key === "grade") {
+    const handleGradeChange = (key: Key | null) => {
+      onChange(field.key, typeof key === "string" ? key : "");
+    };
+
+    return (
+      <Select
+        fullWidth
+        isDisabled={isDisabled}
+        onSelectionChange={handleGradeChange}
+        placeholder="可不填"
+        selectedKey={value || null}
+        variant="secondary"
+      >
+        <Label>{field.label}</Label>
+        <Select.Trigger>
+          <Select.Value />
+          <Select.Indicator />
+        </Select.Trigger>
+        <Select.Popover>
+          <ListBox>
+            <ListBox.Item id="" textValue="未填写">
+              未填写
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+            {gradeOptions.map((option) => (
+              <ListBox.Item id={option} key={option} textValue={option}>
+                {option}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            ))}
+          </ListBox>
+        </Select.Popover>
+      </Select>
+    );
+  }
+
+  return (
+    <TextField
+      fullWidth
+      isDisabled={isDisabled}
+      key={field.key}
+      name={field.key}
+      onChange={(value) => onChange(field.key, value)}
+      value={value}
+    >
+      <Label>{field.label}</Label>
+      <Input
+        autoComplete={field.autoComplete}
+        placeholder="可不填"
+        variant="secondary"
+      />
+    </TextField>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const session = authClient.useSession();
@@ -69,6 +145,7 @@ export default function RegisterPage() {
   );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const gradeOptions = getGradeOptions();
   const updateProfile = useMutation(
     trpc.profile.update.mutationOptions({
       onSuccess: (profile) => {
@@ -129,12 +206,19 @@ export default function RegisterPage() {
         return;
       }
 
-      try {
-        await updateProfile.mutateAsync(profileFormValues);
-      } catch {
-        setError("账号已创建，但个人信息保存失败，可稍后在个人信息页补填。");
-        await session.refetch();
-        return;
+      const changedProfileValues = getChangedProfileValues(
+        profileFormValues,
+        emptyProfileFormValues
+      );
+
+      if (hasProfileUpdateValues(changedProfileValues)) {
+        try {
+          await updateProfile.mutateAsync(changedProfileValues);
+        } catch {
+          setError("账号已创建，但个人信息保存失败，可稍后在个人信息页补填。");
+          await session.refetch();
+          return;
+        }
       }
 
       await session.refetch();
@@ -248,23 +332,14 @@ export default function RegisterPage() {
                     </Fieldset.Legend>
                     <Fieldset.Group className="grid gap-4 sm:grid-cols-2">
                       {profileFieldConfigs.map((field) => (
-                        <TextField
-                          fullWidth
+                        <RegisterProfileFieldInput
+                          field={field}
+                          gradeOptions={gradeOptions}
                           isDisabled={submitting}
                           key={field.key}
-                          name={field.key}
-                          onChange={(value) =>
-                            handleProfileInputChange(field.key, value)
-                          }
+                          onChange={handleProfileInputChange}
                           value={profileFormValues[field.key]}
-                        >
-                          <Label>{field.label}</Label>
-                          <Input
-                            autoComplete={field.autoComplete}
-                            placeholder="可不填"
-                            variant="secondary"
-                          />
-                        </TextField>
+                        />
                       ))}
                     </Fieldset.Group>
                   </Fieldset>
