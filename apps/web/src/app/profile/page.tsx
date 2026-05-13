@@ -28,6 +28,7 @@ import {
   profileFieldConfigs,
 } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
+import { OjAccountSection } from "./oj-account-section";
 
 interface ProfileMessage {
   text: string;
@@ -187,6 +188,7 @@ export default function ProfilePage() {
   }
 
   const username = getPreferredUsername(user);
+  const authUsername = user.username ?? null;
 
   return (
     <AppShell
@@ -203,7 +205,6 @@ export default function ProfilePage() {
               已登录
             </Chip>
           }
-          description="这里展示账号摘要和队内基础信息。更新后会同步保存到当前账号。"
           title="个人信息"
         />
 
@@ -232,8 +233,7 @@ export default function ProfilePage() {
 
         <Card>
           <Card.Header>
-            <Card.Description>资料状态</Card.Description>
-            <Card.Title>队内基础信息</Card.Title>
+            <h2 className="font-semibold text-xl">队内基础信息</h2>
           </Card.Header>
           <Card.Content className="grid gap-4">
             {profileQuery.isPending ? (
@@ -267,15 +267,12 @@ export default function ProfilePage() {
           </Card.Content>
         </Card>
 
+        <OjAccountSection username={authUsername} />
+
         <Card>
           <Card.Content>
             <section className="grid gap-5">
-              <div>
-                <h2 className="font-semibold text-xl">编辑资料</h2>
-                <p className="mt-2 text-muted text-sm leading-6">
-                  这些信息用于队内统计和后续业务模块识别。
-                </p>
-              </div>
+              <h2 className="font-semibold text-xl">编辑资料</h2>
 
               <Form className="grid gap-5" onSubmit={handleProfileSubmit}>
                 <div className="grid gap-4 sm:grid-cols-2">
