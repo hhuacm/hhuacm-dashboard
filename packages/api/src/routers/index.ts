@@ -10,7 +10,7 @@ import {
   userProfile,
 } from "@hhuacm-dashboard/db/schema/profile";
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { protectedProcedure, publicProcedure, router } from "../index";
@@ -209,6 +209,28 @@ export const appRouter = router({
         release: release(),
       },
     };
+  }),
+  dashboard: router({
+    summary: publicProcedure.query(async ({ ctx }) => {
+      const [summary] = await ctx.db
+        .select({
+          activeUsers: sql<number | null>`
+            sum(case when ${userProfile.memberStatus} = 'active' then 1 else 0 end)
+          `.mapWith(Number),
+          selectionUsers: sql<number | null>`
+            sum(case when ${userProfile.memberStatus} is null or ${userProfile.memberStatus} = ${defaultMemberStatus} then 1 else 0 end)
+          `.mapWith(Number),
+          totalUsers: sql<number>`count(${user.id})`.mapWith(Number),
+        })
+        .from(user)
+        .leftJoin(userProfile, eq(userProfile.userId, user.id));
+
+      return {
+        activeUsers: summary?.activeUsers ?? 0,
+        selectionUsers: summary?.selectionUsers ?? 0,
+        totalUsers: summary?.totalUsers ?? 0,
+      };
+    }),
   }),
   profile: router({
     get: protectedProcedure.query(async ({ ctx }) => {
