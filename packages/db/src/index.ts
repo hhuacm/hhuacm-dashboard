@@ -11,6 +11,7 @@ import {
   userRelations,
   verification,
 } from "./schema/auth";
+import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import { userProfile, userProfileRelations } from "./schema/profile";
 
 const schema = {
@@ -19,6 +20,8 @@ const schema = {
   session,
   sessionRelations,
   user,
+  userOjAccount,
+  userOjAccountRelations,
   userProfile,
   userProfileRelations,
   userRelations,
