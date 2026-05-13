@@ -57,6 +57,7 @@ const profileUpdateInputSchema = profileInputSchema
 const ojAccountFields = {
   handle: userOjAccount.handle,
   platform: userOjAccount.platform,
+  profileUrl: userOjAccount.profileUrl,
 } as const;
 
 const ojPlatformSchema = z.enum(ojPlatforms);
@@ -77,6 +78,24 @@ const ojAccountListInputSchema = z.object({
 });
 
 const normalizeHandle = (handle: string) => handle.toLowerCase();
+
+const buildOjProfileUrl = (
+  platform: (typeof ojPlatforms)[number],
+  handle: string
+) => {
+  const encodedHandle = encodeURIComponent(handle);
+
+  if (platform === "codeforces") {
+    return `https://codeforces.com/profile/${encodedHandle}`;
+  }
+
+  if (platform === "atcoder") {
+    return `https://atcoder.jp/users/${encodedHandle}`;
+  }
+
+  // TODO: Fill in per-platform profile URL rules.
+  return "";
+};
 
 const getExistingCurrentUserAccountMessage = (account: {
   handle: string;
@@ -221,6 +240,7 @@ export const appRouter = router({
         }
 
         const normalizedHandle = normalizeHandle(input.handle);
+        const profileUrl = buildOjProfileUrl(input.platform, input.handle);
         const [existingHandleOwner] = await ctx.db
           .select(ojAccountFields)
           .from(userOjAccount)
@@ -245,6 +265,7 @@ export const appRouter = router({
             handle: input.handle,
             normalizedHandle,
             platform: input.platform,
+            profileUrl,
             userId: ctx.session.user.id,
           })
           .returning(ojAccountFields);
@@ -277,6 +298,7 @@ export const appRouter = router({
         }
 
         const normalizedHandle = normalizeHandle(input.handle);
+        const profileUrl = buildOjProfileUrl(input.platform, input.handle);
         const [existingHandleOwner] = await ctx.db
           .select(ojAccountFields)
           .from(userOjAccount)
@@ -301,6 +323,7 @@ export const appRouter = router({
           .set({
             handle: input.handle,
             normalizedHandle,
+            profileUrl,
             updatedAt: new Date(),
           })
           .where(

@@ -53,6 +53,7 @@ type OjPlatform = (typeof ojPlatformConfigs)[number]["key"];
 interface OjAccount {
   handle: string;
   platform: OjPlatform;
+  profileUrl: string;
 }
 
 interface OjAccountSectionProps {
@@ -110,6 +111,31 @@ const getOjAccountErrorMessage = (error: unknown) => {
 
   return "操作失败，请稍后再试。";
 };
+
+function OjAccountHandle({ account }: { account: OjAccount | undefined }) {
+  if (!account) {
+    return null;
+  }
+
+  if (account.profileUrl) {
+    return (
+      <a
+        className="max-w-full break-all font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
+        href={account.profileUrl}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {account.handle}
+      </a>
+    );
+  }
+
+  return (
+    <span className="max-w-full break-all font-medium text-foreground">
+      {account.handle}
+    </span>
+  );
+}
 
 export function OjAccountSection({ username }: OjAccountSectionProps) {
   const queryClient = useQueryClient();
@@ -384,11 +410,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                       >
                         {account ? "已登记" : "未登记"}
                       </Chip>
-                      {account ? (
-                        <span className="max-w-full break-all font-medium text-foreground">
-                          {account.handle}
-                        </span>
-                      ) : null}
+                      <OjAccountHandle account={account} />
                     </div>
 
                     <div className="flex flex-wrap gap-2 sm:justify-end">

@@ -31,6 +31,7 @@ export const userOjAccount = sqliteTable(
     platform: text("platform", { enum: ojPlatforms }).notNull(),
     handle: text("handle").notNull(),
     normalizedHandle: text("normalized_handle").notNull(),
+    profileUrl: text("profile_url").default("").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
