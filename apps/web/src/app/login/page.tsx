@@ -12,7 +12,8 @@ import {
   TextField,
 } from "@heroui/react";
 import { ArrowLeft, UserRound } from "lucide-react";
-import { useRouter } from "next/navigation";
+import type { Route } from "next";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
@@ -36,8 +37,18 @@ const getLoginErrorMessage = (message: string | undefined) => {
 
 const isEmailIdentifier = (value: string) => value.includes("@");
 
+const getSafeRedirectPath = (redirect: null | string): Route => {
+  if (!redirect?.startsWith("/") || redirect.startsWith("//")) {
+    return "/profile";
+  }
+
+  return redirect as Route;
+};
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = getSafeRedirectPath(searchParams.get("redirect"));
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const [identifier, setIdentifier] = useState("");
@@ -87,7 +98,7 @@ export default function LoginPage() {
       }
 
       await session.refetch();
-      router.push("/profile");
+      router.push(redirectPath);
     } catch {
       setError("认证服务暂时不可用，请确认后端和数据库已启动。");
     } finally {
@@ -127,9 +138,9 @@ export default function LoginPage() {
               </Card.Description>
             </Card.Header>
             <Card.Footer>
-              <Button onPress={() => router.push("/profile")}>
+              <Button onPress={() => router.push(redirectPath)}>
                 <UserRound className="size-4" />
-                进入个人信息
+                {redirectPath === "/profile" ? "进入个人信息" : "继续"}
               </Button>
             </Card.Footer>
           </Card>

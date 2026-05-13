@@ -232,6 +232,28 @@ export const appRouter = router({
       };
     }),
   }),
+  account: router({
+    me: protectedProcedure.query(async ({ ctx }) => {
+      const [currentUser] = await ctx.db
+        .select({
+          displayUsername: user.displayUsername,
+          email: user.email,
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          username: user.username,
+        })
+        .from(user)
+        .where(eq(user.id, ctx.session.user.id))
+        .limit(1);
+
+      if (!currentUser) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      return currentUser;
+    }),
+  }),
   profile: router({
     get: protectedProcedure.query(async ({ ctx }) => {
       const [profile] = await ctx.db

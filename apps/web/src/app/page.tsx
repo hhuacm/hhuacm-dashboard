@@ -10,7 +10,8 @@ import {
   Separator,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Sparkles, UserRound } from "lucide-react";
+import { LayoutDashboard, LogOut, Sparkles, UserRound } from "lucide-react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { type Key, type ReactNode, useState } from "react";
 
@@ -37,6 +38,7 @@ interface HealthDetail {
 
 interface AccountMenuProps {
   displayName: string;
+  isAdmin: boolean;
   onLogout: () => Promise<void>;
 }
 
@@ -129,7 +131,7 @@ const formatUptime = (uptimeMs: number | undefined) => {
   return `${seconds} 秒`;
 };
 
-function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
+function AccountMenu({ displayName, isAdmin, onLogout }: AccountMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -142,6 +144,12 @@ function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
     if (key === "profile") {
       setOpen(false);
       router.push("/profile");
+      return;
+    }
+
+    if (key === "admin") {
+      setOpen(false);
+      router.push("/admin" as Route);
       return;
     }
 
@@ -169,6 +177,12 @@ function AccountMenu({ displayName, onLogout }: AccountMenuProps) {
             <UserRound className="size-4" />
             <Label>个人信息</Label>
           </Dropdown.Item>
+          {isAdmin ? (
+            <Dropdown.Item id="admin" textValue="管理面板">
+              <LayoutDashboard className="size-4" />
+              <Label>管理面板</Label>
+            </Dropdown.Item>
+          ) : null}
           <Separator />
           <Dropdown.Item id="logout" textValue="注销" variant="danger">
             <LogOut className="size-4" />
@@ -303,7 +317,13 @@ export default function Home() {
   const dashboardSummary = useQuery(trpc.dashboard.summary.queryOptions());
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
+  const accountMe = useQuery(
+    trpc.account.me.queryOptions(undefined, {
+      enabled: Boolean(user),
+    })
+  );
   const username = user ? getPreferredUsername(user) : "";
+  const isAdmin = accountMe.data?.role === "admin";
   const status = getHealthStatus(health.isLoading, health.isError);
   const healthTone = getHealthTone(health.isLoading, health.isError);
 
@@ -315,6 +335,7 @@ export default function Home() {
   const headerAction = user ? (
     <AccountMenu
       displayName={formatDisplayName(username)}
+      isAdmin={isAdmin}
       onLogout={handleLogout}
     />
   ) : (
