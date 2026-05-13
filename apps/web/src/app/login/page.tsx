@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { PageHeader } from "@/components/page-header";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 
 const getLoginErrorMessage = (message: string | undefined) => {
@@ -104,18 +103,17 @@ export default function LoginPage() {
       maxWidth="4xl"
       title="账号"
     >
-      <div className="mx-auto grid w-full max-w-xl gap-6 py-4 sm:py-8">
-        <PageHeader
-          action={
-            user ? (
-              <Chip color="success" size="sm" variant="soft">
-                已登录
-              </Chip>
-            ) : null
-          }
-          description="登录后可以维护个人信息，并进入后续队务模块。"
-          title="登录 HHUACM Dashboard"
-        />
+      <div className="mx-auto grid w-full max-w-xl gap-6 pb-4 sm:pb-8">
+        <div className="grid justify-items-center gap-3 text-center">
+          <h1 className="text-balance font-semibold text-3xl tracking-normal sm:text-4xl">
+            登录 HHUACM Dashboard
+          </h1>
+          {user ? (
+            <Chip color="success" size="sm" variant="soft">
+              已登录
+            </Chip>
+          ) : null}
+        </div>
 
         {user ? (
           <Card>
@@ -137,14 +135,6 @@ export default function LoginPage() {
           </Card>
         ) : (
           <Card>
-            <Card.Header>
-              <Card.Description>账号入口</Card.Description>
-              <Card.Title className="text-xl">欢迎回来</Card.Title>
-              <Card.Description>
-                使用邮箱或用户名进入 HHUACM Dashboard。
-              </Card.Description>
-            </Card.Header>
-
             <Form className="contents" onSubmit={handleSubmit}>
               <Card.Content>
                 <div className="flex flex-col gap-4">

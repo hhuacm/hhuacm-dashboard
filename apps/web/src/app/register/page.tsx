@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { PageHeader } from "@/components/page-header";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
@@ -155,18 +154,17 @@ export default function RegisterPage() {
       maxWidth="4xl"
       title="账号"
     >
-      <div className="mx-auto grid w-full max-w-xl gap-6 py-4 sm:py-8">
-        <PageHeader
-          action={
-            user ? (
-              <Chip color="success" size="sm" variant="soft">
-                已登录
-              </Chip>
-            ) : null
-          }
-          description="创建账号后可以补充队内基础资料，用于后续统计和业务模块识别。"
-          title="注册 HHUACM Dashboard"
-        />
+      <div className="mx-auto grid w-full max-w-xl gap-6 pb-4 sm:pb-8">
+        <div className="grid justify-items-center gap-3 text-center">
+          <h1 className="text-balance font-semibold text-3xl tracking-normal sm:text-4xl">
+            注册 HHUACM Dashboard
+          </h1>
+          {user ? (
+            <Chip color="success" size="sm" variant="soft">
+              已登录
+            </Chip>
+          ) : null}
+        </div>
 
         {user ? (
           <Card>
@@ -189,11 +187,7 @@ export default function RegisterPage() {
         ) : (
           <Card>
             <Card.Header>
-              <Card.Description>账号入口</Card.Description>
               <Card.Title className="text-xl">创建账号</Card.Title>
-              <Card.Description>
-                使用用户名、邮箱和密码创建本地开发账号。
-              </Card.Description>
             </Card.Header>
 
             <Form className="contents" onSubmit={handleSubmit}>
@@ -230,6 +224,24 @@ export default function RegisterPage() {
                     />
                   </TextField>
 
+                  <TextField
+                    fullWidth
+                    isDisabled={submitting}
+                    name="password"
+                    onChange={setPassword}
+                    type="password"
+                    value={password}
+                  >
+                    <Label>密码</Label>
+                    <Input
+                      autoComplete="new-password"
+                      placeholder="输入密码"
+                      variant="secondary"
+                    />
+                  </TextField>
+
+                  <Separator />
+
                   <Fieldset className="rounded-xl border border-border bg-surface-secondary p-4">
                     <Fieldset.Legend className="px-1">
                       个人信息（可选）
@@ -256,24 +268,6 @@ export default function RegisterPage() {
                       ))}
                     </Fieldset.Group>
                   </Fieldset>
-
-                  <Separator />
-
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
-                    name="password"
-                    onChange={setPassword}
-                    type="password"
-                    value={password}
-                  >
-                    <Label>密码</Label>
-                    <Input
-                      autoComplete="new-password"
-                      placeholder="输入密码"
-                      variant="secondary"
-                    />
-                  </TextField>
 
                   {error ? (
                     <Alert status="danger">
