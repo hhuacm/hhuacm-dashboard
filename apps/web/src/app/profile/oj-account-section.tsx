@@ -444,8 +444,18 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
             <Modal.CloseTrigger isDisabled={isSaving} />
             <Form className="contents" onSubmit={handleSubmit}>
               <Modal.Header>
-                <Modal.Icon className="bg-default text-accent">
-                  <Code2 className="size-5" />
+                <Modal.Icon className="bg-default">
+                  {dialogPlatformConfig ? (
+                    <Image
+                      alt={`${dialogPlatformConfig.label} logo`}
+                      className="size-6 object-contain"
+                      height={24}
+                      src={dialogPlatformConfig.iconSrc}
+                      width={24}
+                    />
+                  ) : (
+                    <Code2 className="size-5 text-accent" />
+                  )}
                 </Modal.Icon>
                 <Modal.Heading>
                   {dialog?.mode === "edit" ? "编辑 OJ 账号" : "添加 OJ 账号"}
