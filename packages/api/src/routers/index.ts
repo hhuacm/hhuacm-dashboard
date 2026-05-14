@@ -10,7 +10,18 @@ import {
   userProfile,
 } from "@hhuacm-dashboard/db/schema/profile";
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  ne,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -64,16 +75,107 @@ const profileUpdateInputSchema = profileInputSchema
     message: "Profile update requires at least one field",
   });
 
+const adminUsersSortColumnSchema = z.enum([
+  "email",
+  "grade",
+  "major",
+  "memberStatus",
+  "realName",
+  "studentId",
+  "username",
+]);
+
+const adminUsersSortDirectionSchema = z.enum(["ascending", "descending"]);
+
 const adminUsersListInputSchema = z.object({
+  filters: z
+    .object({
+      grades: z.array(z.string().trim().min(1)).optional(),
+      memberStatuses: z.array(z.enum(memberStatuses)).optional(),
+      ojPlatforms: z.array(z.enum(ojPlatforms)).optional(),
+    })
+    .optional(),
   page: z.number().int().min(1),
   pageSize: z.number().int().min(5).max(80),
+  sort: z
+    .object({
+      column: adminUsersSortColumnSchema,
+      direction: adminUsersSortDirectionSchema,
+    })
+    .optional(),
 });
+
+type AdminUsersListInput = z.infer<typeof adminUsersListInputSchema>;
+type AdminUsersSortColumn = z.infer<typeof adminUsersSortColumnSchema>;
 
 interface AdminUserOjAccount {
   handle: string;
   platform: (typeof ojPlatforms)[number];
   profileUrl: string;
 }
+
+const adminMemberStatusLabels = {
+  active: "服役中",
+  frozen: "已冻结",
+  retired: "已退役",
+  selection: "选拔中",
+} as const satisfies Record<(typeof memberStatuses)[number], string>;
+
+const adminOjPlatformLabels = {
+  atcoder: "AtCoder",
+  codeforces: "Codeforces",
+  luogu: "洛谷",
+  nowcoder: "牛客",
+} as const satisfies Record<(typeof ojPlatforms)[number], string>;
+
+const usernameSortExpression = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`;
+const memberStatusSortExpression = sql<string>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
+
+const getAdminUsersSortExpression = (column: AdminUsersSortColumn) => {
+  if (column === "email") {
+    return user.email;
+  }
+
+  if (column === "grade") {
+    return userProfile.grade;
+  }
+
+  if (column === "major") {
+    return userProfile.major;
+  }
+
+  if (column === "memberStatus") {
+    return memberStatusSortExpression;
+  }
+
+  if (column === "realName") {
+    return userProfile.realName;
+  }
+
+  if (column === "studentId") {
+    return userProfile.studentId;
+  }
+
+  return usernameSortExpression;
+};
+
+const getAdminUsersOrderBy = (sort: AdminUsersListInput["sort"]) => {
+  if (!sort) {
+    return [asc(usernameSortExpression), asc(user.email), asc(user.id)];
+  }
+
+  const sortExpression = getAdminUsersSortExpression(sort.column);
+  const primaryOrder =
+    sort.direction === "descending"
+      ? desc(sortExpression)
+      : asc(sortExpression);
+
+  if (sort.column === "username") {
+    return [primaryOrder, asc(user.email), asc(user.id)];
+  }
+
+  return [primaryOrder, asc(user.id)];
+};
 
 const ojAccountFields = {
   handle: userOjAccount.handle,
@@ -276,11 +378,44 @@ export const appRouter = router({
         .input(adminUsersListInputSchema)
         .query(async ({ ctx, input }) => {
           const offset = (input.page - 1) * input.pageSize;
+          const filters = input.filters;
+          const filterConditions: SQL[] = [];
+
+          if (filters?.memberStatuses?.length) {
+            filterConditions.push(
+              inArray(memberStatusSortExpression, filters.memberStatuses)
+            );
+          }
+
+          if (filters?.grades?.length) {
+            filterConditions.push(inArray(userProfile.grade, filters.grades));
+          }
+
+          if (filters?.ojPlatforms?.length) {
+            filterConditions.push(
+              exists(
+                ctx.db
+                  .select({ id: userOjAccount.id })
+                  .from(userOjAccount)
+                  .where(
+                    and(
+                      eq(userOjAccount.userId, user.id),
+                      inArray(userOjAccount.platform, filters.ojPlatforms)
+                    )
+                  )
+              )
+            );
+          }
+
+          const whereCondition =
+            filterConditions.length > 0 ? and(...filterConditions) : undefined;
           const [totalRow] = await ctx.db
             .select({
               total: sql<number>`count(${user.id})`.mapWith(Number),
             })
-            .from(user);
+            .from(user)
+            .leftJoin(userProfile, eq(userProfile.userId, user.id))
+            .where(whereCondition);
 
           const users = await ctx.db
             .select({
@@ -297,13 +432,8 @@ export const appRouter = router({
             })
             .from(user)
             .leftJoin(userProfile, eq(userProfile.userId, user.id))
-            .orderBy(
-              asc(
-                sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`
-              ),
-              asc(user.email),
-              asc(user.id)
-            )
+            .where(whereCondition)
+            .orderBy(...getAdminUsersOrderBy(input.sort))
             .limit(input.pageSize)
             .offset(offset);
 
@@ -345,6 +475,28 @@ export const appRouter = router({
             total: totalRow?.total ?? 0,
           };
         }),
+      metadata: adminProcedure.query(async ({ ctx }) => {
+        const gradeRows = await ctx.db
+          .select({ value: userProfile.grade })
+          .from(userProfile)
+          .where(isNotNull(userProfile.grade))
+          .groupBy(userProfile.grade)
+          .orderBy(asc(userProfile.grade));
+
+        return {
+          grades: gradeRows.flatMap((row) =>
+            row.value ? [{ label: row.value, value: row.value }] : []
+          ),
+          memberStatuses: memberStatuses.map((status) => ({
+            label: adminMemberStatusLabels[status],
+            value: status,
+          })),
+          ojPlatforms: ojPlatforms.map((platform) => ({
+            label: adminOjPlatformLabels[platform],
+            value: platform,
+          })),
+        };
+      }),
     }),
   }),
   profile: router({

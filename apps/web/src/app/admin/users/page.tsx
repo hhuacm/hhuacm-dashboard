@@ -4,17 +4,29 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
+  CheckboxGroup,
   Chip,
+  Label,
   Pagination,
+  Popover,
   Spinner,
   Table,
   Tooltip,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  ChevronDown,
+  SlidersHorizontal,
+  UsersRound,
+  X,
+} from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import {
+  type Key,
   type ReactNode,
   useCallback,
   useEffect,
@@ -24,7 +36,6 @@ import {
 } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { PageHeader } from "@/components/page-header";
 import { authClient } from "@/utils/auth-client";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
@@ -38,6 +49,16 @@ const tableReservedHeightPx = 156;
 const viewportBottomGapPx = 40;
 const compactPaginationLimit = 7;
 const paginationNeighborCount = 1;
+
+const sortableColumns = [
+  "email",
+  "grade",
+  "major",
+  "memberStatus",
+  "realName",
+  "studentId",
+  "username",
+] as const;
 
 const memberStatusConfig = {
   active: {
@@ -70,6 +91,24 @@ const ojPlatformOrder = ["luogu", "codeforces", "atcoder", "nowcoder"] as const;
 type MemberStatus = keyof typeof memberStatusConfig;
 type OjPlatform = keyof typeof ojPlatformLabels;
 type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
+type SortColumn = (typeof sortableColumns)[number];
+type SortDirection = "ascending" | "descending";
+
+interface FilterOption {
+  label: string;
+  value: string;
+}
+
+interface AdminUsersFilters {
+  grades: string[];
+  memberStatuses: MemberStatus[];
+  ojPlatforms: OjPlatform[];
+}
+
+interface AdminUsersSort {
+  column: SortColumn;
+  direction: SortDirection;
+}
 
 interface AdminUserOjAccount {
   handle: string;
@@ -92,12 +131,21 @@ interface AdminUserTableRow {
 }
 
 interface AdminUsersTableSectionProps {
+  filters: AdminUsersFilters;
+  hasActiveFilters: boolean;
   isFetching: boolean;
   isLoadError: boolean;
   isLoading: boolean;
+  metadata: AdminUsersMetadata | undefined;
+  metadataIsError: boolean;
+  metadataIsLoading: boolean;
+  onClearFilters: () => void;
+  onFilterChange: (key: keyof AdminUsersFilters, values: string[]) => void;
+  onSortChange: (sort: AdminUsersSort) => void;
   page: number;
   pageSize: number;
   setPage: (page: number | ((currentPage: number) => number)) => void;
+  sort: AdminUsersSort;
   tableRegionRef: (element: HTMLDivElement | null) => void;
   total: number;
   totalPages: number;
@@ -111,8 +159,28 @@ interface AccessFeedbackProps {
   shouldPromptLogin: boolean;
 }
 
+interface AdminUsersMetadata {
+  grades: FilterOption[];
+  memberStatuses: FilterOption[];
+  ojPlatforms: FilterOption[];
+}
+
+interface FilterMenuProps {
+  isDisabled?: boolean;
+  label: string;
+  onChange: (values: string[]) => void;
+  options: FilterOption[];
+  selectedValues: string[];
+}
+
 const clampPageSize = (pageSize: number) =>
   Math.min(maxPageSize, Math.max(minPageSize, pageSize));
+
+const emptyAdminUsersFilters: AdminUsersFilters = {
+  grades: [],
+  memberStatuses: [],
+  ojPlatforms: [],
+};
 
 const calculatePageSize = (element: HTMLDivElement | null) => {
   if (!element) {
@@ -143,6 +211,21 @@ const getAdminDisplayUsername = (user: AdminUserTableRow) => {
 
 const isMemberStatus = (status: string): status is MemberStatus =>
   status in memberStatusConfig;
+
+const isSortColumn = (key: Key): key is SortColumn =>
+  typeof key === "string" &&
+  sortableColumns.includes(key as (typeof sortableColumns)[number]);
+
+const isMemberStatusFilterValue = (value: string): value is MemberStatus =>
+  value in memberStatusConfig;
+
+const isOjPlatformFilterValue = (value: string): value is OjPlatform =>
+  value in ojPlatformLabels;
+
+const hasFilters = (filters: AdminUsersFilters) =>
+  filters.grades.length > 0 ||
+  filters.memberStatuses.length > 0 ||
+  filters.ojPlatforms.length > 0;
 
 const getPaginationItems = (page: number, totalPages: number): PageItem[] => {
   if (totalPages <= compactPaginationLimit) {
@@ -370,27 +453,214 @@ function UsersPagination({
   );
 }
 
+function FilterMenu({
+  isDisabled = false,
+  label,
+  onChange,
+  options,
+  selectedValues,
+}: FilterMenuProps) {
+  const selectedCount = selectedValues.length;
+  const buttonLabel = selectedCount > 0 ? `${label} ${selectedCount}` : label;
+
+  return (
+    <Popover>
+      <Button isDisabled={isDisabled} size="sm" variant="outline">
+        <SlidersHorizontal className="size-4" />
+        {buttonLabel}
+        <ChevronDown className="size-4" />
+      </Button>
+      <Popover.Content className="w-56">
+        <Popover.Dialog className="grid gap-3">
+          <Popover.Heading className="font-semibold text-sm">
+            {label}
+          </Popover.Heading>
+          {options.length > 0 ? (
+            <CheckboxGroup
+              className="grid gap-2"
+              onChange={onChange}
+              value={selectedValues}
+            >
+              {options.map((option) => (
+                <Checkbox key={option.value} value={option.value}>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label>{option.label}</Label>
+                  </Checkbox.Content>
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+          ) : (
+            <p className="text-muted text-sm">暂无可选项</p>
+          )}
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
+function AdminUsersFiltersToolbar({
+  filters,
+  hasActiveFilters,
+  metadata,
+  metadataIsLoading,
+  onClearFilters,
+  onFilterChange,
+}: {
+  filters: AdminUsersFilters;
+  hasActiveFilters: boolean;
+  metadata: AdminUsersMetadata | undefined;
+  metadataIsLoading: boolean;
+  onClearFilters: () => void;
+  onFilterChange: (key: keyof AdminUsersFilters, values: string[]) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <FilterMenu
+        isDisabled={metadataIsLoading}
+        label="状态"
+        onChange={(values) => onFilterChange("memberStatuses", values)}
+        options={metadata?.memberStatuses ?? []}
+        selectedValues={filters.memberStatuses}
+      />
+      <FilterMenu
+        isDisabled={metadataIsLoading}
+        label="年级"
+        onChange={(values) => onFilterChange("grades", values)}
+        options={metadata?.grades ?? []}
+        selectedValues={filters.grades}
+      />
+      <FilterMenu
+        isDisabled={metadataIsLoading}
+        label="OJ"
+        onChange={(values) => onFilterChange("ojPlatforms", values)}
+        options={metadata?.ojPlatforms ?? []}
+        selectedValues={filters.ojPlatforms}
+      />
+      <Button
+        isDisabled={!hasActiveFilters}
+        onPress={onClearFilters}
+        size="sm"
+        variant="ghost"
+      >
+        <X className="size-4" />
+        清除筛选
+      </Button>
+      {metadataIsLoading ? (
+        <span className="inline-flex items-center gap-2 text-muted text-sm">
+          <Spinner color="current" size="sm" />
+          正在读取筛选项
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function SortableColumnHeader({
+  children,
+  sortDirection,
+}: {
+  children: ReactNode;
+  sortDirection?: SortDirection;
+}) {
+  return (
+    <span className="flex items-center justify-between gap-2">
+      <span>{children}</span>
+      <ArrowUpDown
+        className={`size-3 transition-transform ${
+          sortDirection === "descending" ? "rotate-180" : ""
+        } ${sortDirection ? "text-accent" : "text-muted"}`}
+      />
+    </span>
+  );
+}
+
 function AdminUsersTable({
   footer,
+  onSortChange,
+  sort,
   users,
 }: {
   footer: ReactNode;
+  onSortChange: (sort: AdminUsersSort) => void;
+  sort: AdminUsersSort;
   users: AdminUserTableRow[];
 }) {
+  const handleSortChange = (descriptor: {
+    column?: Key;
+    direction?: SortDirection;
+  }) => {
+    if (!(descriptor.column && isSortColumn(descriptor.column))) {
+      return;
+    }
+
+    onSortChange({
+      column: descriptor.column,
+      direction: descriptor.direction ?? "ascending",
+    });
+  };
+
   return (
     <Table variant="secondary">
       <Table.ScrollContainer>
-        <Table.Content aria-label="管理员用户列表" className="min-w-[1160px]">
+        <Table.Content
+          aria-label="管理员用户列表"
+          className="min-w-[1160px]"
+          onSortChange={handleSortChange}
+          sortDescriptor={sort}
+        >
           <Table.Header>
-            <Table.Column id="username" isRowHeader>
-              用户名
+            <Table.Column allowsSorting id="username" isRowHeader>
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  用户名
+                </SortableColumnHeader>
+              )}
             </Table.Column>
-            <Table.Column id="email">邮箱</Table.Column>
-            <Table.Column id="realName">姓名</Table.Column>
-            <Table.Column id="grade">年级</Table.Column>
-            <Table.Column id="studentId">学号</Table.Column>
-            <Table.Column id="major">专业</Table.Column>
-            <Table.Column id="memberStatus">状态</Table.Column>
+            <Table.Column allowsSorting id="email">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  邮箱
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
+            <Table.Column allowsSorting id="realName">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  姓名
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
+            <Table.Column allowsSorting id="grade">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  年级
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
+            <Table.Column allowsSorting id="studentId">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  学号
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
+            <Table.Column allowsSorting id="major">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  专业
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
+            <Table.Column allowsSorting id="memberStatus">
+              {({ sortDirection }) => (
+                <SortableColumnHeader sortDirection={sortDirection}>
+                  状态
+                </SortableColumnHeader>
+              )}
+            </Table.Column>
             <Table.Column id="ojAccounts">OJ 账号</Table.Column>
           </Table.Header>
           <Table.Body>
@@ -492,89 +762,111 @@ function AccessFeedback({
 }
 
 function AdminUsersTableSection({
+  filters,
+  hasActiveFilters,
   isFetching,
   isLoading,
   isLoadError,
+  metadata,
+  metadataIsError,
+  metadataIsLoading,
+  onClearFilters,
+  onFilterChange,
+  onSortChange,
   page,
   pageSize,
   setPage,
+  sort,
   tableRegionRef,
   total,
   totalPages,
   users,
 }: AdminUsersTableSectionProps) {
   return (
-    <>
-      <PageHeader
-        action={
-          isFetching ? (
-            <Chip color="warning" size="sm" variant="soft">
-              刷新中
-            </Chip>
-          ) : (
-            <Chip color="success" size="sm" variant="soft">
-              管理员
-            </Chip>
-          )
-        }
-        title="用户列表"
-      />
-
-      <Card>
-        <Card.Header>
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Card.Description>全部账号</Card.Description>
-              <Card.Title className="mt-1">{total} 个用户</Card.Title>
-            </div>
-            <p className="text-muted text-sm">每页 {pageSize} 条</p>
+    <Card>
+      <Card.Header>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Card.Description>全部账号</Card.Description>
+            <Card.Title className="mt-1">{total} 个用户</Card.Title>
           </div>
-        </Card.Header>
-        <Card.Content className="grid gap-4" ref={tableRegionRef}>
-          {isLoading ? (
-            <Alert>
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Description>正在读取用户列表。</Alert.Description>
-              </Alert.Content>
-            </Alert>
-          ) : null}
+          <div className="flex items-center gap-3 text-muted text-sm">
+            {isFetching ? (
+              <span className="inline-flex items-center gap-2">
+                <Spinner color="current" size="sm" />
+                刷新中
+              </span>
+            ) : null}
+            <span>每页 {pageSize} 条</span>
+          </div>
+        </div>
+      </Card.Header>
+      <Card.Content className="grid gap-4" ref={tableRegionRef}>
+        <AdminUsersFiltersToolbar
+          filters={filters}
+          hasActiveFilters={hasActiveFilters}
+          metadata={metadata}
+          metadataIsLoading={metadataIsLoading}
+          onClearFilters={onClearFilters}
+          onFilterChange={onFilterChange}
+        />
 
-          {isLoadError ? (
-            <Alert status="danger">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Description>
-                  用户列表加载失败，请稍后重试。
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
-          ) : null}
+        {metadataIsError ? (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                筛选项加载失败，请刷新页面后重试。
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
 
-          <AdminUsersTable
-            footer={
-              <UsersPagination
-                page={page}
-                pageSize={pageSize}
-                setPage={setPage}
-                total={total}
-                totalPages={totalPages}
-              />
-            }
-            users={users}
-          />
+        {isLoading ? (
+          <Alert>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>正在读取用户列表。</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
 
-          {users.length === 0 && !isLoading ? (
-            <Alert>
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Description>暂无用户。</Alert.Description>
-              </Alert.Content>
-            </Alert>
-          ) : null}
-        </Card.Content>
-      </Card>
-    </>
+        {isLoadError ? (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                用户列表加载失败，请稍后重试。
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+
+        <AdminUsersTable
+          footer={
+            <UsersPagination
+              page={page}
+              pageSize={pageSize}
+              setPage={setPage}
+              total={total}
+              totalPages={totalPages}
+            />
+          }
+          onSortChange={onSortChange}
+          sort={sort}
+          users={users}
+        />
+
+        {users.length === 0 && !isLoading ? (
+          <Alert>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>暂无用户。</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+      </Card.Content>
+    </Card>
   );
 }
 
@@ -583,6 +875,13 @@ export default function AdminUsersPage() {
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<AdminUsersFilters>(
+    emptyAdminUsersFilters
+  );
+  const [sort, setSort] = useState<AdminUsersSort>({
+    column: "username",
+    direction: "ascending",
+  });
   const { pageSize, tableRegionRef } = useAutoPageSize();
   const previousPageSizeRef = useRef(pageSize);
   const accountMe = useQuery(
@@ -633,9 +932,57 @@ export default function AdminUsersPage() {
     previousPageSizeRef.current = pageSize;
   }, [pageSize]);
 
-  const listInput = useMemo(() => ({ page, pageSize }), [page, pageSize]);
+  const handleFilterChange = (
+    key: keyof AdminUsersFilters,
+    values: string[]
+  ) => {
+    const nextValues = (() => {
+      if (key === "memberStatuses") {
+        return values.filter(isMemberStatusFilterValue);
+      }
+
+      if (key === "ojPlatforms") {
+        return values.filter(isOjPlatformFilterValue);
+      }
+
+      return values;
+    })();
+
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [key]: nextValues,
+    }));
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setFilters(emptyAdminUsersFilters);
+    setPage(1);
+  };
+
+  const handleSortChange = (nextSort: AdminUsersSort) => {
+    setSort(nextSort);
+    setPage(1);
+  };
+
+  const hasActiveFilters = hasFilters(filters);
+  const listInput = useMemo(
+    () => ({
+      filters: hasActiveFilters ? filters : undefined,
+      page,
+      pageSize,
+      sort,
+    }),
+    [filters, hasActiveFilters, page, pageSize, sort]
+  );
   const usersQuery = useQuery(
     trpc.admin.users.list.queryOptions(listInput, {
+      enabled: Boolean(isAdmin),
+      retry: false,
+    })
+  );
+  const metadataQuery = useQuery(
+    trpc.admin.users.metadata.queryOptions(undefined, {
       enabled: Boolean(isAdmin),
       retry: false,
     })
@@ -678,12 +1025,21 @@ export default function AdminUsersPage() {
 
         {isAdmin ? (
           <AdminUsersTableSection
+            filters={filters}
+            hasActiveFilters={hasActiveFilters}
             isFetching={usersQuery.isFetching}
             isLoadError={usersQuery.isError}
             isLoading={usersQuery.isPending}
+            metadata={metadataQuery.data}
+            metadataIsError={metadataQuery.isError}
+            metadataIsLoading={metadataQuery.isPending}
+            onClearFilters={handleClearFilters}
+            onFilterChange={handleFilterChange}
+            onSortChange={handleSortChange}
             page={page}
             pageSize={pageSize}
             setPage={setPage}
+            sort={sort}
             tableRegionRef={tableRegionRef}
             total={total}
             totalPages={totalPages}

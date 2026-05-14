@@ -25,7 +25,6 @@ import {
   useState,
 } from "react";
 import { AppShell } from "@/components/app-shell";
-import { PageHeader } from "@/components/page-header";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
   buildProfileFormValues,
@@ -375,15 +374,6 @@ export default function ProfilePage() {
       title="个人信息"
     >
       <div className="grid gap-8">
-        <PageHeader
-          action={
-            <Chip color="success" size="sm" variant="soft">
-              已登录
-            </Chip>
-          }
-          title="个人信息"
-        />
-
         <Card>
           <Card.Header>
             <div className="flex items-start gap-4">
