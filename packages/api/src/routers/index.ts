@@ -24,6 +24,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import type { Context } from "../context";
 import {
   adminProcedure,
   protectedProcedure,
@@ -200,7 +201,57 @@ const ojAccountListInputSchema = z.object({
   username: trimmedStringSchema,
 });
 
+const adminUserInputSchema = z.object({
+  userId: trimmedStringSchema,
+});
+
+const adminProfileInputSchema = profileInputSchema.extend({
+  memberStatus: z.enum(memberStatuses),
+});
+
+const adminProfileUpdateInputSchema = adminProfileInputSchema
+  .partial()
+  .refine((input) => Object.keys(input).length > 0, {
+    message: "Profile update requires at least one field",
+  });
+
+const adminUserProfileUpdateInputSchema = adminUserInputSchema.extend({
+  values: adminProfileUpdateInputSchema,
+});
+
+const adminUserOjAccountInputSchema = adminUserInputSchema.extend({
+  handle: trimmedStringSchema,
+  platform: ojPlatformSchema,
+});
+
+const adminUserOjAccountDeleteInputSchema = adminUserInputSchema.extend({
+  platform: ojPlatformSchema,
+});
+
 const normalizeHandle = (handle: string) => handle.toLowerCase();
+
+const getTargetUser = async (db: Context["db"], userId: string) => {
+  const [targetUser] = await db
+    .select({
+      displayUsername: user.displayUsername,
+      email: user.email,
+      id: user.id,
+      name: user.name,
+      username: user.username,
+    })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!targetUser) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `User does not exist: ${userId}`,
+    });
+  }
+
+  return targetUser;
+};
 
 const buildLuoguProfileUrl = async (handle: string) => {
   try {
@@ -374,6 +425,33 @@ export const appRouter = router({
   }),
   admin: router({
     users: router({
+      get: adminProcedure
+        .input(adminUserInputSchema)
+        .query(async ({ ctx, input }) => {
+          const targetUser = await getTargetUser(ctx.db, input.userId);
+          const [profile] = await ctx.db
+            .select(profileFields)
+            .from(userProfile)
+            .where(eq(userProfile.userId, input.userId))
+            .limit(1);
+          const ojAccounts = await ctx.db
+            .select(ojAccountFields)
+            .from(userOjAccount)
+            .where(eq(userOjAccount.userId, input.userId))
+            .orderBy(asc(userOjAccount.platform));
+
+          return {
+            ...targetUser,
+            ojAccounts,
+            profile: {
+              grade: profile?.grade ?? null,
+              major: profile?.major ?? null,
+              memberStatus: profile?.memberStatus ?? defaultMemberStatus,
+              realName: profile?.realName ?? null,
+              studentId: profile?.studentId ?? null,
+            },
+          };
+        }),
       list: adminProcedure
         .input(adminUsersListInputSchema)
         .query(async ({ ctx, input }) => {
@@ -497,6 +575,140 @@ export const appRouter = router({
           })),
         };
       }),
+      updateProfile: adminProcedure
+        .input(adminUserProfileUpdateInputSchema)
+        .mutation(async ({ ctx, input }) => {
+          await getTargetUser(ctx.db, input.userId);
+
+          const [profile] = await ctx.db
+            .insert(userProfile)
+            .values({
+              ...input.values,
+              userId: input.userId,
+            })
+            .onConflictDoUpdate({
+              set: {
+                ...input.values,
+                updatedAt: new Date(),
+              },
+              target: userProfile.userId,
+            })
+            .returning(profileFields);
+
+          if (!profile) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+          }
+
+          return {
+            ...profile,
+            memberStatus: profile.memberStatus ?? defaultMemberStatus,
+          };
+        }),
+      upsertOjAccount: adminProcedure
+        .input(adminUserOjAccountInputSchema)
+        .mutation(async ({ ctx, input }) => {
+          await getTargetUser(ctx.db, input.userId);
+
+          const normalizedHandle = normalizeHandle(input.handle);
+          const profileUrl = await buildOjProfileUrl(
+            input.platform,
+            input.handle
+          );
+          const [existingHandleOwner] = await ctx.db
+            .select(ojAccountFields)
+            .from(userOjAccount)
+            .where(
+              and(
+                eq(userOjAccount.platform, input.platform),
+                eq(userOjAccount.normalizedHandle, normalizedHandle),
+                ne(userOjAccount.userId, input.userId)
+              )
+            )
+            .limit(1);
+
+          if (existingHandleOwner) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `OJ handle already exists: ${existingHandleOwner.platform} ${existingHandleOwner.handle}`,
+            });
+          }
+
+          const [existingAccount] = await ctx.db
+            .select(ojAccountFields)
+            .from(userOjAccount)
+            .where(
+              and(
+                eq(userOjAccount.userId, input.userId),
+                eq(userOjAccount.platform, input.platform)
+              )
+            )
+            .limit(1);
+
+          if (existingAccount) {
+            const [account] = await ctx.db
+              .update(userOjAccount)
+              .set({
+                handle: input.handle,
+                normalizedHandle,
+                profileUrl,
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(userOjAccount.userId, input.userId),
+                  eq(userOjAccount.platform, input.platform)
+                )
+              )
+              .returning(ojAccountFields);
+
+            if (!account) {
+              throw new TRPCError({ code: "NOT_FOUND" });
+            }
+
+            return account;
+          }
+
+          const [account] = await ctx.db
+            .insert(userOjAccount)
+            .values({
+              handle: input.handle,
+              normalizedHandle,
+              platform: input.platform,
+              profileUrl,
+              userId: input.userId,
+            })
+            .returning(ojAccountFields);
+
+          if (!account) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+          }
+
+          return account;
+        }),
+      deleteOjAccount: adminProcedure
+        .input(adminUserOjAccountDeleteInputSchema)
+        .mutation(async ({ ctx, input }) => {
+          await getTargetUser(ctx.db, input.userId);
+
+          const [account] = await ctx.db
+            .delete(userOjAccount)
+            .where(
+              and(
+                eq(userOjAccount.userId, input.userId),
+                eq(userOjAccount.platform, input.platform)
+              )
+            )
+            .returning(ojAccountFields);
+
+          if (!account) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `OJ account does not exist: ${input.platform}`,
+            });
+          }
+
+          return account;
+        }),
     }),
   }),
   profile: router({
