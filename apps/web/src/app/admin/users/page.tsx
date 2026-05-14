@@ -2,16 +2,20 @@
 
 import {
   Alert,
+  AlertDialog,
   Button,
   Card,
   Checkbox,
   CheckboxGroup,
   Chip,
+  Input,
   Label,
+  Modal,
   Pagination,
   Popover,
   Spinner,
   Table,
+  TextField,
   Tooltip,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +23,9 @@ import {
   ArrowLeft,
   ArrowUpDown,
   ChevronDown,
+  Pencil,
   SlidersHorizontal,
+  Trash2,
   UsersRound,
   X,
 } from "lucide-react";
@@ -55,6 +61,7 @@ const tableReservedHeightPx = 156;
 const viewportBottomGapPx = 40;
 const compactPaginationLimit = 7;
 const paginationNeighborCount = 1;
+const adminUsersActionsColumnMinWidth = 112;
 const adminUsersColumnVisibilityStorageKey = "admin-users-column-visibility-v1";
 
 const sortableColumns = [
@@ -100,6 +107,7 @@ type OjPlatform = keyof typeof ojPlatformLabels;
 type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
 type SortColumn = (typeof sortableColumns)[number];
 type SortDirection = "ascending" | "descending";
+type DevelopmentDialogType = "delete" | "edit";
 type AdminUsersColumnId =
   | "email"
   | "grade"
@@ -163,6 +171,8 @@ interface AdminUsersTableSectionProps {
   metadataIsError: boolean;
   metadataIsLoading: boolean;
   onClearFilters: () => void;
+  onDeleteUser: (user: AdminUserTableRow) => void;
+  onEditUser: (user: AdminUserTableRow) => void;
   onFilterChange: (key: keyof AdminUsersFilters, values: string[]) => void;
   onSortChange: (sort: AdminUsersSort) => void;
   page: number;
@@ -202,6 +212,25 @@ interface AdminUsersVisibleColumnControls {
   setColumnVisible: (columnId: AdminUsersColumnId, isVisible: boolean) => void;
   visibleColumnIds: readonly AdminUsersColumnId[];
   visibleColumns: readonly AdminUsersColumnConfig[];
+}
+
+interface AdminUserActionsCellProps {
+  onDelete: () => void;
+  onEdit: () => void;
+  username: null | string;
+}
+
+interface AdminUserDeleteDialogProps {
+  confirmationValue: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onConfirmationChange: (value: string) => void;
+  user: AdminUserTableRow | null;
+}
+
+interface AdminUserDevelopmentDialogProps {
+  onClose: () => void;
+  type: DevelopmentDialogType | null;
 }
 
 const clampPageSize = (pageSize: number) =>
@@ -281,7 +310,7 @@ const getVisibleTableMinWidth = (
     minWidth += column.minWidth;
   }
 
-  return Math.max(720, minWidth);
+  return Math.max(720, minWidth + adminUsersActionsColumnMinWidth);
 };
 
 const getFirstVisibleSortColumn = (
@@ -501,6 +530,58 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
   );
 }
 
+function AdminUserActionsCell({
+  onDelete,
+  onEdit,
+  username,
+}: AdminUserActionsCellProps) {
+  const canDelete = Boolean(username);
+
+  return (
+    <div className="flex min-h-7 items-center gap-1">
+      <Tooltip delay={0}>
+        <Tooltip.Trigger>
+          <Button
+            aria-label="修改用户"
+            className="size-8"
+            isIconOnly
+            onPress={onEdit}
+            size="sm"
+            variant="ghost"
+          >
+            <Pencil className="size-4" />
+          </Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content showArrow>
+          <Tooltip.Arrow />
+          修改用户
+        </Tooltip.Content>
+      </Tooltip>
+      <Tooltip delay={0}>
+        <Tooltip.Trigger>
+          <span className="inline-flex">
+            <Button
+              aria-label={canDelete ? "删除用户" : "缺少注册用户名，暂不能删除"}
+              className="size-8"
+              isDisabled={!canDelete}
+              isIconOnly
+              onPress={onDelete}
+              size="sm"
+              variant="ghost"
+            >
+              <Trash2 className="size-4 text-danger" />
+            </Button>
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content showArrow>
+          <Tooltip.Arrow />
+          {canDelete ? "删除用户" : "缺少注册用户名，暂不能删除"}
+        </Tooltip.Content>
+      </Tooltip>
+    </div>
+  );
+}
+
 function UsersPagination({
   page,
   pageSize,
@@ -680,6 +761,110 @@ function AdminUsersFiltersToolbar({
   );
 }
 
+function AdminUserDevelopmentDialog({
+  onClose,
+  type,
+}: AdminUserDevelopmentDialogProps) {
+  const message =
+    type === "delete"
+      ? "删除用户功能正在开发中。"
+      : "修改用户信息功能正在开发中。";
+
+  return (
+    <Modal.Backdrop
+      isOpen={Boolean(type)}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          onClose();
+        }
+      }}
+    >
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-100">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Icon className="bg-default">
+              <Pencil className="size-5 text-accent" />
+            </Modal.Icon>
+            <Modal.Heading>正在开发中</Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <p className="text-muted text-sm">{message}</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onPress={onClose}>知道了</Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
+  );
+}
+
+function AdminUserDeleteDialog({
+  confirmationValue,
+  onCancel,
+  onConfirm,
+  onConfirmationChange,
+  user,
+}: AdminUserDeleteDialogProps) {
+  const username = user?.username ?? "";
+  const isConfirmationMatched = confirmationValue === username;
+
+  return (
+    <AlertDialog.Backdrop
+      isOpen={Boolean(user)}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          onCancel();
+        }
+      }}
+    >
+      <AlertDialog.Container>
+        <AlertDialog.Dialog className="sm:max-w-110">
+          <AlertDialog.CloseTrigger />
+          <AlertDialog.Header>
+            <AlertDialog.Icon status="danger">
+              <Trash2 className="size-5" />
+            </AlertDialog.Icon>
+            <AlertDialog.Heading>删除用户？</AlertDialog.Heading>
+          </AlertDialog.Header>
+          <AlertDialog.Body className="px-0.5 pt-3 pb-0.5">
+            <div className="grid gap-4">
+              <p className="text-sm">
+                用户一旦删除便无法恢复。请完整输入用户名：
+                <span className="font-mono font-semibold">{username}</span>
+              </p>
+              <TextField
+                autoFocus
+                fullWidth
+                name="username-confirmation"
+                onChange={onConfirmationChange}
+                value={confirmationValue}
+              >
+                <Label>注册用户名</Label>
+                <Input autoComplete="off" variant="secondary" />
+              </TextField>
+            </div>
+          </AlertDialog.Body>
+          <AlertDialog.Footer>
+            <Button onPress={onCancel} variant="tertiary">
+              取消
+            </Button>
+            <Button
+              isDisabled={!isConfirmationMatched}
+              onPress={onConfirm}
+              variant="danger"
+            >
+              <Trash2 className="size-4" />
+              删除
+            </Button>
+          </AlertDialog.Footer>
+        </AlertDialog.Dialog>
+      </AlertDialog.Container>
+    </AlertDialog.Backdrop>
+  );
+}
+
 function SortableColumnHeader({
   children,
   sortDirection,
@@ -757,12 +942,16 @@ function renderAdminUserCell(
 
 function AdminUsersTable({
   footer,
+  onDeleteUser,
+  onEditUser,
   onSortChange,
   sort,
   users,
   visibleColumns,
 }: {
   footer: ReactNode;
+  onDeleteUser: (user: AdminUserTableRow) => void;
+  onEditUser: (user: AdminUserTableRow) => void;
   onSortChange: (sort: AdminUsersSort) => void;
   sort: AdminUsersSort;
   users: AdminUserTableRow[];
@@ -826,6 +1015,13 @@ function AdminUsersTable({
                 }
               </Table.Column>
             ))}
+            <Table.Column
+              className="whitespace-nowrap"
+              id="actions"
+              key="actions"
+            >
+              操作
+            </Table.Column>
           </Table.Header>
           <Table.Body>
             {users.map((user) => {
@@ -846,6 +1042,13 @@ function AdminUsersTable({
                       {renderAdminUserCell(column.id, user)}
                     </Table.Cell>
                   ))}
+                  <Table.Cell className="whitespace-nowrap">
+                    <AdminUserActionsCell
+                      onDelete={() => onDeleteUser(user)}
+                      onEdit={() => onEditUser(user)}
+                      username={user.username}
+                    />
+                  </Table.Cell>
                 </Table.Row>
               );
             })}
@@ -917,6 +1120,8 @@ function AdminUsersTableSection({
   metadataIsError,
   metadataIsLoading,
   onClearFilters,
+  onDeleteUser,
+  onEditUser,
   onFilterChange,
   onSortChange,
   page,
@@ -1019,6 +1224,8 @@ function AdminUsersTableSection({
               totalPages={totalPages}
             />
           }
+          onDeleteUser={onDeleteUser}
+          onEditUser={onEditUser}
           onSortChange={onSortChange}
           sort={sort}
           users={users}
@@ -1050,6 +1257,11 @@ export default function AdminUsersPage() {
     column: "username",
     direction: "ascending",
   });
+  const [developmentDialogType, setDevelopmentDialogType] =
+    useState<DevelopmentDialogType | null>(null);
+  const [deleteTargetUser, setDeleteTargetUser] =
+    useState<AdminUserTableRow | null>(null);
+  const [deleteConfirmationValue, setDeleteConfirmationValue] = useState("");
   const { pageSize, tableRegionRef } = useAutoPageSize();
   const previousPageSizeRef = useRef(pageSize);
   const accountMe = useQuery(
@@ -1132,6 +1344,28 @@ export default function AdminUsersPage() {
     setSort(nextSort);
     setPage(1);
   }, []);
+  const handleEditUser = (_nextUser: AdminUserTableRow) => {
+    setDevelopmentDialogType("edit");
+  };
+  const handleDeleteUser = (nextUser: AdminUserTableRow) => {
+    if (!nextUser.username) {
+      return;
+    }
+
+    setDeleteTargetUser(nextUser);
+    setDeleteConfirmationValue("");
+  };
+  const closeDeleteDialog = () => {
+    setDeleteTargetUser(null);
+    setDeleteConfirmationValue("");
+  };
+  const handleDeleteConfirm = () => {
+    closeDeleteDialog();
+    setDevelopmentDialogType("delete");
+  };
+  const closeDevelopmentDialog = () => {
+    setDevelopmentDialogType(null);
+  };
   const visibleColumnControls = useColumnVisibility({
     columns: adminUsersColumns,
     storageKey: adminUsersColumnVisibilityStorageKey,
@@ -1206,6 +1440,8 @@ export default function AdminUsersPage() {
             metadataIsError={metadataQuery.isError}
             metadataIsLoading={metadataQuery.isPending}
             onClearFilters={handleClearFilters}
+            onDeleteUser={handleDeleteUser}
+            onEditUser={handleEditUser}
             onFilterChange={handleFilterChange}
             onSortChange={handleSortChange}
             page={page}
@@ -1219,6 +1455,18 @@ export default function AdminUsersPage() {
             visibleColumnControls={visibleColumnControls}
           />
         ) : null}
+
+        <AdminUserDeleteDialog
+          confirmationValue={deleteConfirmationValue}
+          onCancel={closeDeleteDialog}
+          onConfirm={handleDeleteConfirm}
+          onConfirmationChange={setDeleteConfirmationValue}
+          user={deleteTargetUser}
+        />
+        <AdminUserDevelopmentDialog
+          onClose={closeDevelopmentDialog}
+          type={developmentDialogType}
+        />
       </div>
     </AppShell>
   );
