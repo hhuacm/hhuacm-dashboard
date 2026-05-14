@@ -26,6 +26,7 @@ import {
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import {
+  type CSSProperties,
   type Key,
   type ReactNode,
   useCallback,
@@ -36,6 +37,11 @@ import {
 } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import {
+  ColumnVisibilityMenu,
+  type TableColumnVisibilityConfig,
+  useColumnVisibility,
+} from "@/components/column-visibility";
 import { authClient } from "@/utils/auth-client";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
@@ -49,6 +55,7 @@ const tableReservedHeightPx = 156;
 const viewportBottomGapPx = 40;
 const compactPaginationLimit = 7;
 const paginationNeighborCount = 1;
+const adminUsersColumnVisibilityStorageKey = "admin-users-column-visibility-v1";
 
 const sortableColumns = [
   "email",
@@ -93,6 +100,22 @@ type OjPlatform = keyof typeof ojPlatformLabels;
 type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
 type SortColumn = (typeof sortableColumns)[number];
 type SortDirection = "ascending" | "descending";
+type AdminUsersColumnId =
+  | "email"
+  | "grade"
+  | "major"
+  | "memberStatus"
+  | "ojAccounts"
+  | "realName"
+  | "studentId"
+  | "username";
+
+interface AdminUsersColumnConfig
+  extends TableColumnVisibilityConfig<AdminUsersColumnId> {
+  cellClassName?: string;
+  headerClassName?: string;
+  minWidth: number;
+}
 
 interface FilterOption {
   label: string;
@@ -150,6 +173,7 @@ interface AdminUsersTableSectionProps {
   total: number;
   totalPages: number;
   users: AdminUserTableRow[];
+  visibleColumnControls: AdminUsersVisibleColumnControls;
 }
 
 interface AccessFeedbackProps {
@@ -173,6 +197,13 @@ interface FilterMenuProps {
   selectedValues: string[];
 }
 
+interface AdminUsersVisibleColumnControls {
+  resetColumns: () => void;
+  setColumnVisible: (columnId: AdminUsersColumnId, isVisible: boolean) => void;
+  visibleColumnIds: readonly AdminUsersColumnId[];
+  visibleColumns: readonly AdminUsersColumnConfig[];
+}
+
 const clampPageSize = (pageSize: number) =>
   Math.min(maxPageSize, Math.max(minPageSize, pageSize));
 
@@ -180,6 +211,89 @@ const emptyAdminUsersFilters: AdminUsersFilters = {
   grades: [],
   memberStatuses: [],
   ojPlatforms: [],
+};
+
+const adminUsersColumns = [
+  {
+    cellClassName: "max-w-48 whitespace-nowrap font-medium",
+    defaultVisible: true,
+    id: "username",
+    label: "用户名",
+    minWidth: 192,
+  },
+  {
+    cellClassName: "max-w-72 whitespace-nowrap",
+    defaultVisible: true,
+    id: "email",
+    label: "邮箱",
+    minWidth: 256,
+  },
+  {
+    cellClassName: "whitespace-nowrap",
+    defaultVisible: true,
+    id: "realName",
+    label: "姓名",
+    minWidth: 128,
+  },
+  {
+    cellClassName: "whitespace-nowrap",
+    defaultVisible: false,
+    id: "grade",
+    label: "年级",
+    minWidth: 96,
+  },
+  {
+    cellClassName: "whitespace-nowrap",
+    defaultVisible: false,
+    id: "studentId",
+    label: "学号",
+    minWidth: 136,
+  },
+  {
+    cellClassName: "max-w-64 whitespace-nowrap",
+    defaultVisible: false,
+    id: "major",
+    label: "专业",
+    minWidth: 176,
+  },
+  {
+    cellClassName: "whitespace-nowrap",
+    defaultVisible: true,
+    id: "memberStatus",
+    label: "状态",
+    minWidth: 112,
+  },
+  {
+    cellClassName: "whitespace-nowrap",
+    defaultVisible: true,
+    id: "ojAccounts",
+    label: "OJ 账号",
+    minWidth: 220,
+  },
+] as const satisfies readonly AdminUsersColumnConfig[];
+
+const getVisibleTableMinWidth = (
+  columns: readonly AdminUsersColumnConfig[]
+) => {
+  let minWidth = 0;
+
+  for (const column of columns) {
+    minWidth += column.minWidth;
+  }
+
+  return Math.max(720, minWidth);
+};
+
+const getFirstVisibleSortColumn = (
+  columnIds: readonly AdminUsersColumnId[]
+) => {
+  for (const columnId of columnIds) {
+    if (isSortColumn(columnId)) {
+      return columnId;
+    }
+  }
+
+  return null;
 };
 
 const calculatePageSize = (element: HTMLDivElement | null) => {
@@ -508,6 +622,7 @@ function AdminUsersFiltersToolbar({
   metadataIsLoading,
   onClearFilters,
   onFilterChange,
+  visibleColumnControls,
 }: {
   filters: AdminUsersFilters;
   hasActiveFilters: boolean;
@@ -515,6 +630,7 @@ function AdminUsersFiltersToolbar({
   metadataIsLoading: boolean;
   onClearFilters: () => void;
   onFilterChange: (key: keyof AdminUsersFilters, values: string[]) => void;
+  visibleColumnControls: AdminUsersVisibleColumnControls;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -548,6 +664,12 @@ function AdminUsersFiltersToolbar({
         <X className="size-4" />
         清除筛选
       </Button>
+      <ColumnVisibilityMenu
+        columns={adminUsersColumns}
+        onReset={visibleColumnControls.resetColumns}
+        onVisibleChange={visibleColumnControls.setColumnVisible}
+        visibleColumnIds={visibleColumnControls.visibleColumnIds}
+      />
       {metadataIsLoading ? (
         <span className="inline-flex items-center gap-2 text-muted text-sm">
           <Spinner color="current" size="sm" />
@@ -577,17 +699,83 @@ function SortableColumnHeader({
   );
 }
 
+function renderAdminUserColumnHeader(
+  column: AdminUsersColumnConfig,
+  sortDirection?: SortDirection
+) {
+  if (!isSortColumn(column.id)) {
+    return column.label;
+  }
+
+  return (
+    <SortableColumnHeader sortDirection={sortDirection}>
+      {column.label}
+    </SortableColumnHeader>
+  );
+}
+
+function renderAdminUserCell(
+  columnId: AdminUsersColumnId,
+  user: AdminUserTableRow
+) {
+  if (columnId === "username") {
+    return (
+      <span className="block truncate">{getAdminDisplayUsername(user)}</span>
+    );
+  }
+
+  if (columnId === "email") {
+    return <span className="block truncate">{user.email}</span>;
+  }
+
+  if (columnId === "realName") {
+    return <ProfileValue value={user.realName} />;
+  }
+
+  if (columnId === "grade") {
+    return <ProfileValue value={user.grade} />;
+  }
+
+  if (columnId === "studentId") {
+    return <ProfileValue mono value={user.studentId} />;
+  }
+
+  if (columnId === "major") {
+    return (
+      <span className="block truncate">
+        <ProfileValue value={user.major} />
+      </span>
+    );
+  }
+
+  if (columnId === "memberStatus") {
+    return <MemberStatusChip status={user.memberStatus} />;
+  }
+
+  return <OjAccountChips accounts={user.ojAccounts} />;
+}
+
 function AdminUsersTable({
   footer,
   onSortChange,
   sort,
   users,
+  visibleColumns,
 }: {
   footer: ReactNode;
   onSortChange: (sort: AdminUsersSort) => void;
   sort: AdminUsersSort;
   users: AdminUserTableRow[];
+  visibleColumns: readonly AdminUsersColumnConfig[];
 }) {
+  const tableStyle = useMemo<CSSProperties>(
+    () => ({ minWidth: getVisibleTableMinWidth(visibleColumns) }),
+    [visibleColumns]
+  );
+  const tableContentKey = visibleColumns.map((column) => column.id).join("|");
+  const rowHeaderColumn = visibleColumns[0];
+  const otherColumns = visibleColumns.slice(1);
+
   const handleSortChange = (descriptor: {
     column?: Key;
     direction?: SortDirection;
@@ -607,61 +795,37 @@ function AdminUsersTable({
       <Table.ScrollContainer>
         <Table.Content
           aria-label="管理员用户列表"
-          className="min-w-[1160px]"
+          key={tableContentKey}
           onSortChange={handleSortChange}
           sortDescriptor={sort}
+          style={tableStyle}
         >
           <Table.Header>
-            <Table.Column allowsSorting id="username" isRowHeader>
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  用户名
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="email">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  邮箱
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="realName">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  姓名
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="grade">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  年级
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="studentId">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  学号
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="major">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  专业
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column allowsSorting id="memberStatus">
-              {({ sortDirection }) => (
-                <SortableColumnHeader sortDirection={sortDirection}>
-                  状态
-                </SortableColumnHeader>
-              )}
-            </Table.Column>
-            <Table.Column id="ojAccounts">OJ 账号</Table.Column>
+            {rowHeaderColumn ? (
+              <Table.Column
+                allowsSorting={isSortColumn(rowHeaderColumn.id)}
+                className={rowHeaderColumn.headerClassName}
+                id={rowHeaderColumn.id}
+                isRowHeader
+                key={rowHeaderColumn.id}
+              >
+                {({ sortDirection }) =>
+                  renderAdminUserColumnHeader(rowHeaderColumn, sortDirection)
+                }
+              </Table.Column>
+            ) : null}
+            {otherColumns.map((column) => (
+              <Table.Column
+                allowsSorting={isSortColumn(column.id)}
+                className={column.headerClassName}
+                id={column.id}
+                key={column.id}
+              >
+                {({ sortDirection }) =>
+                  renderAdminUserColumnHeader(column, sortDirection)
+                }
+              </Table.Column>
+            ))}
           </Table.Header>
           <Table.Body>
             {users.map((user) => {
@@ -674,32 +838,14 @@ function AdminUsersTable({
                   key={user.id}
                   textValue={displayUsername}
                 >
-                  <Table.Cell className="max-w-48 whitespace-nowrap font-medium">
-                    <span className="block truncate">{displayUsername}</span>
-                  </Table.Cell>
-                  <Table.Cell className="max-w-72 whitespace-nowrap">
-                    <span className="block truncate">{user.email}</span>
-                  </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap">
-                    <ProfileValue value={user.realName} />
-                  </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap">
-                    <ProfileValue value={user.grade} />
-                  </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap">
-                    <ProfileValue mono value={user.studentId} />
-                  </Table.Cell>
-                  <Table.Cell className="max-w-64 whitespace-nowrap">
-                    <span className="block truncate">
-                      <ProfileValue value={user.major} />
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap">
-                    <MemberStatusChip status={user.memberStatus} />
-                  </Table.Cell>
-                  <Table.Cell className="whitespace-nowrap">
-                    <OjAccountChips accounts={user.ojAccounts} />
-                  </Table.Cell>
+                  {visibleColumns.map((column) => (
+                    <Table.Cell
+                      className={column.cellClassName}
+                      key={column.id}
+                    >
+                      {renderAdminUserCell(column.id, user)}
+                    </Table.Cell>
+                  ))}
                 </Table.Row>
               );
             })}
@@ -781,7 +927,27 @@ function AdminUsersTableSection({
   total,
   totalPages,
   users,
+  visibleColumnControls,
 }: AdminUsersTableSectionProps) {
+  useEffect(() => {
+    if (visibleColumnControls.visibleColumnIds.includes(sort.column)) {
+      return;
+    }
+
+    const fallbackSortColumn = getFirstVisibleSortColumn(
+      visibleColumnControls.visibleColumnIds
+    );
+
+    if (!fallbackSortColumn) {
+      return;
+    }
+
+    onSortChange({
+      column: fallbackSortColumn,
+      direction: "ascending",
+    });
+  }, [onSortChange, sort.column, visibleColumnControls.visibleColumnIds]);
+
   return (
     <Card>
       <Card.Header>
@@ -809,6 +975,7 @@ function AdminUsersTableSection({
           metadataIsLoading={metadataIsLoading}
           onClearFilters={onClearFilters}
           onFilterChange={onFilterChange}
+          visibleColumnControls={visibleColumnControls}
         />
 
         {metadataIsError ? (
@@ -855,6 +1022,7 @@ function AdminUsersTableSection({
           onSortChange={onSortChange}
           sort={sort}
           users={users}
+          visibleColumns={visibleColumnControls.visibleColumns}
         />
 
         {users.length === 0 && !isLoading ? (
@@ -960,10 +1128,14 @@ export default function AdminUsersPage() {
     setPage(1);
   };
 
-  const handleSortChange = (nextSort: AdminUsersSort) => {
+  const handleSortChange = useCallback((nextSort: AdminUsersSort) => {
     setSort(nextSort);
     setPage(1);
-  };
+  }, []);
+  const visibleColumnControls = useColumnVisibility({
+    columns: adminUsersColumns,
+    storageKey: adminUsersColumnVisibilityStorageKey,
+  });
 
   const hasActiveFilters = hasFilters(filters);
   const listInput = useMemo(
@@ -1044,6 +1216,7 @@ export default function AdminUsersPage() {
             total={total}
             totalPages={totalPages}
             users={users}
+            visibleColumnControls={visibleColumnControls}
           />
         ) : null}
       </div>
