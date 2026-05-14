@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Code2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { type FormEvent, type Key, useMemo, useState } from "react";
+import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import { trpc } from "@/utils/trpc";
 
 const ojPlatformConfigs = [
@@ -79,6 +80,23 @@ const getPlatformConfig = (platform: OjPlatform) =>
 
 const isOjPlatform = (value: string): value is OjPlatform =>
   ojPlatformConfigs.some((config) => config.key === value);
+
+const getOriginalDialogHandle = (
+  accountsByPlatform: Map<OjPlatform, OjAccount>,
+  dialog: AccountDialog | null
+) => {
+  if (dialog?.mode !== "edit") {
+    return "";
+  }
+
+  return accountsByPlatform.get(dialog.platform)?.handle ?? "";
+};
+
+const isOjHandleChanged = (
+  dialog: AccountDialog | null,
+  handle: string,
+  originalHandle: string
+) => dialog?.mode === "edit" && handle !== originalHandle;
 
 const getErrorText = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("message" in error)) {
@@ -239,6 +257,19 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
   const isSaving = addAccount.isPending || updateAccount.isPending;
   const isBusy = isSaving || deleteAccount.isPending;
   const dialogPlatformConfig = getPlatformConfig(formPlatform);
+  const originalDialogHandle = getOriginalDialogHandle(
+    accountsByPlatform,
+    dialog
+  );
+  const isHandleChanged = isOjHandleChanged(
+    dialog,
+    formHandle,
+    originalDialogHandle
+  );
+  const dialogTitle =
+    dialog?.mode === "edit"
+      ? `编辑 ${dialogPlatformConfig?.label ?? formPlatform} 账号`
+      : "添加 OJ 账号";
 
   const openAddDialog = (platform?: OjPlatform) => {
     const nextPlatform = platform ?? availablePlatforms[0]?.key;
@@ -479,11 +510,9 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                     <Code2 className="size-5 text-accent" />
                   )}
                 </Modal.Icon>
-                <Modal.Heading>
-                  {dialog?.mode === "edit" ? "编辑 OJ 账号" : "添加 OJ 账号"}
-                </Modal.Heading>
+                <Modal.Heading>{dialogTitle}</Modal.Heading>
               </Modal.Header>
-              <Modal.Body className="grid gap-4 px-0.5 pb-0.5">
+              <Modal.Body className="grid gap-4 px-0.5 pt-3 pb-0.5">
                 {dialog?.mode === "add" ? (
                   <Select
                     fullWidth
@@ -513,14 +542,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                       </ListBox>
                     </Select.Popover>
                   </Select>
-                ) : (
-                  <div className="rounded-lg border border-border bg-surface p-4">
-                    <p className="text-muted text-sm">平台</p>
-                    <p className="mt-1 font-medium text-foreground">
-                      {dialogPlatformConfig?.label ?? formPlatform}
-                    </p>
-                  </div>
-                )}
+                ) : null}
 
                 {dialogMessage ? (
                   <Alert status={dialogMessage.tone}>
@@ -540,7 +562,10 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                   onChange={setFormHandle}
                   value={formHandle}
                 >
-                  <Label>账号昵称</Label>
+                  <DirtyFieldLabel
+                    isChanged={isHandleChanged}
+                    label="账号昵称"
+                  />
                   <Input
                     autoComplete="off"
                     placeholder="填写该平台的账号昵称"
