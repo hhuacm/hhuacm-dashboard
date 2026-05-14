@@ -205,6 +205,10 @@ const adminUserInputSchema = z.object({
   userId: trimmedStringSchema,
 });
 
+const adminUserDeleteInputSchema = adminUserInputSchema.extend({
+  usernameConfirmation: trimmedStringSchema,
+});
+
 const adminProfileInputSchema = profileInputSchema.extend({
   memberStatus: z.enum(memberStatuses),
 });
@@ -237,6 +241,7 @@ const getTargetUser = async (db: Context["db"], userId: string) => {
       email: user.email,
       id: user.id,
       name: user.name,
+      role: user.role,
       username: user.username,
     })
     .from(user)
@@ -505,6 +510,7 @@ export const appRouter = router({
               memberStatus: userProfile.memberStatus,
               name: user.name,
               realName: userProfile.realName,
+              role: user.role,
               studentId: userProfile.studentId,
               username: user.username,
             })
@@ -575,6 +581,58 @@ export const appRouter = router({
           })),
         };
       }),
+      delete: adminProcedure
+        .input(adminUserDeleteInputSchema)
+        .mutation(async ({ ctx, input }) => {
+          const targetUser = await getTargetUser(ctx.db, input.userId);
+
+          if (targetUser.role === "admin") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Admin users cannot be deleted from the admin panel",
+            });
+          }
+
+          const [targetProfile] = await ctx.db
+            .select({ memberStatus: userProfile.memberStatus })
+            .from(userProfile)
+            .where(eq(userProfile.userId, input.userId))
+            .limit(1);
+          const targetMemberStatus =
+            targetProfile?.memberStatus ?? defaultMemberStatus;
+
+          if (targetMemberStatus !== "frozen") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Only frozen users can be deleted from the admin panel",
+            });
+          }
+
+          if (input.usernameConfirmation !== targetUser.username) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Username confirmation does not match",
+            });
+          }
+
+          const [deletedUser] = await ctx.db
+            .delete(user)
+            .where(eq(user.id, input.userId))
+            .returning({
+              displayUsername: user.displayUsername,
+              email: user.email,
+              id: user.id,
+              name: user.name,
+              role: user.role,
+              username: user.username,
+            });
+
+          if (!deletedUser) {
+            throw new TRPCError({ code: "NOT_FOUND" });
+          }
+
+          return deletedUser;
+        }),
       updateProfile: adminProcedure
         .input(adminUserProfileUpdateInputSchema)
         .mutation(async ({ ctx, input }) => {

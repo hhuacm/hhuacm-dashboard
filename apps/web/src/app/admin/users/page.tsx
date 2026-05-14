@@ -130,7 +130,7 @@ type OjPlatform = keyof typeof ojPlatformLabels;
 type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
 type SortColumn = (typeof sortableColumns)[number];
 type SortDirection = "ascending" | "descending";
-type DevelopmentDialogType = "delete";
+type UserRole = "admin" | "member";
 type AdminUsersColumnId =
   | "email"
   | "grade"
@@ -185,6 +185,7 @@ interface AdminUserDetail {
   name: string;
   ojAccounts: AdminUserOjAccount[];
   profile: AdminUserProfile;
+  role: UserRole;
   username: null | string;
 }
 
@@ -198,6 +199,7 @@ interface AdminUserTableRow {
   name: string;
   ojAccounts: AdminUserOjAccount[];
   realName: null | string;
+  role: UserRole;
   studentId: null | string;
   username: null | string;
 }
@@ -256,22 +258,21 @@ interface AdminUsersVisibleColumnControls {
 }
 
 interface AdminUserActionsCellProps {
+  memberStatus: string;
   onDelete: () => void;
   onEdit: () => void;
+  role: UserRole;
   username: null | string;
 }
 
 interface AdminUserDeleteDialogProps {
   confirmationValue: string;
+  errorMessage: null | string;
+  isDeleting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
   onConfirmationChange: (value: string) => void;
   user: AdminUserTableRow | null;
-}
-
-interface AdminUserDevelopmentDialogProps {
-  onClose: () => void;
-  type: DevelopmentDialogType | null;
 }
 
 interface AdminUserEditDialogProps {
@@ -505,6 +506,18 @@ const getAdminEditErrorMessage = (error: unknown) => {
     return "用户不存在，请刷新列表后重试。";
   }
 
+  if (errorText.includes("Admin users cannot be deleted")) {
+    return "管理员账户不能在面板删除。";
+  }
+
+  if (errorText.includes("Only frozen users can be deleted")) {
+    return "只有已冻结用户才能删除。";
+  }
+
+  if (errorText.includes("Username confirmation does not match")) {
+    return "用户名确认不匹配。";
+  }
+
   if (errorText.includes("Invalid grade")) {
     return "年级不在可选范围内。";
   }
@@ -703,11 +716,30 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
 }
 
 function AdminUserActionsCell({
+  memberStatus,
   onDelete,
   onEdit,
+  role,
   username,
 }: AdminUserActionsCellProps) {
-  const canDelete = Boolean(username);
+  const isAdminUser = role === "admin";
+  const isFrozenUser = memberStatus === "frozen";
+  const canDelete = Boolean(username) && !isAdminUser && isFrozenUser;
+  const deleteLabel = (() => {
+    if (isAdminUser) {
+      return "管理员账户不能在面板删除";
+    }
+
+    if (!isFrozenUser) {
+      return "只有已冻结用户才能删除";
+    }
+
+    if (!username) {
+      return "缺少注册用户名，暂不能删除";
+    }
+
+    return "删除用户";
+  })();
 
   return (
     <div className="flex min-h-7 items-center gap-1">
@@ -733,7 +765,7 @@ function AdminUserActionsCell({
         <Tooltip.Trigger>
           <span className="inline-flex">
             <Button
-              aria-label={canDelete ? "删除用户" : "缺少注册用户名，暂不能删除"}
+              aria-label={deleteLabel}
               className="size-8"
               isDisabled={!canDelete}
               isIconOnly
@@ -747,7 +779,7 @@ function AdminUserActionsCell({
         </Tooltip.Trigger>
         <Tooltip.Content showArrow>
           <Tooltip.Arrow />
-          {canDelete ? "删除用户" : "缺少注册用户名，暂不能删除"}
+          {deleteLabel}
         </Tooltip.Content>
       </Tooltip>
     </div>
@@ -933,42 +965,10 @@ function AdminUsersFiltersToolbar({
   );
 }
 
-function AdminUserDevelopmentDialog({
-  onClose,
-  type,
-}: AdminUserDevelopmentDialogProps) {
-  return (
-    <Modal.Backdrop
-      isOpen={Boolean(type)}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          onClose();
-        }
-      }}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-100">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Icon className="bg-default">
-              <Pencil className="size-5 text-accent" />
-            </Modal.Icon>
-            <Modal.Heading>正在开发中</Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            <p className="text-muted text-sm">删除用户功能正在开发中。</p>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button onPress={onClose}>知道了</Button>
-          </Modal.Footer>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
-}
-
 function AdminUserDeleteDialog({
   confirmationValue,
+  errorMessage,
+  isDeleting,
   onCancel,
   onConfirm,
   onConfirmationChange,
@@ -976,19 +976,20 @@ function AdminUserDeleteDialog({
 }: AdminUserDeleteDialogProps) {
   const username = user?.username ?? "";
   const isConfirmationMatched = confirmationValue === username;
+  const canConfirm = Boolean(user) && isConfirmationMatched && !isDeleting;
 
   return (
     <AlertDialog.Backdrop
       isOpen={Boolean(user)}
       onOpenChange={(isOpen) => {
-        if (!isOpen) {
+        if (!(isOpen || isDeleting)) {
           onCancel();
         }
       }}
     >
       <AlertDialog.Container>
         <AlertDialog.Dialog className="sm:max-w-110">
-          <AlertDialog.CloseTrigger />
+          <AlertDialog.CloseTrigger isDisabled={isDeleting} />
           <AlertDialog.Header>
             <AlertDialog.Icon status="danger">
               <Trash2 className="size-5" />
@@ -1004,6 +1005,7 @@ function AdminUserDeleteDialog({
               <TextField
                 autoFocus
                 fullWidth
+                isDisabled={isDeleting}
                 name="username-confirmation"
                 onChange={onConfirmationChange}
                 value={confirmationValue}
@@ -1011,19 +1013,40 @@ function AdminUserDeleteDialog({
                 <Label>注册用户名</Label>
                 <Input autoComplete="off" variant="secondary" />
               </TextField>
+              {errorMessage ? (
+                <Alert status="danger">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Description>{errorMessage}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
+              ) : null}
             </div>
           </AlertDialog.Body>
           <AlertDialog.Footer>
-            <Button onPress={onCancel} variant="tertiary">
+            <Button
+              isDisabled={isDeleting}
+              onPress={onCancel}
+              variant="tertiary"
+            >
               取消
             </Button>
             <Button
-              isDisabled={!isConfirmationMatched}
+              isDisabled={!canConfirm}
+              isPending={isDeleting}
               onPress={onConfirm}
               variant="danger"
             >
-              <Trash2 className="size-4" />
-              删除
+              {({ isPending }) => (
+                <>
+                  {isPending ? (
+                    <Spinner color="current" size="sm" />
+                  ) : (
+                    <Trash2 className="size-4" />
+                  )}
+                  {isPending ? "删除中" : "删除"}
+                </>
+              )}
             </Button>
           </AlertDialog.Footer>
         </AlertDialog.Dialog>
@@ -1816,8 +1839,10 @@ function AdminUsersTable({
                   ))}
                   <Table.Cell className="whitespace-nowrap">
                     <AdminUserActionsCell
+                      memberStatus={user.memberStatus}
                       onDelete={() => onDeleteUser(user)}
                       onEdit={() => onEditUser(user)}
+                      role={user.role}
                       username={user.username}
                     />
                   </Table.Cell>
@@ -2019,6 +2044,7 @@ function AdminUsersTableSection({
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const [page, setPage] = useState(1);
@@ -2029,13 +2055,14 @@ export default function AdminUsersPage() {
     column: "username",
     direction: "ascending",
   });
-  const [developmentDialogType, setDevelopmentDialogType] =
-    useState<DevelopmentDialogType | null>(null);
   const [editTargetUser, setEditTargetUser] =
     useState<AdminUserTableRow | null>(null);
   const [deleteTargetUser, setDeleteTargetUser] =
     useState<AdminUserTableRow | null>(null);
   const [deleteConfirmationValue, setDeleteConfirmationValue] = useState("");
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
+    null
+  );
   const { pageSize, tableRegionRef } = useAutoPageSize();
   const previousPageSizeRef = useRef(pageSize);
   const accountMe = useQuery(
@@ -2125,23 +2152,24 @@ export default function AdminUsersPage() {
     setEditTargetUser(null);
   };
   const handleDeleteUser = (nextUser: AdminUserTableRow) => {
-    if (!nextUser.username) {
+    if (
+      !(
+        nextUser.username &&
+        nextUser.role !== "admin" &&
+        nextUser.memberStatus === "frozen"
+      )
+    ) {
       return;
     }
 
     setDeleteTargetUser(nextUser);
     setDeleteConfirmationValue("");
+    setDeleteErrorMessage(null);
   };
   const closeDeleteDialog = () => {
     setDeleteTargetUser(null);
     setDeleteConfirmationValue("");
-  };
-  const handleDeleteConfirm = () => {
-    closeDeleteDialog();
-    setDevelopmentDialogType("delete");
-  };
-  const closeDevelopmentDialog = () => {
-    setDevelopmentDialogType(null);
+    setDeleteErrorMessage(null);
   };
   const visibleColumnControls = useColumnVisibility({
     columns: adminUsersColumns,
@@ -2174,6 +2202,29 @@ export default function AdminUsersPage() {
   const users = usersQuery.data?.items ?? [];
   const total = usersQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const deleteUser = useMutation(
+    trpc.admin.users.delete.mutationOptions({
+      onError: (error) => {
+        setDeleteErrorMessage(getAdminEditErrorMessage(error));
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: listQueryKey });
+        closeDeleteDialog();
+      },
+    })
+  );
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetUser) {
+      return;
+    }
+
+    setDeleteErrorMessage(null);
+    await deleteUser.mutateAsync({
+      userId: deleteTargetUser.id,
+      usernameConfirmation: deleteConfirmationValue,
+    });
+  };
 
   useEffect(() => {
     if (page > totalPages) {
@@ -2236,19 +2287,20 @@ export default function AdminUsersPage() {
 
         <AdminUserDeleteDialog
           confirmationValue={deleteConfirmationValue}
+          errorMessage={deleteErrorMessage}
+          isDeleting={deleteUser.isPending}
           onCancel={closeDeleteDialog}
           onConfirm={handleDeleteConfirm}
-          onConfirmationChange={setDeleteConfirmationValue}
+          onConfirmationChange={(value) => {
+            setDeleteErrorMessage(null);
+            setDeleteConfirmationValue(value);
+          }}
           user={deleteTargetUser}
         />
         <AdminUserEditDialog
           listQueryKey={listQueryKey}
           onClose={closeEditDialog}
           user={editTargetUser}
-        />
-        <AdminUserDevelopmentDialog
-          onClose={closeDevelopmentDialog}
-          type={developmentDialogType}
         />
       </div>
     </AppShell>
