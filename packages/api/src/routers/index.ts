@@ -10,10 +10,15 @@ import {
   userProfile,
 } from "@hhuacm-dashboard/db/schema/profile";
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { protectedProcedure, publicProcedure, router } from "../index";
+import {
+  adminProcedure,
+  protectedProcedure,
+  publicProcedure,
+  router,
+} from "../index";
 
 const serverStartedAt = new Date();
 const defaultMemberStatus = memberStatuses[0];
@@ -58,6 +63,17 @@ const profileUpdateInputSchema = profileInputSchema
   .refine((input) => Object.keys(input).length > 0, {
     message: "Profile update requires at least one field",
   });
+
+const adminUsersListInputSchema = z.object({
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(5).max(80),
+});
+
+interface AdminUserOjAccount {
+  handle: string;
+  platform: (typeof ojPlatforms)[number];
+  profileUrl: string;
+}
 
 const ojAccountFields = {
   handle: userOjAccount.handle,
@@ -252,6 +268,83 @@ export const appRouter = router({
       }
 
       return currentUser;
+    }),
+  }),
+  admin: router({
+    users: router({
+      list: adminProcedure
+        .input(adminUsersListInputSchema)
+        .query(async ({ ctx, input }) => {
+          const offset = (input.page - 1) * input.pageSize;
+          const [totalRow] = await ctx.db
+            .select({
+              total: sql<number>`count(${user.id})`.mapWith(Number),
+            })
+            .from(user);
+
+          const users = await ctx.db
+            .select({
+              displayUsername: user.displayUsername,
+              email: user.email,
+              grade: userProfile.grade,
+              id: user.id,
+              major: userProfile.major,
+              memberStatus: userProfile.memberStatus,
+              name: user.name,
+              realName: userProfile.realName,
+              studentId: userProfile.studentId,
+              username: user.username,
+            })
+            .from(user)
+            .leftJoin(userProfile, eq(userProfile.userId, user.id))
+            .orderBy(
+              asc(
+                sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`
+              ),
+              asc(user.email),
+              asc(user.id)
+            )
+            .limit(input.pageSize)
+            .offset(offset);
+
+          const userIds = users.map((currentUser) => currentUser.id);
+          const ojAccounts =
+            userIds.length > 0
+              ? await ctx.db
+                  .select({
+                    handle: userOjAccount.handle,
+                    platform: userOjAccount.platform,
+                    profileUrl: userOjAccount.profileUrl,
+                    userId: userOjAccount.userId,
+                  })
+                  .from(userOjAccount)
+                  .where(inArray(userOjAccount.userId, userIds))
+                  .orderBy(asc(userOjAccount.platform))
+              : [];
+          const ojAccountsByUserId = new Map<string, AdminUserOjAccount[]>();
+
+          for (const account of ojAccounts) {
+            const currentAccounts =
+              ojAccountsByUserId.get(account.userId) ?? [];
+            currentAccounts.push({
+              handle: account.handle,
+              platform: account.platform,
+              profileUrl: account.profileUrl,
+            });
+            ojAccountsByUserId.set(account.userId, currentAccounts);
+          }
+
+          return {
+            items: users.map((currentUser) => ({
+              ...currentUser,
+              memberStatus: currentUser.memberStatus ?? defaultMemberStatus,
+              ojAccounts: ojAccountsByUserId.get(currentUser.id) ?? [],
+            })),
+            page: input.page,
+            pageSize: input.pageSize,
+            total: totalRow?.total ?? 0,
+          };
+        }),
     }),
   }),
   profile: router({

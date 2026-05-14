@@ -2,7 +2,8 @@
 
 import { Alert, Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, UsersRound } from "lucide-react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -97,8 +98,22 @@ export default function AdminPage() {
 
         {isAdmin ? (
           <Card>
-            <Card.Content>
-              <h1 className="font-semibold text-2xl">欢迎来到管理面板</h1>
+            <Card.Header>
+              <div>
+                <Card.Description>管理员工具</Card.Description>
+                <Card.Title className="mt-1">管理面板</Card.Title>
+              </div>
+            </Card.Header>
+            <Card.Content className="grid gap-4">
+              <Button
+                className="justify-start"
+                onPress={() => router.push("/admin/users" as Route)}
+                size="lg"
+                variant="outline"
+              >
+                <UsersRound className="size-4" />
+                用户列表
+              </Button>
             </Card.Content>
           </Card>
         ) : null}
