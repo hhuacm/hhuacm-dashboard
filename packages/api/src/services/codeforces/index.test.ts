@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { summarizeAcceptedProblems } from ".";
+import { summarizeAcceptedProblems } from "./summary";
 
 describe("summarizeAcceptedProblems", () => {
   it("deduplicates accepted problems by first accepted time", () => {
@@ -31,12 +31,12 @@ describe("summarizeAcceptedProblems", () => {
           verdict: "WRONG_ANSWER",
         },
       ],
-      now
+      { acceptedSinceSeconds: now - 30 * 24 * 60 * 60 }
     );
 
     expect(summary).toEqual({
       acceptedProblemCount: 2,
-      acceptedProblemCountInMonth: 1,
+      acceptedProblemCountSince: 1,
     });
   });
 
@@ -66,12 +66,42 @@ describe("summarizeAcceptedProblems", () => {
           verdict: "OK",
         },
       ],
-      now
+      { acceptedSinceSeconds: now - 30 * 24 * 60 * 60 }
     );
 
     expect(summary).toEqual({
       acceptedProblemCount: 1,
-      acceptedProblemCountInMonth: 1,
+      acceptedProblemCountSince: 1,
+    });
+  });
+
+  it("summarizes accepted problems since an arbitrary timestamp", () => {
+    const windowStart = 500;
+
+    const summary = summarizeAcceptedProblems(
+      [
+        {
+          creationTimeSeconds: 499,
+          problem: { contestId: 1, index: "A" },
+          verdict: "OK",
+        },
+        {
+          creationTimeSeconds: 500,
+          problem: { contestId: 2, index: "B" },
+          verdict: "OK",
+        },
+        {
+          creationTimeSeconds: 700,
+          problem: { contestId: 3, index: "C" },
+          verdict: "OK",
+        },
+      ],
+      { acceptedSinceSeconds: windowStart }
+    );
+
+    expect(summary).toEqual({
+      acceptedProblemCount: 3,
+      acceptedProblemCountSince: 2,
     });
   });
 });

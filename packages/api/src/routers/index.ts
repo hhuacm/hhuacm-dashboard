@@ -34,8 +34,8 @@ import {
 import {
   deleteCodeforcesStats,
   getFreshCodeforcesStats,
-  type PublicCodeforcesStats,
-} from "../services/codeforces";
+} from "../services/codeforces/stats-cache";
+import type { PublicCodeforcesStats } from "../services/codeforces/types";
 
 const serverStartedAt = new Date();
 const defaultMemberStatus = memberStatuses[0];
