@@ -10,7 +10,13 @@ import {
   Separator,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, LogOut, Sparkles, UserRound } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { type Key, type ReactNode, useState } from "react";
@@ -40,6 +46,7 @@ interface AccountMenuProps {
   displayName: string;
   isAdmin: boolean;
   onLogout: () => Promise<void>;
+  username: null | string | undefined;
 }
 
 interface HomeInfoItemProps {
@@ -131,7 +138,12 @@ const formatUptime = (uptimeMs: number | undefined) => {
   return `${seconds} 秒`;
 };
 
-function AccountMenu({ displayName, isAdmin, onLogout }: AccountMenuProps) {
+function AccountMenu({
+  displayName,
+  isAdmin,
+  onLogout,
+  username,
+}: AccountMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -143,7 +155,13 @@ function AccountMenu({ displayName, isAdmin, onLogout }: AccountMenuProps) {
   const handleAction = (key: Key) => {
     if (key === "profile") {
       setOpen(false);
-      router.push("/profile");
+      router.push(username ? (`/profile/${username}` as Route) : "/profile");
+      return;
+    }
+
+    if (key === "settings") {
+      setOpen(false);
+      router.push("/settings/profile" as Route);
       return;
     }
 
@@ -173,9 +191,13 @@ function AccountMenu({ displayName, isAdmin, onLogout }: AccountMenuProps) {
       </Button>
       <Dropdown.Popover className="min-w-44" placement="bottom end">
         <Dropdown.Menu onAction={handleAction}>
-          <Dropdown.Item id="profile" textValue="个人信息">
+          <Dropdown.Item id="profile" textValue="个人主页">
             <UserRound className="size-4" />
-            <Label>个人信息</Label>
+            <Label>个人主页</Label>
+          </Dropdown.Item>
+          <Dropdown.Item id="settings" textValue="资料设置">
+            <Settings className="size-4" />
+            <Label>资料设置</Label>
           </Dropdown.Item>
           {isAdmin ? (
             <Dropdown.Item id="admin" textValue="管理面板">
@@ -322,7 +344,7 @@ export default function Home() {
       enabled: Boolean(user),
     })
   );
-  const username = user ? getPreferredUsername(user) : "";
+  const displayUsername = user ? getPreferredUsername(user) : "";
   const isAdmin = accountMe.data?.role === "admin";
   const status = getHealthStatus(health.isLoading, health.isError);
   const healthTone = getHealthTone(health.isLoading, health.isError);
@@ -334,9 +356,10 @@ export default function Home() {
 
   const headerAction = user ? (
     <AccountMenu
-      displayName={formatDisplayName(username)}
+      displayName={formatDisplayName(displayUsername)}
       isAdmin={isAdmin}
       onLogout={handleLogout}
+      username={user.username}
     />
   ) : (
     <div className="flex items-center gap-2">

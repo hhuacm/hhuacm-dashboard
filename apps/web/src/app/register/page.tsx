@@ -15,8 +15,9 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, UserRound } from "lucide-react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type Key, useState } from "react";
 
@@ -136,7 +137,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
-  const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -147,11 +147,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const gradeOptions = getGradeOptions();
   const updateProfile = useMutation(
-    trpc.profile.update.mutationOptions({
-      onSuccess: (profile) => {
-        queryClient.setQueryData(trpc.profile.get.queryKey(), profile);
-      },
-    })
+    trpc.settings.profile.update.mutationOptions()
   );
 
   const shellAction = (
@@ -215,14 +211,14 @@ export default function RegisterPage() {
         try {
           await updateProfile.mutateAsync(changedProfileValues);
         } catch {
-          setError("账号已创建，但个人信息保存失败，可稍后在个人信息页补填。");
+          setError("账号已创建，但个人信息保存失败，可稍后在资料设置页补填。");
           await session.refetch();
           return;
         }
       }
 
       await session.refetch();
-      router.push("/profile");
+      router.push(`/profile/${normalizedUsername}` as Route);
     } catch {
       setError("认证服务暂时不可用，请确认后端和数据库已启动。");
     } finally {
@@ -258,13 +254,13 @@ export default function RegisterPage() {
                 {getPreferredUsername(user)}
               </Card.Title>
               <Card.Description>
-                你已经登录，可以直接进入个人信息页。
+                你已经登录，可以直接进入个人主页。
               </Card.Description>
             </Card.Header>
             <Card.Footer>
               <Button onPress={() => router.push("/profile")}>
                 <UserRound className="size-4" />
-                进入个人信息
+                进入个人主页
               </Button>
             </Card.Footer>
           </Card>

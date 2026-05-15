@@ -45,6 +45,9 @@ const getSafeRedirectPath = (redirect: null | string): Route => {
   return redirect as Route;
 };
 
+const getUserProfilePath = (username: null | string | undefined): Route =>
+  username ? (`/profile/${username}` as Route) : "/profile";
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -97,8 +100,16 @@ export default function LoginPage() {
         return;
       }
 
+      router.push(
+        redirectPath === "/profile"
+          ? getUserProfilePath(
+              isEmailIdentifier(normalizedIdentifier)
+                ? user?.username
+                : normalizedIdentifier
+            )
+          : redirectPath
+      );
       await session.refetch();
-      router.push(redirectPath);
     } catch {
       setError("认证服务暂时不可用，请确认后端和数据库已启动。");
     } finally {
@@ -134,13 +145,21 @@ export default function LoginPage() {
                 {getPreferredUsername(user)}
               </Card.Title>
               <Card.Description>
-                你已经登录，可以直接进入个人信息页。
+                你已经登录，可以直接进入个人主页。
               </Card.Description>
             </Card.Header>
             <Card.Footer>
-              <Button onPress={() => router.push(redirectPath)}>
+              <Button
+                onPress={() =>
+                  router.push(
+                    redirectPath === "/profile"
+                      ? getUserProfilePath(user.username)
+                      : redirectPath
+                  )
+                }
+              >
                 <UserRound className="size-4" />
-                {redirectPath === "/profile" ? "进入个人信息" : "继续"}
+                {redirectPath === "/profile" ? "进入个人主页" : "继续"}
               </Button>
             </Card.Footer>
           </Card>

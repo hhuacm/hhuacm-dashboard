@@ -9,7 +9,7 @@ const maxWidthClassNames = {
 interface AppShellProps {
   action?: ReactNode;
   children: ReactNode;
-  description: string;
+  description?: string;
   icon: ReactNode;
   maxWidth?: keyof typeof maxWidthClassNames;
   title: string;
@@ -37,7 +37,11 @@ export function AppShell({
               <p className="truncate font-semibold text-base leading-none">
                 {title}
               </p>
-              <p className="mt-1 truncate text-muted text-sm">{description}</p>
+              {description ? (
+                <p className="mt-1 truncate text-muted text-sm">
+                  {description}
+                </p>
+              ) : null}
             </div>
           </div>
 

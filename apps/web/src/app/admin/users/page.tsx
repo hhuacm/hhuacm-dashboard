@@ -40,7 +40,7 @@ import {
   X,
 } from "lucide-react";
 import type { Route } from "next";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   type CSSProperties,
   type FormEvent,
@@ -2044,9 +2044,11 @@ function AdminUsersTableSection({
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
+  const targetUsername = searchParams.get("username");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AdminUsersFilters>(
     emptyAdminUsersFilters
@@ -2231,6 +2233,20 @@ export default function AdminUsersPage() {
       setPage(totalPages);
     }
   }, [page, totalPages]);
+
+  useEffect(() => {
+    if (!(targetUsername && isAdmin && !usersQuery.isPending)) {
+      return;
+    }
+
+    const targetUser = users.find(
+      (currentUser) => currentUser.username === targetUsername
+    );
+
+    if (targetUser) {
+      setEditTargetUser(targetUser);
+    }
+  }, [isAdmin, targetUsername, users, usersQuery.isPending]);
 
   const shellAction = (
     <Button

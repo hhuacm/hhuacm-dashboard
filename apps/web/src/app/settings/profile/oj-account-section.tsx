@@ -15,41 +15,18 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Code2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { type FormEvent, type Key, useMemo, useState } from "react";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import {
+  getOjPlatformConfig,
+  isOjPlatform,
+  type OjPlatform,
+  ojPlatformConfigs,
+} from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
-
-const ojPlatformConfigs = [
-  {
-    iconSrc: "/oj-icons/luogu.png",
-    key: "luogu",
-    label: "洛谷",
-    name: "Luogu",
-  },
-  {
-    iconSrc: "/oj-icons/codeforces.svg",
-    key: "codeforces",
-    label: "Codeforces",
-    name: "Codeforces",
-  },
-  {
-    iconSrc: "/oj-icons/atcoder.png",
-    key: "atcoder",
-    label: "AtCoder",
-    name: "AtCoder",
-  },
-  {
-    iconSrc: "/oj-icons/nowcoder.png",
-    key: "nowcoder",
-    label: "牛客",
-    name: "Nowcoder",
-  },
-] as const;
-
-type OjPlatform = (typeof ojPlatformConfigs)[number]["key"];
 
 interface OjAccount {
   handle: string;
@@ -58,7 +35,9 @@ interface OjAccount {
 }
 
 interface OjAccountSectionProps {
-  username: null | string | undefined;
+  accounts: OjAccount[];
+  isError: boolean;
+  isLoading: boolean;
 }
 
 interface OjAccountMessage {
@@ -74,12 +53,6 @@ type AccountDialog =
       mode: "edit";
       platform: OjPlatform;
     };
-
-const getPlatformConfig = (platform: OjPlatform) =>
-  ojPlatformConfigs.find((config) => config.key === platform);
-
-const isOjPlatform = (value: string): value is OjPlatform =>
-  ojPlatformConfigs.some((config) => config.key === value);
 
 const getOriginalDialogHandle = (
   accountsByPlatform: Map<OjPlatform, OjAccount>,
@@ -155,10 +128,13 @@ function OjAccountHandle({ account }: { account: OjAccount | undefined }) {
   );
 }
 
-export function OjAccountSection({ username }: OjAccountSectionProps) {
+export function OjAccountSection({
+  accounts,
+  isError,
+  isLoading,
+}: OjAccountSectionProps) {
   const queryClient = useQueryClient();
-  const queryInput = { username: username ?? "" };
-  const queryKey = trpc.ojAccount.listByUsername.queryKey(queryInput);
+  const settingsProfileQueryKey = trpc.settings.profile.get.queryKey();
   const [dialog, setDialog] = useState<AccountDialog | null>(null);
   const [formPlatform, setFormPlatform] = useState<OjPlatform>("luogu");
   const [formHandle, setFormHandle] = useState("");
@@ -171,34 +147,28 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
     null
   );
 
-  const accountQuery = useQuery(
-    trpc.ojAccount.listByUsername.queryOptions(queryInput, {
-      enabled: Boolean(username),
-    })
-  );
-
   const accountsByPlatform = useMemo(() => {
     const nextAccounts = new Map<OjPlatform, OjAccount>();
 
-    for (const account of accountQuery.data?.accounts ?? []) {
+    for (const account of accounts) {
       nextAccounts.set(account.platform, account);
     }
 
     return nextAccounts;
-  }, [accountQuery.data?.accounts]);
+  }, [accounts]);
 
   const availablePlatforms = ojPlatformConfigs.filter(
     (config) => !accountsByPlatform.has(config.key)
   );
   const hasAvailablePlatform = availablePlatforms.length > 0;
-  const canAddAccount = Boolean(username && hasAvailablePlatform);
+  const canAddAccount = hasAvailablePlatform;
 
   const invalidateAccounts = async () => {
-    await queryClient.invalidateQueries({ queryKey });
+    await queryClient.invalidateQueries({ queryKey: settingsProfileQueryKey });
   };
 
   const addAccount = useMutation(
-    trpc.ojAccount.add.mutationOptions({
+    trpc.settings.ojAccount.add.mutationOptions({
       onError: (error) => {
         setDialogMessage({
           text: getOjAccountErrorMessage(error),
@@ -217,7 +187,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
   );
 
   const updateAccount = useMutation(
-    trpc.ojAccount.update.mutationOptions({
+    trpc.settings.ojAccount.update.mutationOptions({
       onError: (error) => {
         setDialogMessage({
           text: getOjAccountErrorMessage(error),
@@ -236,7 +206,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
   );
 
   const deleteAccount = useMutation(
-    trpc.ojAccount.delete.mutationOptions({
+    trpc.settings.ojAccount.delete.mutationOptions({
       onError: (error) => {
         setDeleteMessage({
           text: getOjAccountErrorMessage(error),
@@ -256,7 +226,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
 
   const isSaving = addAccount.isPending || updateAccount.isPending;
   const isBusy = isSaving || deleteAccount.isPending;
-  const dialogPlatformConfig = getPlatformConfig(formPlatform);
+  const dialogPlatformConfig = getOjPlatformConfig(formPlatform);
   const originalDialogHandle = getOriginalDialogHandle(
     accountsByPlatform,
     dialog
@@ -362,18 +332,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
           </Button>
         </Card.Header>
         <Card.Content className="grid gap-4">
-          {username ? null : (
-            <Alert>
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Description>
-                  当前账号缺少用户名，暂时不能维护 OJ 账号。
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
-          )}
-
-          {accountQuery.isPending && username ? (
+          {isLoading ? (
             <Alert>
               <Alert.Indicator />
               <Alert.Content>
@@ -382,12 +341,12 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
             </Alert>
           ) : null}
 
-          {accountQuery.isError ? (
+          {isError ? (
             <Alert status="danger">
               <Alert.Indicator />
               <Alert.Content>
                 <Alert.Description>
-                  {getOjAccountErrorMessage(accountQuery.error)}
+                  OJ 账号加载失败，请刷新页面重试。
                 </Alert.Description>
               </Alert.Content>
             </Alert>
@@ -473,7 +432,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                         </>
                       ) : (
                         <Button
-                          isDisabled={!username || isBusy}
+                          isDisabled={isBusy}
                           onPress={() => openAddDialog(platform.key)}
                           size="sm"
                           variant="secondary"
@@ -621,7 +580,7 @@ export function OjAccountSection({ username }: OjAccountSectionProps) {
                 <p>
                   将删除
                   {deleteTarget
-                    ? ` ${getPlatformConfig(deleteTarget.platform)?.label ?? deleteTarget.platform} `
+                    ? ` ${getOjPlatformConfig(deleteTarget.platform)?.label ?? deleteTarget.platform} `
                     : " "}
                   的账号记录。删除后可以重新添加。
                 </p>
