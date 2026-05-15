@@ -10,12 +10,14 @@
     }
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "import:ranklist-users": "bun src/scripts/import-ranklist-users.ts"
   },
   "dependencies": {
     "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "better-auth": "catalog:",
+    "drizzle-orm": "^0.45.1",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

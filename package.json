@@ -38,7 +38,8 @@
     "db:migrate": "turbo -F @hhuacm-dashboard/db db:migrate",
     "db:local": "turbo -F @hhuacm-dashboard/db db:local",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "import:ranklist-users": "bun run --cwd packages/auth import:ranklist-users"
   },
   "dependencies": {
     "@hhuacm-dashboard/env": "workspace:*",
