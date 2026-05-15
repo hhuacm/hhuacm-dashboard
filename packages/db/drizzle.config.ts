@@ -15,6 +15,7 @@ export default defineConfig({
     "./src/schema/auth.ts",
     "./src/schema/profile.ts",
     "./src/schema/oj-account.ts",
+    "./src/schema/codeforces-account-stats.ts",
   ],
   out: "./src/migrations",
   dialect: "turso",

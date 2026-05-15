@@ -11,12 +11,18 @@ import {
   userRelations,
   verification,
 } from "./schema/auth";
+import {
+  codeforcesAccountStats,
+  codeforcesAccountStatsRelations,
+} from "./schema/codeforces-account-stats";
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import { userProfile, userProfileRelations } from "./schema/profile";
 
 const schema = {
   account,
   accountRelations,
+  codeforcesAccountStats,
+  codeforcesAccountStatsRelations,
   session,
   sessionRelations,
   user,

@@ -4,6 +4,7 @@ import { Alert, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CircleAlert,
   ExternalLink,
   LayoutDashboard,
   Settings,
@@ -14,6 +15,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { AppShell } from "@/components/app-shell";
+import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
 import { getOjPlatformConfig, type OjPlatform } from "@/utils/oj-platforms";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
@@ -51,6 +53,18 @@ interface PublicInfoItemProps {
 }
 
 interface PublicOjAccount {
+  codeforces?: null | {
+    acceptedProblemCount: null | number;
+    acceptedProblemCountInMonth: null | number;
+    fetchedAt: null | string;
+    handle: string;
+    lastAttemptedAt: string;
+    lastError: null | string;
+    lastOnlineAt: null | string;
+    maxRating: null | number;
+    rating: null | number;
+    syncStatus: "failed" | "ready";
+  };
   handle: string;
   platform: OjPlatform;
   profileUrl: string;
@@ -83,48 +97,152 @@ function PublicInfoItem({ label, value }: PublicInfoItemProps) {
   );
 }
 
+function formatNumber(value: null | number) {
+  return value === null ? "—" : value.toLocaleString("zh-CN");
+}
+
+function formatDateTime(value: null | string) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function CodeforcesMetric({
+  label,
+  value,
+  valueClassName = "text-foreground",
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+      <dt className="text-muted text-xs">{label}</dt>
+      <dd
+        className={`mt-1 font-semibold text-lg leading-snug ${valueClassName}`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function CodeforcesRatingMetric({
+  label,
+  rating,
+}: {
+  label: string;
+  rating: null | number;
+}) {
+  return (
+    <CodeforcesMetric
+      label={label}
+      value={formatNumber(rating)}
+      valueClassName={getCodeforcesRatingClassName(rating)}
+    />
+  );
+}
+
 function OjAccountCard({ account }: { account: PublicOjAccount }) {
   const platform = getOjPlatformConfig(account.platform);
+  const isCodeforces = account.platform === "codeforces";
+  const codeforces = account.codeforces;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-default">
-          {platform ? (
-            <Image
-              alt={`${platform.label} logo`}
-              className="size-6 object-contain"
-              height={24}
-              src={platform.iconSrc}
-              width={24}
-            />
-          ) : (
-            <UserRound className="size-5 text-accent" />
-          )}
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-default">
+            {platform ? (
+              <Image
+                alt={`${platform.label} logo`}
+                className="size-6 object-contain"
+                height={24}
+                src={platform.iconSrc}
+                width={24}
+              />
+            ) : (
+              <UserRound className="size-5 text-accent" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium text-foreground">
+              {platform?.label ?? account.platform}
+            </p>
+            {isCodeforces && codeforces?.syncStatus === "failed" ? (
+              <p className="mt-1 inline-flex items-center gap-1 text-danger text-sm">
+                <CircleAlert className="size-3.5" />
+                刷新失败
+              </p>
+            ) : null}
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="font-medium text-foreground">
-            {platform?.label ?? account.platform}
-          </p>
-          <p className="text-muted text-sm">{platform?.name ?? "OJ"}</p>
-        </div>
+
+        {account.profileUrl ? (
+          <a
+            className={`inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline ${
+              isCodeforces
+                ? getCodeforcesRatingClassName(codeforces?.rating)
+                : "text-accent"
+            }`}
+            href={account.profileUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>{codeforces?.handle ?? account.handle}</span>
+            <ExternalLink className="size-4 shrink-0" />
+          </a>
+        ) : (
+          <span className="break-all font-medium text-foreground">
+            {codeforces?.handle ?? account.handle}
+          </span>
+        )}
       </div>
 
-      {account.profileUrl ? (
-        <a
-          className="inline-flex min-w-0 items-center gap-2 break-all font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
-          href={account.profileUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <span>{account.handle}</span>
-          <ExternalLink className="size-4 shrink-0" />
-        </a>
-      ) : (
-        <span className="break-all font-medium text-foreground">
-          {account.handle}
-        </span>
-      )}
+      {isCodeforces ? (
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <CodeforcesRatingMetric
+            label="当前 Rating"
+            rating={codeforces?.rating ?? null}
+          />
+          <CodeforcesRatingMetric
+            label="最高 Rating"
+            rating={codeforces?.maxRating ?? null}
+          />
+          <CodeforcesMetric
+            label="AC 题数"
+            value={formatNumber(codeforces?.acceptedProblemCount ?? null)}
+          />
+          <CodeforcesMetric
+            label="近 30 天 AC"
+            value={formatNumber(
+              codeforces?.acceptedProblemCountInMonth ?? null
+            )}
+          />
+          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
+            <dt className="text-muted text-xs">最近活跃</dt>
+            <dd className="mt-1 font-medium text-foreground">
+              {formatDateTime(codeforces?.lastOnlineAt ?? null)}
+            </dd>
+          </div>
+          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
+            <dt className="text-muted text-xs">数据更新</dt>
+            <dd className="mt-1 font-medium text-foreground">
+              {formatDateTime(codeforces?.fetchedAt ?? null)}
+            </dd>
+          </div>
+        </dl>
+      ) : null}
     </div>
   );
 }

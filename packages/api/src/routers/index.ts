@@ -31,6 +31,11 @@ import {
   publicProcedure,
   router,
 } from "../index";
+import {
+  deleteCodeforcesStats,
+  getFreshCodeforcesStats,
+  type PublicCodeforcesStats,
+} from "../services/codeforces";
 
 const serverStartedAt = new Date();
 const defaultMemberStatus = memberStatuses[0];
@@ -115,6 +120,13 @@ interface AdminUserOjAccount {
   profileUrl: string;
 }
 
+interface PublicOjAccount {
+  codeforces?: PublicCodeforcesStats | null;
+  handle: string;
+  platform: (typeof ojPlatforms)[number];
+  profileUrl: string;
+}
+
 const adminMemberStatusLabels = {
   active: "服役中",
   frozen: "已冻结",
@@ -182,6 +194,11 @@ const ojAccountFields = {
   handle: userOjAccount.handle,
   platform: userOjAccount.platform,
   profileUrl: userOjAccount.profileUrl,
+} as const;
+
+const internalOjAccountFields = {
+  id: userOjAccount.id,
+  ...ojAccountFields,
 } as const;
 
 const ojPlatformSchema = z.enum(ojPlatforms);
@@ -304,6 +321,45 @@ const listOjAccountsByUserId = (db: Context["db"], userId: string) =>
     .from(userOjAccount)
     .where(eq(userOjAccount.userId, userId))
     .orderBy(asc(userOjAccount.platform));
+
+const listInternalOjAccountsByUserId = (db: Context["db"], userId: string) =>
+  db
+    .select(internalOjAccountFields)
+    .from(userOjAccount)
+    .where(eq(userOjAccount.userId, userId))
+    .orderBy(asc(userOjAccount.platform));
+
+const attachPublicOjAccountData = async (
+  db: Context["db"],
+  accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>
+): Promise<PublicOjAccount[]> => {
+  const publicAccounts: PublicOjAccount[] = [];
+
+  for (const account of accounts) {
+    const publicAccount: PublicOjAccount = {
+      handle: account.handle,
+      platform: account.platform,
+      profileUrl: account.profileUrl,
+    };
+
+    if (account.platform === "codeforces") {
+      publicAccount.codeforces = await getFreshCodeforcesStats(db, account);
+    }
+
+    publicAccounts.push(publicAccount);
+  }
+
+  return publicAccounts;
+};
+
+const clearCodeforcesStatsIfNeeded = async (
+  db: Context["db"],
+  account: { id: string; platform: (typeof ojPlatforms)[number] }
+) => {
+  if (account.platform === "codeforces") {
+    await deleteCodeforcesStats(db, account.id);
+  }
+};
 
 const buildLuoguProfileUrl = async (handle: string) => {
   try {
@@ -739,7 +795,7 @@ export const appRouter = router({
           }
 
           const [existingAccount] = await ctx.db
-            .select(ojAccountFields)
+            .select(internalOjAccountFields)
             .from(userOjAccount)
             .where(
               and(
@@ -764,13 +820,19 @@ export const appRouter = router({
                   eq(userOjAccount.platform, input.platform)
                 )
               )
-              .returning(ojAccountFields);
+              .returning(internalOjAccountFields);
 
             if (!account) {
               throw new TRPCError({ code: "NOT_FOUND" });
             }
 
-            return account;
+            await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+            return {
+              handle: account.handle,
+              platform: account.platform,
+              profileUrl: account.profileUrl,
+            };
           }
 
           const [account] = await ctx.db
@@ -782,13 +844,19 @@ export const appRouter = router({
               profileUrl,
               userId: input.userId,
             })
-            .returning(ojAccountFields);
+            .returning(internalOjAccountFields);
 
           if (!account) {
             throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           }
 
-          return account;
+          await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+          return {
+            handle: account.handle,
+            platform: account.platform,
+            profileUrl: account.profileUrl,
+          };
         }),
       deleteOjAccount: adminProcedure
         .input(adminUserOjAccountDeleteInputSchema)
@@ -803,7 +871,7 @@ export const appRouter = router({
                 eq(userOjAccount.platform, input.platform)
               )
             )
-            .returning(ojAccountFields);
+            .returning(internalOjAccountFields);
 
           if (!account) {
             throw new TRPCError({
@@ -812,7 +880,13 @@ export const appRouter = router({
             });
           }
 
-          return account;
+          await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+          return {
+            handle: account.handle,
+            platform: account.platform,
+            profileUrl: account.profileUrl,
+          };
         }),
     }),
   }),
@@ -825,7 +899,10 @@ export const appRouter = router({
           input.username
         );
         const profile = await getProfileByUserId(ctx.db, targetUser.id);
-        const ojAccounts = await listOjAccountsByUserId(ctx.db, targetUser.id);
+        const ojAccounts = await attachPublicOjAccountData(
+          ctx.db,
+          await listInternalOjAccountsByUserId(ctx.db, targetUser.id)
+        );
         const currentUserId = ctx.session?.user.id ?? null;
         const currentUser = currentUserId
           ? (
@@ -957,13 +1034,19 @@ export const appRouter = router({
               profileUrl,
               userId: ctx.session.user.id,
             })
-            .returning(ojAccountFields);
+            .returning(internalOjAccountFields);
 
           if (!account) {
             throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
           }
 
-          return account;
+          await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+          return {
+            handle: account.handle,
+            platform: account.platform,
+            profileUrl: account.profileUrl,
+          };
         }),
       update: protectedProcedure
         .input(ojAccountInputSchema)
@@ -1024,13 +1107,19 @@ export const appRouter = router({
                 eq(userOjAccount.platform, input.platform)
               )
             )
-            .returning(ojAccountFields);
+            .returning(internalOjAccountFields);
 
           if (!account) {
             throw new TRPCError({ code: "NOT_FOUND" });
           }
 
-          return account;
+          await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+          return {
+            handle: account.handle,
+            platform: account.platform,
+            profileUrl: account.profileUrl,
+          };
         }),
       delete: protectedProcedure
         .input(ojAccountPlatformInputSchema)
@@ -1043,7 +1132,7 @@ export const appRouter = router({
                 eq(userOjAccount.platform, input.platform)
               )
             )
-            .returning(ojAccountFields);
+            .returning(internalOjAccountFields);
 
           if (!account) {
             throw new TRPCError({
@@ -1052,7 +1141,13 @@ export const appRouter = router({
             });
           }
 
-          return account;
+          await clearCodeforcesStatsIfNeeded(ctx.db, account);
+
+          return {
+            handle: account.handle,
+            platform: account.platform,
+            profileUrl: account.profileUrl,
+          };
         }),
     }),
   }),
