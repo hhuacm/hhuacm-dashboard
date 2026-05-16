@@ -2,7 +2,7 @@
 
 import { Button, Card, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BadgeCheck, UserRound } from "lucide-react";
+import { BadgeCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -52,13 +52,6 @@ export default function ProfileSettingsPage() {
     }
   };
 
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
-
   useEffect(() => {
     if (!(session.isPending || user)) {
       router.replace("/login?redirect=/settings/profile");
@@ -68,7 +61,6 @@ export default function ProfileSettingsPage() {
   if (session.isPending) {
     return (
       <AppShell
-        action={shellAction}
         description="维护账号资料与 OJ 绑定"
         icon={<UserRound className="size-4" />}
         maxWidth="5xl"
@@ -98,7 +90,6 @@ export default function ProfileSettingsPage() {
   if (!user) {
     return (
       <AppShell
-        action={shellAction}
         description="维护账号资料与 OJ 绑定"
         icon={<UserRound className="size-4" />}
         maxWidth="5xl"
@@ -136,7 +127,6 @@ export default function ProfileSettingsPage() {
 
   return (
     <AppShell
-      action={shellAction}
       description="维护账号资料与 OJ 绑定"
       icon={<UserRound className="size-4" />}
       maxWidth="5xl"

@@ -2,7 +2,7 @@
 
 import { Alert, Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, UsersRound } from "lucide-react";
+import { LayoutDashboard, UsersRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -51,16 +51,8 @@ export default function AdminPage() {
     }
   }, [isMember, router, session.isPending, user]);
 
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
-
   return (
     <AppShell
-      action={shellAction}
       description="管理员控制台"
       icon={<LayoutDashboard className="size-4" />}
       maxWidth="4xl"

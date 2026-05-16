@@ -205,7 +205,7 @@ export function ColumnVisibilityMenu<ColumnId extends string>({
           </div>
           <CheckboxGroup
             aria-label="可见列"
-            className="grid gap-2"
+            className="grid gap-2 pb-4"
             onChange={handleChange}
             value={[...visibleColumnIds]}
           >

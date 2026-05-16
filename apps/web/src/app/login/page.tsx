@@ -11,7 +11,7 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import { ArrowLeft, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -58,13 +58,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -119,7 +112,6 @@ export default function LoginPage() {
 
   return (
     <AppShell
-      action={shellAction}
       description="账号与个人资料入口"
       icon={<UserRound className="size-4" />}
       maxWidth="4xl"

@@ -3,7 +3,6 @@
 import { Alert, Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   CircleAlert,
   ExternalLink,
   LayoutDashboard,
@@ -320,16 +319,8 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
     profile?.permissions.isAdmin && !profile.permissions.isOwner
   );
 
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
-
   return (
     <AppShell
-      action={shellAction}
       icon={<UserRound className="size-4" />}
       maxWidth="5xl"
       title="个人主页"

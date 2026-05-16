@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Button, Card, Spinner } from "@heroui/react";
-import { ArrowLeft, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -29,17 +29,9 @@ export default function ProfileRedirectPage() {
     }
   }, [router, session.isPending, user, username]);
 
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
-
   if (!(session.isPending || username || !user)) {
     return (
       <AppShell
-        action={shellAction}
         description="打开公开个人主页"
         icon={<UserRound className="size-4" />}
         maxWidth="4xl"
@@ -68,7 +60,6 @@ export default function ProfileRedirectPage() {
 
   return (
     <AppShell
-      action={shellAction}
       description="打开公开个人主页"
       icon={<UserRound className="size-4" />}
       maxWidth="4xl"

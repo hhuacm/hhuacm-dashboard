@@ -1,31 +1,14 @@
 "use client";
 
-import {
-  Alert,
-  Button,
-  Card,
-  Chip,
-  Dropdown,
-  Label,
-  Separator,
-} from "@heroui/react";
+import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  Sparkles,
-  UserRound,
-} from "lucide-react";
+import { Sparkles, Trophy } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type Key, type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
-
-const USERNAME_VISIBLE_LENGTH = 20;
 
 const healthChipColor = {
   danger: "danger",
@@ -40,13 +23,6 @@ interface HealthDetail {
   label: string;
   mono?: boolean;
   value: ReactNode;
-}
-
-interface AccountMenuProps {
-  displayName: string;
-  isAdmin: boolean;
-  onLogout: () => Promise<void>;
-  username: null | string | undefined;
 }
 
 interface HomeInfoItemProps {
@@ -94,14 +70,6 @@ const getHealthTone = (isLoading: boolean, isError: boolean) => {
   return "success" as const;
 };
 
-const formatDisplayName = (username: string) => {
-  if (username.length <= USERNAME_VISIBLE_LENGTH) {
-    return username;
-  }
-
-  return `${username.slice(0, USERNAME_VISIBLE_LENGTH)}…`;
-};
-
 const formatCheckedAt = (checkedAt: string | undefined) => {
   if (!checkedAt) {
     return "-";
@@ -137,84 +105,6 @@ const formatUptime = (uptimeMs: number | undefined) => {
 
   return `${seconds} 秒`;
 };
-
-function AccountMenu({
-  displayName,
-  isAdmin,
-  onLogout,
-  username,
-}: AccountMenuProps) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-
-  const handleLogout = () => {
-    setOpen(false);
-    onLogout().catch(() => undefined);
-  };
-
-  const handleAction = (key: Key) => {
-    if (key === "profile") {
-      setOpen(false);
-      router.push(username ? (`/profile/${username}` as Route) : "/profile");
-      return;
-    }
-
-    if (key === "settings") {
-      setOpen(false);
-      router.push("/settings/profile" as Route);
-      return;
-    }
-
-    if (key === "admin") {
-      setOpen(false);
-      router.push("/admin" as Route);
-      return;
-    }
-
-    if (key === "logout") {
-      handleLogout();
-    }
-  };
-
-  return (
-    <Dropdown isOpen={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
-      <Button
-        aria-label="打开账号菜单"
-        className="max-w-56 justify-start"
-        size="lg"
-        variant="outline"
-      >
-        <UserRound className="size-4" />
-        <span className="max-w-44 overflow-hidden text-ellipsis">
-          {displayName}
-        </span>
-      </Button>
-      <Dropdown.Popover className="min-w-44" placement="bottom end">
-        <Dropdown.Menu onAction={handleAction}>
-          <Dropdown.Item id="profile" textValue="个人主页">
-            <UserRound className="size-4" />
-            <Label>个人主页</Label>
-          </Dropdown.Item>
-          <Dropdown.Item id="settings" textValue="资料设置">
-            <Settings className="size-4" />
-            <Label>资料设置</Label>
-          </Dropdown.Item>
-          {isAdmin ? (
-            <Dropdown.Item id="admin" textValue="管理面板">
-              <LayoutDashboard className="size-4" />
-              <Label>管理面板</Label>
-            </Dropdown.Item>
-          ) : null}
-          <Separator />
-          <Dropdown.Item id="logout" textValue="注销" variant="danger">
-            <LogOut className="size-4" />
-            <Label>注销</Label>
-          </Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown.Popover>
-    </Dropdown>
-  );
-}
 
 function HomeInfoItem({ label, mono = false, value }: HomeInfoItemProps) {
   return (
@@ -333,58 +223,56 @@ function ServiceHealthCard({
   );
 }
 
-export default function Home() {
+function QuickLinksCard() {
   const router = useRouter();
+
+  return (
+    <Card>
+      <Card.Header>
+        <div>
+          <Card.Description>常用入口</Card.Description>
+          <Card.Title className="mt-1">公开榜单</Card.Title>
+        </div>
+      </Card.Header>
+      <Card.Content className="grid gap-4">
+        <Button
+          className="justify-start"
+          onPress={() => router.push("/rank/codeforces" as Route)}
+          size="lg"
+          variant="outline"
+        >
+          <Trophy className="size-4" />
+          Codeforces 排行榜
+        </Button>
+      </Card.Content>
+    </Card>
+  );
+}
+
+export default function Home() {
   const health = useQuery(trpc.health.queryOptions());
   const dashboardSummary = useQuery(trpc.dashboard.summary.queryOptions());
-  const session = authClient.useSession();
-  const user = session.data?.user ?? null;
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-    })
-  );
-  const displayUsername = user ? getPreferredUsername(user) : "";
-  const isAdmin = accountMe.data?.role === "admin";
   const status = getHealthStatus(health.isLoading, health.isError);
   const healthTone = getHealthTone(health.isLoading, health.isError);
 
-  const handleLogout = async () => {
-    await authClient.signOut();
-    await session.refetch();
-  };
-
-  const headerAction = user ? (
-    <AccountMenu
-      displayName={formatDisplayName(displayUsername)}
-      isAdmin={isAdmin}
-      onLogout={handleLogout}
-      username={user.username}
-    />
-  ) : (
-    <div className="flex items-center gap-2">
-      <Button onPress={() => router.push("/login")} variant="ghost">
-        登录
-      </Button>
-      <Button onPress={() => router.push("/register")}>注册</Button>
-    </div>
-  );
-
   return (
     <AppShell
-      action={headerAction}
       description="队务工作台"
       icon={<Sparkles className="size-4" />}
       title="HHUACM Dashboard"
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <TeamSummaryCard
-          activeUsers={dashboardSummary.data?.activeUsers ?? 0}
-          isError={dashboardSummary.isError}
-          isLoading={dashboardSummary.isLoading}
-          selectionUsers={dashboardSummary.data?.selectionUsers ?? 0}
-          totalUsers={dashboardSummary.data?.totalUsers ?? 0}
-        />
+        <div className="grid gap-6">
+          <TeamSummaryCard
+            activeUsers={dashboardSummary.data?.activeUsers ?? 0}
+            isError={dashboardSummary.isError}
+            isLoading={dashboardSummary.isLoading}
+            selectionUsers={dashboardSummary.data?.selectionUsers ?? 0}
+            totalUsers={dashboardSummary.data?.totalUsers ?? 0}
+          />
+
+          <QuickLinksCard />
+        </div>
 
         <ServiceHealthCard
           details={[

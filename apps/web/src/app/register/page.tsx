@@ -16,7 +16,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type Key, useState } from "react";
@@ -150,13 +150,6 @@ export default function RegisterPage() {
     trpc.settings.profile.update.mutationOptions()
   );
 
-  const shellAction = (
-    <Button onPress={() => router.push("/")} size="sm" variant="outline">
-      <ArrowLeft className="size-4" />
-      返回首页
-    </Button>
-  );
-
   const handleProfileInputChange = (field: ProfileFieldKey, value: string) => {
     setProfileFormValues((currentValues) => ({
       ...currentValues,
@@ -228,7 +221,6 @@ export default function RegisterPage() {
 
   return (
     <AppShell
-      action={shellAction}
       description="账号与个人资料入口"
       icon={<UserRound className="size-4" />}
       maxWidth="4xl"
