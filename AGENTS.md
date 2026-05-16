@@ -1,126 +1,55 @@
-# Ultracite Code Standards
+# 项目协作准则
 
-This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.
+本项目使用 **Ultracite** 做格式化和静态检查。
 
-## Quick Reference
+## 常用命令
 
-- **Format code**: `bun x ultracite fix`
-- **Check for issues**: `bun x ultracite check`
-- **Diagnose setup**: `bun x ultracite doctor`
+- 格式化并自动修复：`bun x ultracite fix`
+- 检查代码问题：`bun x ultracite check`
+- 检查类型：`bun run check-types`
 
-Biome (the underlying engine) provides robust linting and formatting. Most issues are automatically fixable.
+## 架构取舍
 
----
+本项目长期处于测试状态，代码编写以架构本身的优雅和完整性作为第一优先级。不要为了兼容旧实现、历史数据、未来迁移或假想部署形态增加代码；如果需要改变结构，直接改到当前最清晰的形态。
 
-## Core Principles
+架构优雅的核心是阅读轻松、简单、易于理解。命名、文件边界、数据流和函数职责应该让人可以顺着普通流程一眼读懂。性能、复用、扩展性和异常场景处理都必须让位于清晰明了的架构。
 
-Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
+如果一个内容眼下没有用到，或者没有被明确说明马上就要使用，就不要写。不要提前添加抽象、配置项、兼容层、调度策略、重试策略、迁移兜底或“以后可能用得上”的字段。
 
-### Type Safety & Explicitness
+## 编码要求
 
-- Use explicit types for function parameters and return values when they enhance clarity
-- Prefer `unknown` over `any` when the type is genuinely unknown
-- Use const assertions (`as const`) for immutable values and literal types
-- Leverage TypeScript's type narrowing instead of type assertions
-- Use meaningful variable names instead of magic numbers - extract constants with descriptive names
+- 优先表达业务流程，不优先表达技术技巧。
+- 保持函数职责单一，避免把多个阶段揉进同一个函数。
+- 使用有意义的命名，避免魔法值。
+- 默认使用 `const`，只有需要重新赋值时使用 `let`，不要使用 `var`。
+- 使用 `async/await`，不要混用不必要的 Promise 链。
+- 避免 `any`；确实未知时使用 `unknown`。
+- 不写无用注释；只有复杂逻辑确实需要解释时才补充简短注释。
+- 删除未使用的代码、字段、配置和测试。
 
-### Modern JavaScript/TypeScript
+## React 与前端
 
-- Use arrow functions for callbacks and short functions
-- Prefer `for...of` loops over `.forEach()` and indexed `for` loops
-- Use optional chaining (`?.`) and nullish coalescing (`??`) for safer property access
-- Prefer template literals over string concatenation
-- Use destructuring for object and array assignments
-- Use `const` by default, `let` only when reassignment is needed, never `var`
+- 使用函数组件。
+- Hook 只在组件顶层调用。
+- 列表渲染使用稳定且唯一的 `key`。
+- 使用语义化 HTML。
+- 图片使用 Next.js `<Image>`。
+- 页面和组件应优先清楚表达当前业务状态，不为未实现的状态预留 UI。
 
-### Async & Promises
+## 测试
 
-- Always `await` promises in async functions - don't forget to use the return value
-- Use `async/await` syntax instead of promise chains for better readability
-- Handle errors appropriately in async code with try-catch blocks
-- Don't use async functions as Promise executors
+- 测试应说明当前真实行为，不为未来计划写测试。
+- 使用 `async/await`，不要使用 done callback。
+- 不提交 `.only` 或 `.skip`。
+- 测试结构保持扁平，避免过度嵌套。
 
-### React & JSX
+## 提交前
 
-- Use function components over class components
-- Call hooks at the top level only, never conditionally
-- Specify all dependencies in hook dependency arrays correctly
-- Use the `key` prop for elements in iterables (prefer unique IDs over array indices)
-- Nest children between opening and closing tags instead of passing as props
-- Don't define components inside other components
-- Use semantic HTML and ARIA attributes for accessibility:
-  - Provide meaningful alt text for images
-  - Use proper heading hierarchy
-  - Add labels for form inputs
-  - Include keyboard event handlers alongside mouse events
-  - Use semantic elements (`<button>`, `<nav>`, etc.) instead of divs with roles
+运行：
 
-### Error Handling & Debugging
+```bash
+bun run check-types
+bun x ultracite check
+```
 
-- Remove `console.log`, `debugger`, and `alert` statements from production code
-- Throw `Error` objects with descriptive messages, not strings or other values
-- Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
-- Prefer early returns over nested conditionals for error cases
-
-### Code Organization
-
-- Keep functions focused and under reasonable cognitive complexity limits
-- Extract complex conditions into well-named boolean variables
-- Use early returns to reduce nesting
-- Prefer simple conditionals over nested ternary operators
-- Group related code together and separate concerns
-
-### Security
-
-- Add `rel="noopener"` when using `target="_blank"` on links
-- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
-- Don't use `eval()` or assign directly to `document.cookie`
-- Validate and sanitize user input
-
-### Performance
-
-- Avoid spread syntax in accumulators within loops
-- Use top-level regex literals instead of creating them in loops
-- Prefer specific imports over namespace imports
-- Avoid barrel files (index files that re-export everything)
-- Use proper image components (e.g., Next.js `<Image>`) over `<img>` tags
-
-### Framework-Specific Guidance
-
-**Next.js:**
-
-- Use Next.js `<Image>` component for images
-- Use `next/head` or App Router metadata API for head elements
-- Use Server Components for async data fetching instead of async Client Components
-
-**React 19+:**
-
-- Use ref as a prop instead of `React.forwardRef`
-
-**Solid/Svelte/Vue/Qwik:**
-
-- Use `class` and `for` attributes (not `className` or `htmlFor`)
-
----
-
-## Testing
-
-- Write assertions inside `it()` or `test()` blocks
-- Avoid done callbacks in async tests - use async/await instead
-- Don't use `.only` or `.skip` in committed code
-- Keep test suites reasonably flat - avoid excessive `describe` nesting
-
-## When Biome Can't Help
-
-Biome's linter will catch most issues automatically. Focus your attention on:
-
-1. **Business logic correctness** - Biome can't validate your algorithms
-2. **Meaningful naming** - Use descriptive names for functions, variables, and types
-3. **Architecture decisions** - Component structure, data flow, and API design
-4. **Edge cases** - Handle boundary conditions and error states
-5. **User experience** - Accessibility, performance, and usability considerations
-6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
-
----
-
-Most formatting and common issues are automatically fixed by Biome. Run `bun x ultracite fix` before committing to ensure compliance.
+如果修改了具体服务或组件，额外运行对应的测试。
