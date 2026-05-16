@@ -17,12 +17,15 @@ import {
 } from "./schema/codeforces-account-stats";
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import { userProfile, userProfileRelations } from "./schema/profile";
+import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
 
 const schema = {
   account,
   accountRelations,
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
+  refreshJob,
+  refreshJobRelations,
   session,
   sessionRelations,
   user,

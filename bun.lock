@@ -87,6 +87,7 @@
       },
       "devDependencies": {
         "@hhuacm-dashboard/config": "workspace:*",
+        "@libsql/client": "0.15.15",
         "hono": "catalog:",
         "typescript": "catalog:",
       },

@@ -33,9 +33,13 @@ import {
 } from "../index";
 import {
   deleteCodeforcesStats,
-  getFreshCodeforcesStats,
+  getCodeforcesStatsForProfile,
 } from "../services/codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "../services/codeforces/types";
+import {
+  deleteCodeforcesAccountStatsRefreshJob,
+  enqueueCodeforcesAccountStatsRefresh,
+} from "../services/refresh/queue";
 
 const serverStartedAt = new Date();
 const defaultMemberStatus = memberStatuses[0];
@@ -343,7 +347,10 @@ const attachPublicOjAccountData = async (
     };
 
     if (account.platform === "codeforces") {
-      publicAccount.codeforces = await getFreshCodeforcesStats(db, account);
+      publicAccount.codeforces = await getCodeforcesStatsForProfile(
+        db,
+        account
+      );
     }
 
     publicAccounts.push(publicAccount);
@@ -358,6 +365,16 @@ const clearCodeforcesStatsIfNeeded = async (
 ) => {
   if (account.platform === "codeforces") {
     await deleteCodeforcesStats(db, account.id);
+    await deleteCodeforcesAccountStatsRefreshJob(db, account.id);
+  }
+};
+
+const enqueueCodeforcesStatsIfNeeded = async (
+  db: Context["db"],
+  account: { id: string; platform: (typeof ojPlatforms)[number] }
+) => {
+  if (account.platform === "codeforces") {
+    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
   }
 };
 
@@ -718,6 +735,15 @@ export const appRouter = router({
             });
           }
 
+          const targetOjAccounts = await listInternalOjAccountsByUserId(
+            ctx.db,
+            input.userId
+          );
+
+          for (const account of targetOjAccounts) {
+            await clearCodeforcesStatsIfNeeded(ctx.db, account);
+          }
+
           const [deletedUser] = await ctx.db
             .delete(user)
             .where(eq(user.id, input.userId))
@@ -827,6 +853,7 @@ export const appRouter = router({
             }
 
             await clearCodeforcesStatsIfNeeded(ctx.db, account);
+            await enqueueCodeforcesStatsIfNeeded(ctx.db, account);
 
             return {
               handle: account.handle,
@@ -851,6 +878,7 @@ export const appRouter = router({
           }
 
           await clearCodeforcesStatsIfNeeded(ctx.db, account);
+          await enqueueCodeforcesStatsIfNeeded(ctx.db, account);
 
           return {
             handle: account.handle,
@@ -1041,6 +1069,7 @@ export const appRouter = router({
           }
 
           await clearCodeforcesStatsIfNeeded(ctx.db, account);
+          await enqueueCodeforcesStatsIfNeeded(ctx.db, account);
 
           return {
             handle: account.handle,
@@ -1114,6 +1143,7 @@ export const appRouter = router({
           }
 
           await clearCodeforcesStatsIfNeeded(ctx.db, account);
+          await enqueueCodeforcesStatsIfNeeded(ctx.db, account);
 
           return {
             handle: account.handle,

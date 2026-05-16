@@ -8,12 +8,13 @@ export interface PublicCodeforcesStats {
   acceptedProblemCountInMonth: null | number;
   fetchedAt: null | string;
   handle: string;
+  isStale: boolean;
   lastAttemptedAt: string;
   lastError: null | string;
   lastOnlineAt: null | string;
   maxRating: null | number;
   rating: null | number;
-  syncStatus: "failed" | "ready";
+  syncStatus: "empty" | "failed" | "ready" | "refreshing";
 }
 
 export interface CodeforcesProblemSummary {

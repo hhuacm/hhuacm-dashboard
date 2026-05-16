@@ -58,12 +58,13 @@ interface PublicOjAccount {
     acceptedProblemCountInMonth: null | number;
     fetchedAt: null | string;
     handle: string;
+    isStale: boolean;
     lastAttemptedAt: string;
     lastError: null | string;
     lastOnlineAt: null | string;
     maxRating: null | number;
     rating: null | number;
-    syncStatus: "failed" | "ready";
+    syncStatus: "empty" | "failed" | "ready" | "refreshing";
   };
   handle: string;
   platform: OjPlatform;
@@ -153,6 +154,38 @@ function CodeforcesRatingMetric({
   );
 }
 
+function getCodeforcesStatusText(
+  codeforces: PublicOjAccount["codeforces"] | undefined
+) {
+  if (!codeforces || codeforces.syncStatus === "empty") {
+    return "等待刷新";
+  }
+
+  if (codeforces.syncStatus === "refreshing") {
+    return codeforces.fetchedAt ? "后台刷新中" : "等待刷新";
+  }
+
+  if (codeforces.syncStatus === "failed") {
+    return codeforces.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
+  }
+
+  return codeforces.isStale ? "数据待刷新" : "数据已更新";
+}
+
+function getCodeforcesStatusClassName(
+  codeforces: PublicOjAccount["codeforces"] | undefined
+) {
+  if (codeforces?.syncStatus === "failed") {
+    return "text-danger";
+  }
+
+  if (codeforces?.syncStatus === "refreshing" || codeforces?.isStale) {
+    return "text-accent";
+  }
+
+  return "text-muted";
+}
+
 function OjAccountCard({ account }: { account: PublicOjAccount }) {
   const platform = getOjPlatformConfig(account.platform);
   const isCodeforces = account.platform === "codeforces";
@@ -179,10 +212,16 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
             <p className="font-medium text-foreground">
               {platform?.label ?? account.platform}
             </p>
-            {isCodeforces && codeforces?.syncStatus === "failed" ? (
-              <p className="mt-1 inline-flex items-center gap-1 text-danger text-sm">
-                <CircleAlert className="size-3.5" />
-                刷新失败
+            {isCodeforces ? (
+              <p
+                className={`mt-1 inline-flex items-center gap-1 text-sm ${getCodeforcesStatusClassName(
+                  codeforces
+                )}`}
+              >
+                {codeforces?.syncStatus === "failed" ? (
+                  <CircleAlert className="size-3.5" />
+                ) : null}
+                {getCodeforcesStatusText(codeforces)}
               </p>
             ) : null}
           </div>
@@ -239,6 +278,17 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
             <dt className="text-muted text-xs">数据更新</dt>
             <dd className="mt-1 font-medium text-foreground">
               {formatDateTime(codeforces?.fetchedAt ?? null)}
+            </dd>
+          </div>
+          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2 lg:col-span-4">
+            <dt className="text-muted text-xs">刷新状态</dt>
+            <dd
+              className={`wrap-break-word mt-1 font-medium ${getCodeforcesStatusClassName(
+                codeforces
+              )}`}
+            >
+              {getCodeforcesStatusText(codeforces)}
+              {codeforces?.lastError ? `：${codeforces.lastError}` : ""}
             </dd>
           </div>
         </dl>

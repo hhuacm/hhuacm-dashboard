@@ -2,13 +2,12 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { fetchCodeforcesSubmissions, fetchCodeforcesUserInfo } from "./api";
-import { summarizeAcceptedProblems } from "./summary";
+import { refreshDefaults } from "../refresh/constants";
+import {
+  enqueueCodeforcesAccountStatsRefresh,
+  getRefreshJobForCodeforcesAccount,
+} from "../refresh/queue";
 import type { CodeforcesAccount, PublicCodeforcesStats } from "./types";
-
-const statsTtlMs = 30 * 60 * 1000;
-const oneMonthSeconds = 30 * 24 * 60 * 60;
-const maxErrorLength = 500;
 
 type Database = Context["db"];
 
@@ -27,11 +26,6 @@ const codeforcesStatsFields = {
 } as const;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown Codeforces sync error";
-
-const truncateError = (message: string) => message.slice(0, maxErrorLength);
 
 const getCodeforcesStats = async (db: Database, accountId: string) =>
   (
@@ -55,136 +49,98 @@ const isFreshCodeforcesStats = (
     return false;
   }
 
-  return now.getTime() - stats.fetchedAt.getTime() < statsTtlMs;
+  return (
+    now.getTime() - stats.fetchedAt.getTime() <
+    refreshDefaults.codeforcesStatsTtlMs
+  );
 };
 
+const isStatsForCurrentHandle = (
+  stats: Awaited<ReturnType<typeof getCodeforcesStats>>,
+  account: CodeforcesAccount
+) => stats?.handle.toLowerCase() === account.handle.toLowerCase();
+
+const hasActiveRefreshJob = (
+  refreshJobs: Awaited<ReturnType<typeof getRefreshJobForCodeforcesAccount>>
+) =>
+  refreshJobs.some(
+    (job) => job.status === "pending" || job.status === "running"
+  );
+
 const serializeCodeforcesStats = (
-  stats: NonNullable<Awaited<ReturnType<typeof getCodeforcesStats>>>
+  stats: NonNullable<Awaited<ReturnType<typeof getCodeforcesStats>>>,
+  options: {
+    isStale: boolean;
+    lastError?: null | string;
+    syncStatus: PublicCodeforcesStats["syncStatus"];
+  }
 ): PublicCodeforcesStats => ({
   acceptedProblemCount: stats.acceptedProblemCount,
   acceptedProblemCountInMonth: stats.acceptedProblemCountInMonth,
   fetchedAt: toIsoString(stats.fetchedAt),
   handle: stats.handle,
+  isStale: options.isStale,
   lastAttemptedAt: stats.lastAttemptedAt.toISOString(),
-  lastError: stats.lastError,
+  lastError: options.lastError ?? stats.lastError,
   lastOnlineAt: toIsoString(stats.lastOnlineAt),
   maxRating: stats.maxRating,
   rating: stats.rating,
-  syncStatus: stats.lastError ? "failed" : "ready",
+  syncStatus: options.syncStatus,
 });
 
-const refreshCodeforcesStats = async (
-  db: Database,
-  account: CodeforcesAccount,
-  now: Date
-) => {
-  const userInfo = await fetchCodeforcesUserInfo(account.handle);
-  const submissions = await fetchCodeforcesSubmissions(userInfo.handle);
-  const nowSeconds = Math.floor(now.getTime() / 1000);
-  const summary = summarizeAcceptedProblems(submissions, {
-    acceptedSinceSeconds: nowSeconds - oneMonthSeconds,
-  });
-  const fetchedAt = new Date();
-  const lastOnlineAt =
-    userInfo.lastOnlineTimeSeconds === undefined
-      ? null
-      : new Date(userInfo.lastOnlineTimeSeconds * 1000);
-
-  const [stats] = await db
-    .insert(codeforcesAccountStats)
-    .values({
-      acceptedProblemCount: summary.acceptedProblemCount,
-      acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
-      accountId: account.id,
-      fetchedAt,
-      handle: userInfo.handle,
-      lastAttemptedAt: fetchedAt,
-      lastError: null,
-      lastOnlineAt,
-      maxRating: userInfo.maxRating ?? null,
-      rating: userInfo.rating ?? null,
-    })
-    .onConflictDoUpdate({
-      set: {
-        acceptedProblemCount: summary.acceptedProblemCount,
-        acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
-        fetchedAt,
-        handle: userInfo.handle,
-        lastAttemptedAt: fetchedAt,
-        lastError: null,
-        lastOnlineAt,
-        maxRating: userInfo.maxRating ?? null,
-        rating: userInfo.rating ?? null,
-        updatedAt: fetchedAt,
-      },
-      target: codeforcesAccountStats.accountId,
-    })
-    .returning(codeforcesStatsFields);
-
-  if (!stats) {
-    throw new Error(`Codeforces stats write failed for ${account.handle}`);
-  }
-
-  return stats;
-};
-
-const markCodeforcesRefreshFailed = async (
-  db: Database,
-  account: CodeforcesAccount,
-  now: Date,
-  error: unknown
-) => {
-  const lastError = truncateError(getErrorMessage(error));
-  const [stats] = await db
-    .insert(codeforcesAccountStats)
-    .values({
-      accountId: account.id,
-      handle: account.handle,
-      lastAttemptedAt: now,
-      lastError,
-    })
-    .onConflictDoUpdate({
-      set: {
-        handle: account.handle,
-        lastAttemptedAt: now,
-        lastError,
-        updatedAt: now,
-      },
-      target: codeforcesAccountStats.accountId,
-    })
-    .returning(codeforcesStatsFields);
-
-  if (stats) {
-    return stats;
-  }
-
-  return await getCodeforcesStats(db, account.id);
-};
-
-export const getFreshCodeforcesStats = async (
+export const getCodeforcesStatsForProfile = async (
   db: Database,
   account: CodeforcesAccount
 ): Promise<PublicCodeforcesStats | null> => {
   const now = new Date();
   const currentStats = await getCodeforcesStats(db, account.id);
+  const isFresh = isFreshCodeforcesStats(currentStats, account, now);
+  const canDisplayCurrentStats = isStatsForCurrentHandle(currentStats, account);
+  const shouldRefresh = !isFresh;
 
-  if (currentStats && isFreshCodeforcesStats(currentStats, account, now)) {
-    return serializeCodeforcesStats(currentStats);
+  if (shouldRefresh) {
+    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
   }
 
-  try {
-    const refreshedStats = await refreshCodeforcesStats(db, account, now);
-    return serializeCodeforcesStats(refreshedStats);
-  } catch (error) {
-    const failedStats = await markCodeforcesRefreshFailed(
-      db,
-      account,
-      now,
-      error
-    );
+  const refreshJobs = await getRefreshJobForCodeforcesAccount(db, account.id);
+  const lastError = canDisplayCurrentStats
+    ? (currentStats?.lastError ?? null)
+    : null;
+  const isRefreshing = hasActiveRefreshJob(refreshJobs);
+  const syncStatus = (() => {
+    if (isRefreshing) {
+      return "refreshing";
+    }
 
-    return failedStats ? serializeCodeforcesStats(failedStats) : null;
+    if (lastError) {
+      return "failed";
+    }
+
+    return canDisplayCurrentStats ? "ready" : "empty";
+  })();
+
+  if (!(currentStats && canDisplayCurrentStats)) {
+    return {
+      acceptedProblemCount: null,
+      acceptedProblemCountInMonth: null,
+      fetchedAt: null,
+      handle: account.handle,
+      isStale: true,
+      lastAttemptedAt:
+        refreshJobs[0]?.createdAt.toISOString() ?? now.toISOString(),
+      lastError,
+      lastOnlineAt: null,
+      maxRating: null,
+      rating: null,
+      syncStatus,
+    };
   }
+
+  return serializeCodeforcesStats(currentStats, {
+    isStale: !isFresh,
+    lastError,
+    syncStatus,
+  });
 };
 
 export const deleteCodeforcesStats = async (
