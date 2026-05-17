@@ -14,27 +14,24 @@ type RankCodeforcesData = NonNullable<RankRow["codeforces"]>;
 
 const createRankRow = (
   input: Omit<Partial<RankRow>, "codeforces" | "userId"> & {
-    codeforces?: Partial<RankCodeforcesData> | null;
+    codeforces?: Partial<RankCodeforcesData>;
     userId: string;
   }
 ): RankRow => ({
-  codeforces:
-    input.codeforces === undefined
-      ? null
-      : {
-          acceptedProblemCount: null,
-          acceptedProblemCountInMonth: null,
-          accountId: `${input.userId}-cf`,
-          fetchedAt: null,
-          handle: input.userId,
-          lastError: null,
-          lastOnlineAt: null,
-          maxRating: null,
-          profileUrl: "",
-          rating: null,
-          status: "ready",
-          ...input.codeforces,
-        },
+  codeforces: {
+    acceptedProblemCount: null,
+    acceptedProblemCountInMonth: null,
+    accountId: `${input.userId}-cf`,
+    fetchedAt: null,
+    handle: input.userId,
+    lastError: null,
+    lastOnlineAt: null,
+    maxRating: null,
+    profileUrl: "",
+    rating: null,
+    status: "ready",
+    ...input.codeforces,
+  },
   displayName: input.displayName ?? input.userId,
   grade: input.grade ?? null,
   major: input.major ?? null,

@@ -80,19 +80,14 @@ export const listCodeforcesRankRows = async (db: Database) => {
       userId: user.id,
       username: user.username,
     })
-    .from(user)
+    .from(userOjAccount)
+    .innerJoin(user, eq(user.id, userOjAccount.userId))
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
-    .leftJoin(
-      userOjAccount,
-      and(
-        eq(userOjAccount.userId, user.id),
-        eq(userOjAccount.platform, "codeforces")
-      )
-    )
     .leftJoin(
       codeforcesAccountStats,
       eq(codeforcesAccountStats.accountId, userOjAccount.id)
     )
+    .where(eq(userOjAccount.platform, "codeforces"))
     .orderBy(asc(usernameSortExpression), asc(user.id));
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
@@ -116,27 +111,25 @@ export const listCodeforcesRankRows = async (db: Database) => {
   const now = new Date();
 
   return rows.map((row) => ({
-    codeforces: row.accountId
-      ? {
-          acceptedProblemCount: row.acceptedProblemCount,
-          acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,
-          accountId: row.accountId,
-          fetchedAt: toIsoString(row.fetchedAt),
-          handle: row.handle ?? row.statsHandle ?? "",
-          lastError: row.lastError,
-          lastOnlineAt: toIsoString(row.lastOnlineAt),
-          maxRating: row.maxRating,
-          profileUrl: row.profileUrl ?? "",
-          rating: row.rating,
-          status: getCodeforcesRankStatus({
-            fetchedAt: row.fetchedAt,
-            hasActiveRefreshJob: refreshingAccountIds.has(row.accountId),
-            lastError: row.lastError,
-            now,
-            statsHandle: row.statsHandle,
-          }),
-        }
-      : null,
+    codeforces: {
+      acceptedProblemCount: row.acceptedProblemCount,
+      acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,
+      accountId: row.accountId,
+      fetchedAt: toIsoString(row.fetchedAt),
+      handle: row.handle,
+      lastError: row.lastError,
+      lastOnlineAt: toIsoString(row.lastOnlineAt),
+      maxRating: row.maxRating,
+      profileUrl: row.profileUrl,
+      rating: row.rating,
+      status: getCodeforcesRankStatus({
+        fetchedAt: row.fetchedAt,
+        hasActiveRefreshJob: refreshingAccountIds.has(row.accountId),
+        lastError: row.lastError,
+        now,
+        statsHandle: row.statsHandle,
+      }),
+    },
     displayName:
       row.displayUsername ?? row.username ?? row.realName ?? "未命名用户",
     grade: row.grade,

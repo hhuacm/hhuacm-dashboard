@@ -11,6 +11,8 @@ import { eq } from "drizzle-orm";
 import type { Context } from "../context";
 import { getCodeforcesStatsForProfile } from "./codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "./codeforces/types";
+import type { PublicLuoguStats } from "./luogu/profile-stats";
+import { getLuoguStatsForProfile } from "./luogu/profile-stats";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
@@ -38,6 +40,7 @@ const userFields = {
 export interface PublicOjAccount {
   codeforces?: PublicCodeforcesStats | null;
   handle: string;
+  luogu?: PublicLuoguStats | null;
   platform: OjPlatform;
   profileUrl: string;
 }
@@ -118,6 +121,10 @@ const attachPublicOjAccountData = async (
         db,
         account
       );
+    }
+
+    if (account.platform === "luogu") {
+      publicAccount.luogu = await getLuoguStatsForProfile(account);
     }
 
     publicAccounts.push(publicAccount);

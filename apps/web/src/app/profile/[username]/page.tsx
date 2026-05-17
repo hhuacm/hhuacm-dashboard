@@ -64,9 +64,30 @@ interface PublicOjAccount {
     syncStatus: "empty" | "failed" | "ready" | "refreshing";
   };
   handle: string;
+  luogu?: null | {
+    acceptedProblemCount: null | number;
+    difficultyCounts: {
+      count: number;
+      difficulty: number;
+      label: string;
+    }[];
+    lastError: null | string;
+    syncStatus: "empty" | "failed" | "ready";
+  };
   platform: OjPlatform;
   profileUrl: string;
 }
+
+const luoguDifficultyClassNames = [
+  "bg-[rgb(191,191,191)] text-[#333333]",
+  "bg-[rgb(254,76,97)] text-white",
+  "bg-[rgb(243,156,17)] text-white",
+  "bg-[rgb(255,193,22)] text-[#713f12]",
+  "bg-[rgb(83,196,26)] text-white",
+  "bg-[rgb(52,152,219)] text-white",
+  "bg-[rgb(156,61,207)] text-white",
+  "bg-[rgb(14,29,105)] text-white",
+] as const;
 
 const isMemberStatus = (
   status: null | string | undefined
@@ -150,6 +171,33 @@ function CodeforcesRatingMetric({
   );
 }
 
+function LuoguDifficultyRow({
+  count,
+  difficulty,
+  label,
+}: {
+  count: number;
+  difficulty: number;
+  label: string;
+}) {
+  const className =
+    luoguDifficultyClassNames[difficulty] ?? luoguDifficultyClassNames[0];
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-secondary px-3 py-2">
+      <Chip
+        className={`${className} px-3 py-1 font-semibold text-base`}
+        size="md"
+      >
+        {label}
+      </Chip>
+      <span className="shrink-0 font-semibold text-foreground">
+        {formatNumber(count)} 题
+      </span>
+    </div>
+  );
+}
+
 function getCodeforcesStatusText(
   codeforces: PublicOjAccount["codeforces"] | undefined
 ) {
@@ -182,10 +230,116 @@ function getCodeforcesStatusClassName(
   return "text-muted";
 }
 
+function getLuoguStatusText(luogu: PublicOjAccount["luogu"] | undefined) {
+  if (!luogu || luogu.syncStatus === "empty") {
+    return "等待数据";
+  }
+
+  if (luogu.syncStatus === "failed") {
+    return "读取失败";
+  }
+
+  return "数据已更新";
+}
+
+function getLuoguStatusClassName(luogu: PublicOjAccount["luogu"] | undefined) {
+  if (luogu?.syncStatus === "failed") {
+    return "text-danger";
+  }
+
+  return luogu?.syncStatus === "ready" ? "text-muted" : "text-accent";
+}
+
+function CodeforcesStatsContent({
+  codeforces,
+}: {
+  codeforces: PublicOjAccount["codeforces"] | undefined;
+}) {
+  return (
+    <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <CodeforcesRatingMetric
+        label="当前 Rating"
+        rating={codeforces?.rating ?? null}
+      />
+      <CodeforcesRatingMetric
+        label="最高 Rating"
+        rating={codeforces?.maxRating ?? null}
+      />
+      <CodeforcesMetric
+        label="AC 题数"
+        value={formatNumber(codeforces?.acceptedProblemCount ?? null)}
+      />
+      <CodeforcesMetric
+        label="近 30 天 AC"
+        value={formatNumber(codeforces?.acceptedProblemCountInMonth ?? null)}
+      />
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
+        <dt className="text-muted text-xs">最近活跃</dt>
+        <dd className="mt-1 font-medium text-foreground">
+          {formatDateTime(codeforces?.lastOnlineAt ?? null)}
+        </dd>
+      </div>
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
+        <dt className="text-muted text-xs">数据更新</dt>
+        <dd className="mt-1 font-medium text-foreground">
+          {formatDateTime(codeforces?.fetchedAt ?? null)}
+        </dd>
+      </div>
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2 lg:col-span-4">
+        <dt className="text-muted text-xs">刷新状态</dt>
+        <dd
+          className={`wrap-break-word mt-1 font-medium ${getCodeforcesStatusClassName(
+            codeforces
+          )}`}
+        >
+          {getCodeforcesStatusText(codeforces)}
+          {codeforces?.lastError ? `：${codeforces.lastError}` : ""}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function LuoguStatsContent({
+  luogu,
+}: {
+  luogu: PublicOjAccount["luogu"] | undefined;
+}) {
+  return (
+    <div className="mt-4 grid gap-3">
+      <CodeforcesMetric
+        label="总过题数"
+        value={formatNumber(luogu?.acceptedProblemCount ?? null)}
+      />
+      <div className="grid gap-2 sm:grid-cols-2">
+        {luogu?.difficultyCounts.map((item) => (
+          <LuoguDifficultyRow
+            count={item.count}
+            difficulty={item.difficulty}
+            key={item.difficulty}
+            label={item.label}
+          />
+        ))}
+      </div>
+      {luogu?.syncStatus === "failed" ? (
+        <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+          <dt className="text-muted text-xs">读取状态</dt>
+          <dd className="wrap-break-word mt-1 font-medium text-danger">
+            {getLuoguStatusText(luogu)}
+            {luogu.lastError ? `：${luogu.lastError}` : ""}
+          </dd>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function OjAccountCard({ account }: { account: PublicOjAccount }) {
   const platform = getOjPlatformConfig(account.platform);
   const isCodeforces = account.platform === "codeforces";
+  const isLuogu = account.platform === "luogu";
   const codeforces = account.codeforces;
+  const luogu = account.luogu;
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
@@ -220,6 +374,18 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
                 {getCodeforcesStatusText(codeforces)}
               </p>
             ) : null}
+            {isLuogu ? (
+              <p
+                className={`mt-1 inline-flex items-center gap-1 text-sm ${getLuoguStatusClassName(
+                  luogu
+                )}`}
+              >
+                {luogu?.syncStatus === "failed" ? (
+                  <CircleAlert className="size-3.5" />
+                ) : null}
+                {getLuoguStatusText(luogu)}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -244,51 +410,9 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
         )}
       </div>
 
-      {isCodeforces ? (
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CodeforcesRatingMetric
-            label="当前 Rating"
-            rating={codeforces?.rating ?? null}
-          />
-          <CodeforcesRatingMetric
-            label="最高 Rating"
-            rating={codeforces?.maxRating ?? null}
-          />
-          <CodeforcesMetric
-            label="AC 题数"
-            value={formatNumber(codeforces?.acceptedProblemCount ?? null)}
-          />
-          <CodeforcesMetric
-            label="近 30 天 AC"
-            value={formatNumber(
-              codeforces?.acceptedProblemCountInMonth ?? null
-            )}
-          />
-          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
-            <dt className="text-muted text-xs">最近活跃</dt>
-            <dd className="mt-1 font-medium text-foreground">
-              {formatDateTime(codeforces?.lastOnlineAt ?? null)}
-            </dd>
-          </div>
-          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2">
-            <dt className="text-muted text-xs">数据更新</dt>
-            <dd className="mt-1 font-medium text-foreground">
-              {formatDateTime(codeforces?.fetchedAt ?? null)}
-            </dd>
-          </div>
-          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2 lg:col-span-4">
-            <dt className="text-muted text-xs">刷新状态</dt>
-            <dd
-              className={`wrap-break-word mt-1 font-medium ${getCodeforcesStatusClassName(
-                codeforces
-              )}`}
-            >
-              {getCodeforcesStatusText(codeforces)}
-              {codeforces?.lastError ? `：${codeforces.lastError}` : ""}
-            </dd>
-          </div>
-        </dl>
-      ) : null}
+      {isCodeforces ? <CodeforcesStatsContent codeforces={codeforces} /> : null}
+
+      {isLuogu ? <LuoguStatsContent luogu={luogu} /> : null}
     </div>
   );
 }
