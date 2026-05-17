@@ -1,6 +1,10 @@
 "use client";
 
 import { Alert, Button, Card, Chip, Spinner } from "@heroui/react";
+import {
+  type MemberStatus,
+  memberStatusLabels,
+} from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import {
   CircleAlert,
@@ -22,23 +26,17 @@ import { trpc } from "@/utils/trpc";
 const memberStatusConfig = {
   active: {
     className: "bg-success-soft text-success",
-    label: "服役中",
   },
   frozen: {
     className: "bg-black text-white",
-    label: "已冻结",
   },
   retired: {
     className: "bg-default text-muted",
-    label: "已退役",
   },
   selection: {
     className: "bg-accent-soft text-accent",
-    label: "选拔中",
   },
-} as const;
-
-type MemberStatus = keyof typeof memberStatusConfig;
+} as const satisfies Record<MemberStatus, { className: string }>;
 
 interface ProfilePageProps {
   params: Promise<{
@@ -75,13 +73,12 @@ const isMemberStatus = (
 ): status is MemberStatus => Boolean(status && status in memberStatusConfig);
 
 function MemberStatusBadge({ status }: { status: null | string | undefined }) {
-  const config = isMemberStatus(status)
-    ? memberStatusConfig[status]
-    : memberStatusConfig.selection;
+  const memberStatus = isMemberStatus(status) ? status : "selection";
+  const config = memberStatusConfig[memberStatus];
 
   return (
     <Chip className={config.className} size="md" variant="soft">
-      {config.label}
+      {memberStatusLabels[memberStatus]}
     </Chip>
   );
 }

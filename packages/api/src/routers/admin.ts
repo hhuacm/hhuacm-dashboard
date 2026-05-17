@@ -1,0 +1,71 @@
+import { adminProcedure, router } from "../index";
+import {
+  deleteAdminUser,
+  getAdminUser,
+  getAdminUsersMetadata,
+  listAdminUsers,
+} from "../services/admin-users";
+import { deleteOjAccount, upsertOjAccount } from "../services/oj-account";
+import { getTargetUser, updateUserProfile } from "../services/profile";
+import {
+  adminUserDeleteInputSchema,
+  adminUserInputSchema,
+  adminUserOjAccountDeleteInputSchema,
+  adminUserOjAccountInputSchema,
+  adminUserProfileUpdateInputSchema,
+  adminUsersListInputSchema,
+} from "./schemas";
+
+export const adminRouter = router({
+  users: router({
+    get: adminProcedure
+      .input(adminUserInputSchema)
+      .query(
+        async ({ ctx, input }) => await getAdminUser(ctx.db, input.userId)
+      ),
+    list: adminProcedure
+      .input(adminUsersListInputSchema)
+      .query(async ({ ctx, input }) => await listAdminUsers(ctx.db, input)),
+    metadata: adminProcedure.query(
+      async ({ ctx }) => await getAdminUsersMetadata(ctx.db)
+    ),
+    delete: adminProcedure.input(adminUserDeleteInputSchema).mutation(
+      async ({ ctx, input }) =>
+        await deleteAdminUser(ctx.db, {
+          userId: input.userId,
+          usernameConfirmation: input.usernameConfirmation,
+        })
+    ),
+    updateProfile: adminProcedure
+      .input(adminUserProfileUpdateInputSchema)
+      .mutation(
+        async ({ ctx, input }) =>
+          await updateUserProfile(ctx.db, {
+            notFoundCode: "INTERNAL_SERVER_ERROR",
+            userId: input.userId,
+            values: input.values,
+          })
+      ),
+    upsertOjAccount: adminProcedure
+      .input(adminUserOjAccountInputSchema)
+      .mutation(async ({ ctx, input }) => {
+        await getTargetUser(ctx.db, input.userId);
+
+        return await upsertOjAccount(ctx.db, {
+          handle: input.handle,
+          platform: input.platform,
+          userId: input.userId,
+        });
+      }),
+    deleteOjAccount: adminProcedure
+      .input(adminUserOjAccountDeleteInputSchema)
+      .mutation(async ({ ctx, input }) => {
+        await getTargetUser(ctx.db, input.userId);
+
+        return await deleteOjAccount(ctx.db, {
+          platform: input.platform,
+          userId: input.userId,
+        });
+      }),
+  }),
+});

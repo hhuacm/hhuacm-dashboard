@@ -18,6 +18,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "@libsql/client": "0.15.15",
     "dotenv": "catalog:",

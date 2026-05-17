@@ -1,4 +1,4 @@
-import type { ojPlatforms } from "@hhuacm-dashboard/db/schema/oj-account";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
 
@@ -29,7 +29,7 @@ const buildLuoguProfileUrl = async (handle: string) => {
 };
 
 export const buildOjProfileUrl = async (
-  platform: (typeof ojPlatforms)[number],
+  platform: OjPlatform,
   handle: string
 ) => {
   const encodedHandle = encodeURIComponent(handle);

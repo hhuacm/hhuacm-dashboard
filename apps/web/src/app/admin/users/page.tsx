@@ -22,6 +22,14 @@ import {
   Tooltip,
 } from "@heroui/react";
 import {
+  getGradeOptionsWithCurrentValue,
+  memberStatuses,
+  memberStatusLabels,
+  type OjPlatform,
+  ojPlatformLabels,
+  ojPlatforms,
+} from "@hhuacm-dashboard/domain";
+import {
   type QueryKey,
   useMutation,
   useQuery,
@@ -56,153 +64,53 @@ import {
 import { AppShell } from "@/components/app-shell";
 import {
   ColumnVisibilityMenu,
-  type TableColumnVisibilityConfig,
   useColumnVisibility,
 } from "@/components/column-visibility";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import { authClient } from "@/utils/auth-client";
 import {
-  buildProfileFormValues,
   emptyProfileFormValues,
-  getChangedProfileValues,
-  getGradeOptionsWithCurrentValue,
   getProfileDisplayValue,
-  hasProfileUpdateValues,
   type ProfileFieldKey,
-  type ProfileFormValues,
-  type ProfileUpdateValues,
   profileFieldConfigs,
 } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
-
-const redirectDelayMs = 3000;
-const defaultPageSize = 10;
-const minPageSize = 5;
-const maxPageSize = 80;
-const tableRowHeightPx = 56;
-const tableReservedHeightPx = 156;
-const viewportBottomGapPx = 40;
-const compactPaginationLimit = 7;
-const paginationNeighborCount = 1;
-const adminUsersActionsColumnMinWidth = 112;
-const adminUsersColumnVisibilityStorageKey = "admin-users-column-visibility-v1";
-
-const sortableColumns = [
-  "email",
-  "grade",
-  "major",
-  "memberStatus",
-  "realName",
-  "studentId",
-  "username",
-] as const;
-
-const memberStatusConfig = {
-  active: {
-    color: "success",
-    label: "服役中",
-  },
-  frozen: {
-    color: "danger",
-    label: "已冻结",
-  },
-  retired: {
-    color: "default",
-    label: "已退役",
-  },
-  selection: {
-    color: "accent",
-    label: "选拔中",
-  },
-} as const;
-
-const ojPlatformLabels = {
-  atcoder: "AtCoder",
-  codeforces: "Codeforces",
-  luogu: "洛谷",
-  nowcoder: "牛客",
-} as const;
-
-const ojPlatformOrder = ["luogu", "codeforces", "atcoder", "nowcoder"] as const;
-
-type MemberStatus = keyof typeof memberStatusConfig;
-type OjPlatform = keyof typeof ojPlatformLabels;
-type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
-type SortColumn = (typeof sortableColumns)[number];
-type SortDirection = "ascending" | "descending";
-type UserRole = "admin" | "member";
-type AdminUsersColumnId =
-  | "email"
-  | "grade"
-  | "major"
-  | "memberStatus"
-  | "ojAccounts"
-  | "realName"
-  | "studentId"
-  | "username";
-
-interface AdminUsersColumnConfig
-  extends TableColumnVisibilityConfig<AdminUsersColumnId> {
-  cellClassName?: string;
-  headerClassName?: string;
-  minWidth: number;
-}
-
-interface FilterOption {
-  label: string;
-  value: string;
-}
-
-interface AdminUsersFilters {
-  grades: string[];
-  memberStatuses: MemberStatus[];
-  ojPlatforms: OjPlatform[];
-}
-
-interface AdminUsersSort {
-  column: SortColumn;
-  direction: SortDirection;
-}
-
-interface AdminUserOjAccount {
-  handle: string;
-  platform: OjPlatform;
-  profileUrl: string;
-}
-
-interface AdminUserProfile {
-  grade: null | string;
-  major: null | string;
-  memberStatus: MemberStatus;
-  realName: null | string;
-  studentId: null | string;
-}
-
-interface AdminUserDetail {
-  displayUsername: null | string;
-  email: string;
-  id: string;
-  name: string;
-  ojAccounts: AdminUserOjAccount[];
-  profile: AdminUserProfile;
-  role: UserRole;
-  username: null | string;
-}
-
-interface AdminUserTableRow {
-  displayUsername: null | string;
-  email: string;
-  grade: null | string;
-  id: string;
-  major: null | string;
-  memberStatus: string;
-  name: string;
-  ojAccounts: AdminUserOjAccount[];
-  realName: null | string;
-  role: UserRole;
-  studentId: null | string;
-  username: null | string;
-}
+import {
+  type AdminProfileFormValues,
+  type AdminUserDetail,
+  type AdminUserOjAccount,
+  type AdminUsersColumnConfig,
+  type AdminUsersColumnId,
+  type AdminUsersFilters,
+  type AdminUsersMetadata,
+  type AdminUsersSort,
+  type AdminUserTableRow,
+  adminUsersColumns,
+  adminUsersColumnVisibilityStorageKey,
+  buildAdminProfileFormValues,
+  calculatePageSize,
+  defaultPageSize,
+  emptyAdminUsersFilters,
+  type FilterOption,
+  getAdminDetailDisplayUsername,
+  getAdminDisplayUsername,
+  getAdminEditErrorMessage,
+  getChangedAdminProfileValues,
+  getFirstVisibleSortColumn,
+  getOjAccountByPlatform,
+  getPaginationItems,
+  getVisibleTableMinWidth,
+  hasAdminProfileUpdateValues,
+  hasFilters,
+  isMemberStatus,
+  isMemberStatusFilterValue,
+  isOjPlatformFilterValue,
+  isSortColumn,
+  memberStatusConfig,
+  redirectDelayMs,
+  type SortDirection,
+  type UserRole,
+} from "./helpers";
 
 interface AdminUsersTableSectionProps {
   filters: AdminUsersFilters;
@@ -234,12 +142,6 @@ interface AccessFeedbackProps {
   isCheckingAccess: boolean;
   isMember: boolean;
   shouldPromptLogin: boolean;
-}
-
-interface AdminUsersMetadata {
-  grades: FilterOption[];
-  memberStatuses: FilterOption[];
-  ojPlatforms: FilterOption[];
 }
 
 interface FilterMenuProps {
@@ -316,278 +218,6 @@ interface EditorMessage {
   tone: "danger" | "success";
 }
 
-type AdminProfileFormValues = ProfileFormValues & {
-  memberStatus: MemberStatus;
-};
-
-type AdminProfileUpdateValues = ProfileUpdateValues & {
-  memberStatus?: MemberStatus;
-};
-
-const clampPageSize = (pageSize: number) =>
-  Math.min(maxPageSize, Math.max(minPageSize, pageSize));
-
-const emptyAdminUsersFilters: AdminUsersFilters = {
-  grades: [],
-  memberStatuses: [],
-  ojPlatforms: [],
-};
-
-const adminUsersColumns = [
-  {
-    cellClassName: "max-w-48 whitespace-nowrap font-medium",
-    defaultVisible: true,
-    id: "username",
-    label: "用户名",
-    minWidth: 192,
-  },
-  {
-    cellClassName: "max-w-72 whitespace-nowrap",
-    defaultVisible: true,
-    id: "email",
-    label: "邮箱",
-    minWidth: 256,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "realName",
-    label: "姓名",
-    minWidth: 128,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: false,
-    id: "grade",
-    label: "年级",
-    minWidth: 96,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: false,
-    id: "studentId",
-    label: "学号",
-    minWidth: 136,
-  },
-  {
-    cellClassName: "max-w-64 whitespace-nowrap",
-    defaultVisible: false,
-    id: "major",
-    label: "专业",
-    minWidth: 176,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "memberStatus",
-    label: "状态",
-    minWidth: 112,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "ojAccounts",
-    label: "OJ 账号",
-    minWidth: 220,
-  },
-] as const satisfies readonly AdminUsersColumnConfig[];
-
-const getVisibleTableMinWidth = (
-  columns: readonly AdminUsersColumnConfig[]
-) => {
-  let minWidth = 0;
-
-  for (const column of columns) {
-    minWidth += column.minWidth;
-  }
-
-  return Math.max(720, minWidth + adminUsersActionsColumnMinWidth);
-};
-
-const getFirstVisibleSortColumn = (
-  columnIds: readonly AdminUsersColumnId[]
-) => {
-  for (const columnId of columnIds) {
-    if (isSortColumn(columnId)) {
-      return columnId;
-    }
-  }
-
-  return null;
-};
-
-const calculatePageSize = (element: HTMLDivElement | null) => {
-  if (!element) {
-    return defaultPageSize;
-  }
-
-  const { top } = element.getBoundingClientRect();
-  const availableHeight =
-    window.innerHeight - top - viewportBottomGapPx - tableReservedHeightPx;
-  const visibleRows = Math.floor(availableHeight / tableRowHeightPx);
-
-  return clampPageSize(visibleRows);
-};
-
-const getAdminDisplayUsername = (user: AdminUserTableRow) => {
-  const candidates = [user.displayUsername, user.username, user.name];
-
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-
-    if (value) {
-      return value;
-    }
-  }
-
-  return "未设置";
-};
-
-const getAdminDetailDisplayUsername = (
-  user: AdminUserDetail | AdminUserTableRow | null | undefined
-) => {
-  if (!user) {
-    return "未设置";
-  }
-
-  const candidates = [user.displayUsername, user.username, user.name];
-
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-
-    if (value) {
-      return value;
-    }
-  }
-
-  return "未设置";
-};
-
-const isMemberStatus = (status: string): status is MemberStatus =>
-  status in memberStatusConfig;
-
-const isSortColumn = (key: Key): key is SortColumn =>
-  typeof key === "string" &&
-  sortableColumns.includes(key as (typeof sortableColumns)[number]);
-
-const isMemberStatusFilterValue = (value: string): value is MemberStatus =>
-  value in memberStatusConfig;
-
-const isOjPlatformFilterValue = (value: string): value is OjPlatform =>
-  value in ojPlatformLabels;
-
-const hasFilters = (filters: AdminUsersFilters) =>
-  filters.grades.length > 0 ||
-  filters.memberStatuses.length > 0 ||
-  filters.ojPlatforms.length > 0;
-
-const getErrorText = (error: unknown) => {
-  if (typeof error !== "object" || error === null || !("message" in error)) {
-    return "";
-  }
-
-  const message = Reflect.get(error, "message");
-
-  return typeof message === "string" ? message : "";
-};
-
-const getAdminEditErrorMessage = (error: unknown) => {
-  const errorText = getErrorText(error);
-
-  if (errorText.includes("OJ handle already exists")) {
-    return "该平台账号已被其他用户登记。";
-  }
-
-  if (errorText.includes("OJ account does not exist")) {
-    return "该平台尚未登记。";
-  }
-
-  if (errorText.includes("User does not exist")) {
-    return "用户不存在，请刷新列表后重试。";
-  }
-
-  if (errorText.includes("Admin users cannot be deleted")) {
-    return "管理员账户不能在面板删除。";
-  }
-
-  if (errorText.includes("Only frozen users can be deleted")) {
-    return "只有已冻结用户才能删除。";
-  }
-
-  if (errorText.includes("Username confirmation does not match")) {
-    return "用户名确认不匹配。";
-  }
-
-  if (errorText.includes("Invalid grade")) {
-    return "年级不在可选范围内。";
-  }
-
-  return "操作失败，请稍后再试。";
-};
-
-const buildAdminProfileFormValues = (
-  profile: AdminUserProfile | undefined
-): AdminProfileFormValues => ({
-  ...buildProfileFormValues(profile),
-  memberStatus: profile?.memberStatus ?? "selection",
-});
-
-const getChangedAdminProfileValues = (
-  currentValues: AdminProfileFormValues,
-  originalValues: AdminProfileFormValues
-) => {
-  const changedValues: AdminProfileUpdateValues = {
-    ...getChangedProfileValues(currentValues, originalValues),
-  };
-
-  if (currentValues.memberStatus !== originalValues.memberStatus) {
-    changedValues.memberStatus = currentValues.memberStatus;
-  }
-
-  return changedValues;
-};
-
-const hasAdminProfileUpdateValues = (values: AdminProfileUpdateValues) =>
-  "memberStatus" in values || hasProfileUpdateValues(values);
-
-const getOjAccountByPlatform = (
-  accounts: AdminUserOjAccount[],
-  platform: OjPlatform
-) => accounts.find((account) => account.platform === platform);
-
-const getPaginationItems = (page: number, totalPages: number): PageItem[] => {
-  if (totalPages <= compactPaginationLimit) {
-    const pages: PageItem[] = [];
-
-    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
-      pages.push(pageNumber);
-    }
-
-    return pages;
-  }
-
-  const pages: PageItem[] = [1];
-
-  if (page > 3) {
-    pages.push("leading-ellipsis");
-  }
-
-  const startPage = Math.max(2, page - paginationNeighborCount);
-  const endPage = Math.min(totalPages - 1, page + paginationNeighborCount);
-
-  for (let pageNumber = startPage; pageNumber <= endPage; pageNumber += 1) {
-    pages.push(pageNumber);
-  }
-
-  if (page < totalPages - 2) {
-    pages.push("trailing-ellipsis");
-  }
-
-  pages.push(totalPages);
-
-  return pages;
-};
-
 function useAutoPageSize(): {
   pageSize: number;
   tableRegionRef: (element: HTMLDivElement | null) => void;
@@ -633,13 +263,12 @@ function useAutoPageSize(): {
 }
 
 function MemberStatusChip({ status }: { status: string }) {
-  const config = isMemberStatus(status)
-    ? memberStatusConfig[status]
-    : memberStatusConfig.selection;
+  const memberStatus = isMemberStatus(status) ? status : "selection";
+  const config = memberStatusConfig[memberStatus];
 
   return (
     <Chip color={config.color} size="sm" variant="soft">
-      {config.label}
+      {memberStatusLabels[memberStatus]}
     </Chip>
   );
 }
@@ -675,7 +304,7 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
 
   return (
     <div className="flex min-h-7 flex-nowrap items-center gap-1.5">
-      {ojPlatformOrder.map((platform) => {
+      {ojPlatforms.map((platform) => {
         const account = accountsByPlatform.get(platform);
 
         if (!account) {
@@ -1190,13 +819,13 @@ function AdminUserBasicInfoEditor({
             </Select.Trigger>
             <Select.Popover>
               <ListBox>
-                {Object.entries(memberStatusConfig).map(([status, config]) => (
+                {memberStatuses.map((status) => (
                   <ListBox.Item
                     id={status}
                     key={status}
-                    textValue={config.label}
+                    textValue={memberStatusLabels[status]}
                   >
-                    {config.label}
+                    {memberStatusLabels[status]}
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
@@ -1541,7 +1170,7 @@ function AdminUserOjAccountEditor({
         <p className="text-muted text-sm">每个平台账号独立保存。</p>
       </div>
       <div className="grid gap-3">
-        {ojPlatformOrder.map((platform) => (
+        {ojPlatforms.map((platform) => (
           <AdminUserOjAccountRow
             account={getOjAccountByPlatform(accounts, platform)}
             isLoading={isLoading}

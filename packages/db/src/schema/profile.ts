@@ -1,14 +1,8 @@
+import { memberStatuses } from "@hhuacm-dashboard/domain";
 import { relations, sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
-
-export const memberStatuses = [
-  "selection",
-  "active",
-  "retired",
-  "frozen",
-] as const;
 
 export const userProfile = sqliteTable("user_profile", {
   userId: text("user_id")

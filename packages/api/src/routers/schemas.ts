@@ -1,0 +1,103 @@
+import {
+  getGradeOptions,
+  memberStatuses,
+  ojPlatforms,
+} from "@hhuacm-dashboard/domain";
+import { z } from "zod";
+
+export const trimmedStringSchema = z.string().trim().min(1);
+
+export const gradeSchema = z
+  .string()
+  .refine((grade) => !grade || getGradeOptions().includes(grade), {
+    message: "Invalid grade",
+  });
+
+export const profileInputSchema = z.object({
+  grade: gradeSchema,
+  major: z.string(),
+  realName: z.string(),
+  studentId: z.string(),
+});
+
+export const profileUpdateInputSchema = profileInputSchema
+  .partial()
+  .refine((input) => Object.keys(input).length > 0, {
+    message: "Profile update requires at least one field",
+  });
+
+export const ojPlatformSchema = z.enum(ojPlatforms);
+
+export const ojAccountInputSchema = z.object({
+  handle: trimmedStringSchema,
+  platform: ojPlatformSchema,
+});
+
+export const ojAccountPlatformInputSchema = z.object({
+  platform: ojPlatformSchema,
+});
+
+export const profileGetInputSchema = z.object({
+  username: trimmedStringSchema,
+});
+
+export const adminUserInputSchema = z.object({
+  userId: trimmedStringSchema,
+});
+
+const adminUsersSortColumnSchema = z.enum([
+  "email",
+  "grade",
+  "major",
+  "memberStatus",
+  "realName",
+  "studentId",
+  "username",
+]);
+
+const adminUsersSortDirectionSchema = z.enum(["ascending", "descending"]);
+
+export const adminUsersListInputSchema = z.object({
+  filters: z
+    .object({
+      grades: z.array(z.string().trim().min(1)).optional(),
+      memberStatuses: z.array(z.enum(memberStatuses)).optional(),
+      ojPlatforms: z.array(z.enum(ojPlatforms)).optional(),
+    })
+    .optional(),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(5).max(80),
+  sort: z
+    .object({
+      column: adminUsersSortColumnSchema,
+      direction: adminUsersSortDirectionSchema,
+    })
+    .optional(),
+});
+
+export const adminUserDeleteInputSchema = adminUserInputSchema.extend({
+  usernameConfirmation: trimmedStringSchema,
+});
+
+const adminProfileInputSchema = profileInputSchema.extend({
+  memberStatus: z.enum(memberStatuses),
+});
+
+const adminProfileUpdateInputSchema = adminProfileInputSchema
+  .partial()
+  .refine((input) => Object.keys(input).length > 0, {
+    message: "Profile update requires at least one field",
+  });
+
+export const adminUserProfileUpdateInputSchema = adminUserInputSchema.extend({
+  values: adminProfileUpdateInputSchema,
+});
+
+export const adminUserOjAccountInputSchema = adminUserInputSchema.extend({
+  handle: trimmedStringSchema,
+  platform: ojPlatformSchema,
+});
+
+export const adminUserOjAccountDeleteInputSchema = adminUserInputSchema.extend({
+  platform: ojPlatformSchema,
+});

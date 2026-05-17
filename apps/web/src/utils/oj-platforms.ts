@@ -1,34 +1,47 @@
-export const ojPlatformConfigs = [
+import {
+  type OjPlatform,
+  ojPlatformLabels,
+  ojPlatformNames,
+  ojPlatforms,
+} from "@hhuacm-dashboard/domain";
+
+const ojPlatformIconConfigs = [
   {
     iconSrc: "/oj-icons/luogu.png",
     key: "luogu",
-    label: "洛谷",
-    name: "Luogu",
   },
   {
     iconSrc: "/oj-icons/codeforces.svg",
     key: "codeforces",
-    label: "Codeforces",
-    name: "Codeforces",
   },
   {
     iconSrc: "/oj-icons/atcoder.png",
     key: "atcoder",
-    label: "AtCoder",
-    name: "AtCoder",
   },
   {
     iconSrc: "/oj-icons/nowcoder.png",
     key: "nowcoder",
-    label: "牛客",
-    name: "Nowcoder",
   },
-] as const;
+] as const satisfies { iconSrc: string; key: OjPlatform }[];
 
-export type OjPlatform = (typeof ojPlatformConfigs)[number]["key"];
+export type { OjPlatform } from "@hhuacm-dashboard/domain";
+
+export const ojPlatformConfigs = ojPlatforms.map((platform) => {
+  const config = ojPlatformIconConfigs.find((item) => item.key === platform);
+
+  if (!config) {
+    throw new Error(`Missing OJ platform config: ${platform}`);
+  }
+
+  return {
+    ...config,
+    label: ojPlatformLabels[platform],
+    name: ojPlatformNames[platform],
+  };
+});
 
 export const getOjPlatformConfig = (platform: OjPlatform) =>
   ojPlatformConfigs.find((config) => config.key === platform);
 
 export const isOjPlatform = (value: string): value is OjPlatform =>
-  ojPlatformConfigs.some((config) => config.key === value);
+  ojPlatforms.includes(value as OjPlatform);

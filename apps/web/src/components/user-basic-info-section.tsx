@@ -13,6 +13,11 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import {
+  getGradeOptionsWithCurrentValue,
+  type MemberStatus,
+  memberStatusLabels,
+} from "@hhuacm-dashboard/domain";
 import { Pencil, Save } from "lucide-react";
 import {
   type FormEvent,
@@ -25,7 +30,6 @@ import {
   buildProfileFormValues,
   emptyProfileFormValues,
   getChangedProfileValues,
-  getGradeOptionsWithCurrentValue,
   getProfileDisplayValue,
   hasProfileUpdateValues,
   type ProfileData,
@@ -39,23 +43,17 @@ import { DirtyFieldLabel } from "./dirty-field-label";
 const memberStatusConfig = {
   active: {
     className: "bg-success-soft text-success",
-    label: "服役中",
   },
   frozen: {
     className: "bg-black text-white",
-    label: "已冻结",
   },
   retired: {
     className: "bg-default text-muted",
-    label: "已退役",
   },
   selection: {
     className: "bg-accent-soft text-accent",
-    label: "选拔中",
   },
-} as const;
-
-type MemberStatus = keyof typeof memberStatusConfig;
+} as const satisfies Record<MemberStatus, { className: string }>;
 
 export interface UserBasicInfoMessage {
   text: string;
@@ -114,13 +112,12 @@ function BasicInfoItem({ label, value }: BasicInfoItemProps) {
 }
 
 function MemberStatusBadge({ status }: { status: null | string | undefined }) {
-  const config = isMemberStatus(status)
-    ? memberStatusConfig[status]
-    : memberStatusConfig.selection;
+  const memberStatus = isMemberStatus(status) ? status : "selection";
+  const config = memberStatusConfig[memberStatus];
 
   return (
     <Chip className={config.className} size="md" variant="soft">
-      {config.label}
+      {memberStatusLabels[memberStatus]}
     </Chip>
   );
 }

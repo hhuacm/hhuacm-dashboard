@@ -15,6 +15,7 @@
   "dependencies": {
     "@hhuacm-dashboard/auth": "workspace:*",
     "@hhuacm-dashboard/db": "workspace:*",
+    "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",

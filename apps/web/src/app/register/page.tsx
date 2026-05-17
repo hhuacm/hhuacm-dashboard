@@ -15,6 +15,7 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import { getGradeOptions } from "@hhuacm-dashboard/domain";
 import { useMutation } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
@@ -26,7 +27,6 @@ import { authClient, getPreferredUsername } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
   getChangedProfileValues,
-  getGradeOptions,
   hasProfileUpdateValues,
   type ProfileFieldKey,
   type ProfileFormValues,

@@ -10,10 +10,8 @@ import { fileURLToPath } from "node:url";
 import type { createDb } from "@hhuacm-dashboard/db";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import {
-  memberStatuses,
-  userProfile,
-} from "@hhuacm-dashboard/db/schema/profile";
+import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import { memberStatuses } from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
 import dotenv from "dotenv";
 import { and, eq, inArray, or } from "drizzle-orm";

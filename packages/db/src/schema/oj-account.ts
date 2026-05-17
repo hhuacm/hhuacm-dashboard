@@ -1,3 +1,4 @@
+import { ojPlatforms } from "@hhuacm-dashboard/domain";
 import { relations, sql } from "drizzle-orm";
 import {
   check,
@@ -9,15 +10,6 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
-
-export const ojPlatforms = [
-  "luogu",
-  "codeforces",
-  "atcoder",
-  "nowcoder",
-] as const;
-
-export type OjPlatform = (typeof ojPlatforms)[number];
 
 export const userOjAccount = sqliteTable(
   "user_oj_account",
