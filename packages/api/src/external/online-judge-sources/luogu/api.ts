@@ -7,6 +7,13 @@ const luoguUserSearchSchema = z.object({
   users: z.array(z.unknown()),
 });
 
+const luoguSearchUserSchema = z.object({
+  name: z.string(),
+  uid: z.number(),
+});
+
+export type LuoguSearchUserDto = z.infer<typeof luoguSearchUserSchema>;
+
 const buildLuoguApiUrl = (
   path: string,
   searchParams: Record<string, string>
@@ -41,7 +48,11 @@ const searchUsers = async (params: { keyword: string }) => {
     throw new Error("Luogu user/search returned invalid JSON");
   }
 
-  return data.data.users;
+  return data.data.users.flatMap((user) => {
+    const parsedUser = luoguSearchUserSchema.safeParse(user);
+
+    return parsedUser.success ? [parsedUser.data] : [];
+  });
 };
 
 export const luoguSource = {

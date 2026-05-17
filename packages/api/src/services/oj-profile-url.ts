@@ -3,29 +3,16 @@ import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
 
 const buildLuoguProfileUrl = async (handle: string) => {
-  try {
-    const users = await luoguSource.searchUsers({
-      keyword: handle,
-    });
-    const matchedUser = users.find((user: unknown) => {
-      if (typeof user !== "object" || user === null) {
-        return false;
-      }
+  const users = await luoguSource.searchUsers({
+    keyword: handle,
+  });
+  const matchedUser = users.find((user) => user.name === handle);
 
-      return (
-        Reflect.get(user, "name") === handle &&
-        typeof Reflect.get(user, "uid") === "number"
-      );
-    });
-
-    if (!matchedUser) {
-      return "";
-    }
-
-    return `https://www.luogu.com.cn/user/${Reflect.get(matchedUser, "uid")}`;
-  } catch {
+  if (!matchedUser) {
     return "";
   }
+
+  return `https://www.luogu.com.cn/user/${matchedUser.uid}`;
 };
 
 export const buildOjProfileUrl = async (

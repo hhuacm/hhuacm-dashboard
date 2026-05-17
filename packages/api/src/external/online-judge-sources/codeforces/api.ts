@@ -18,6 +18,29 @@ const codeforcesUserInfoSchema = z.object({
 
 const codeforcesUserInfoListSchema = z.array(codeforcesUserInfoSchema);
 
+export type CodeforcesUserInfoDto = z.infer<typeof codeforcesUserInfoSchema>;
+
+const codeforcesSubmissionProblemSchema = z
+  .object({
+    contestId: z.number().optional(),
+    index: z.union([z.number(), z.string()]),
+    problemsetName: z.string().optional(),
+  })
+  .refine(
+    (problem) =>
+      problem.contestId !== undefined || problem.problemsetName !== undefined
+  );
+
+const codeforcesSubmissionSchema = z.object({
+  creationTimeSeconds: z.number(),
+  problem: codeforcesSubmissionProblemSchema,
+  verdict: z.string().optional(),
+});
+
+export type CodeforcesSubmissionDto = z.infer<
+  typeof codeforcesSubmissionSchema
+>;
+
 type CodeforcesEndpoint = "user.info" | "user.status";
 
 const buildCodeforcesApiUrl = (
@@ -101,7 +124,11 @@ const userStatus = async (params: { handle: string }) => {
     );
   }
 
-  return result;
+  return result.flatMap((submission) => {
+    const parsedSubmission = codeforcesSubmissionSchema.safeParse(submission);
+
+    return parsedSubmission.success ? [parsedSubmission.data] : [];
+  });
 };
 
 export const codeforcesSource = {

@@ -1,47 +1,21 @@
+import type { CodeforcesSubmissionDto } from "../../external/online-judge-sources/codeforces/api";
 import type { CodeforcesProblemSummary } from "./types";
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const toProblemKeyPart = (value: unknown) => {
-  if (typeof value === "number" || typeof value === "string") {
-    return String(value);
-  }
-
-  return null;
-};
-
-const toTimestampSeconds = (value: unknown) =>
-  typeof value === "number" && Number.isFinite(value) ? value : null;
-
 export const summarizeAcceptedProblems = (
-  submissions: unknown[],
+  submissions: CodeforcesSubmissionDto[],
   options: { acceptedSinceSeconds: number }
 ): CodeforcesProblemSummary => {
   const firstAcceptedAtByProblem = new Map<string, number>();
 
   for (const submission of submissions) {
-    if (!isRecord(submission) || submission.verdict !== "OK") {
+    if (submission.verdict !== "OK") {
       continue;
     }
 
-    if (!isRecord(submission.problem)) {
-      continue;
-    }
-
-    const problemNamespace = toProblemKeyPart(
-      submission.problem.contestId ?? submission.problem.problemsetName
-    );
-    const problemIndex = toProblemKeyPart(submission.problem.index);
-    const createdAt = toTimestampSeconds(submission.creationTimeSeconds);
-
-    if (
-      problemNamespace === null ||
-      problemIndex === null ||
-      createdAt === null
-    ) {
-      continue;
-    }
+    const problemNamespace =
+      submission.problem.contestId ?? submission.problem.problemsetName;
+    const problemIndex = submission.problem.index;
+    const createdAt = submission.creationTimeSeconds;
 
     const problemId = `${problemNamespace}${problemIndex}`;
     const currentFirstAcceptedAt = firstAcceptedAtByProblem.get(problemId);

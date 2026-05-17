@@ -136,7 +136,6 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  await clearCodeforcesStatsIfNeeded(db, account);
   await enqueueCodeforcesStatsIfNeeded(db, account);
 
   return toPublicOjAccount(account);

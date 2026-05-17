@@ -40,7 +40,7 @@ describe("summarizeAcceptedProblems", () => {
     });
   });
 
-  it("uses problemsetName when contestId is absent and skips incomplete submissions", () => {
+  it("uses problemsetName when contestId is absent", () => {
     const now = 1_000_000;
     const recent = now - 5 * 24 * 60 * 60;
 
@@ -49,20 +49,6 @@ describe("summarizeAcceptedProblems", () => {
         {
           creationTimeSeconds: recent,
           problem: { index: "A", problemsetName: "custom" },
-          verdict: "OK",
-        },
-        {
-          creationTimeSeconds: recent,
-          problem: { index: "B" },
-          verdict: "OK",
-        },
-        {
-          problem: { contestId: 1, index: "C" },
-          verdict: "OK",
-        },
-        {
-          creationTimeSeconds: recent,
-          problem: { contestId: 1 },
           verdict: "OK",
         },
       ],
