@@ -38,6 +38,7 @@ import {
   getCodeforcesStatsForProfile,
 } from "../services/codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "../services/codeforces/types";
+import { buildOjProfileUrl } from "../services/oj-profile-url";
 import {
   codeforcesAccountStatsJobKind,
   ojAccountTargetType,
@@ -393,72 +394,6 @@ const enqueueCodeforcesStatsIfNeeded = async (
   if (account.platform === "codeforces") {
     await enqueueCodeforcesAccountStatsRefresh(db, account.id);
   }
-};
-
-const buildLuoguProfileUrl = async (handle: string) => {
-  try {
-    const response = await fetch(
-      `https://www.luogu.com.cn/api/user/search?keyword=${encodeURIComponent(handle)}`,
-      { signal: AbortSignal.timeout(2000) }
-    );
-
-    if (!response.ok) {
-      return "";
-    }
-
-    const data: unknown = await response.json();
-
-    if (typeof data !== "object" || data === null) {
-      return "";
-    }
-
-    const users = Reflect.get(data, "users");
-
-    if (!Array.isArray(users)) {
-      return "";
-    }
-
-    const matchedUser = users.find((user: unknown) => {
-      if (typeof user !== "object" || user === null) {
-        return false;
-      }
-
-      return (
-        Reflect.get(user, "name") === handle &&
-        typeof Reflect.get(user, "uid") === "number"
-      );
-    });
-
-    if (!matchedUser) {
-      return "";
-    }
-
-    return `https://www.luogu.com.cn/user/${Reflect.get(matchedUser, "uid")}`;
-  } catch {
-    return "";
-  }
-};
-
-const buildOjProfileUrl = async (
-  platform: (typeof ojPlatforms)[number],
-  handle: string
-) => {
-  const encodedHandle = encodeURIComponent(handle);
-
-  if (platform === "codeforces") {
-    return `https://codeforces.com/profile/${encodedHandle}`;
-  }
-
-  if (platform === "atcoder") {
-    return `https://atcoder.jp/users/${encodedHandle}`;
-  }
-
-  if (platform === "luogu") {
-    return await buildLuoguProfileUrl(handle);
-  }
-
-  // TODO: Fill in per-platform profile URL rules.
-  return "";
 };
 
 const getExistingCurrentUserAccountMessage = (account: {

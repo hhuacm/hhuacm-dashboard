@@ -16,8 +16,12 @@ const codeforcesUserInfoSchema = z.object({
   rating: z.number().optional(),
 });
 
+const codeforcesUserInfoListSchema = z.array(codeforcesUserInfoSchema);
+
+type CodeforcesEndpoint = "user.info" | "user.status";
+
 const buildCodeforcesApiUrl = (
-  endpoint: "user.info" | "user.status",
+  endpoint: CodeforcesEndpoint,
   searchParams: Record<string, string>
 ) => {
   const url = new URL(`${codeforcesApiBaseUrl}/${endpoint}`);
@@ -30,9 +34,9 @@ const buildCodeforcesApiUrl = (
 };
 
 const loadCodeforcesResult = async (
-  endpoint: "user.info" | "user.status",
+  endpoint: CodeforcesEndpoint,
   searchParams: Record<string, string>,
-  handle: string
+  requestLabel: string
 ) => {
   const url = buildCodeforcesApiUrl(endpoint, searchParams);
   const response = await fetch(url, {
@@ -40,19 +44,23 @@ const loadCodeforcesResult = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Codeforces ${endpoint} ${handle} HTTP ${response.status}`);
+    throw new Error(
+      `Codeforces ${endpoint} ${requestLabel} HTTP ${response.status}`
+    );
   }
 
   const payload: unknown = await response.json();
   const envelope = codeforcesEnvelopeSchema.safeParse(payload);
 
   if (!envelope.success) {
-    throw new Error(`Codeforces ${endpoint} ${handle} returned invalid JSON`);
+    throw new Error(
+      `Codeforces ${endpoint} ${requestLabel} returned invalid JSON`
+    );
   }
 
   if (envelope.data.status !== "OK" || envelope.data.result === undefined) {
     throw new Error(
-      `Codeforces ${endpoint} ${handle} returned ${envelope.data.status}${
+      `Codeforces ${endpoint} ${requestLabel} returned ${envelope.data.status}${
         envelope.data.comment ? `: ${envelope.data.comment}` : ""
       }`
     );
@@ -61,32 +69,42 @@ const loadCodeforcesResult = async (
   return envelope.data.result;
 };
 
-export const fetchCodeforcesUserInfo = async (handle: string) => {
+const userInfo = async (params: { handles: string }) => {
   const result = await loadCodeforcesResult(
     "user.info",
-    { handles: handle },
-    handle
+    {
+      handles: params.handles,
+    },
+    params.handles
+  );
+  const userInfoList = codeforcesUserInfoListSchema.safeParse(result);
+
+  if (!userInfoList.success) {
+    throw new Error(`Codeforces user.info ${params.handles} result is invalid`);
+  }
+
+  return userInfoList.data;
+};
+
+const userStatus = async (params: { handle: string }) => {
+  const result = await loadCodeforcesResult(
+    "user.status",
+    {
+      handle: params.handle,
+    },
+    params.handle
   );
 
   if (!Array.isArray(result)) {
-    throw new Error(`Codeforces user.info ${handle} result is not an array`);
-  }
-
-  const userInfo = codeforcesUserInfoSchema.safeParse(result[0]);
-
-  if (!userInfo.success) {
-    throw new Error(`Codeforces user.info ${handle} result is invalid`);
-  }
-
-  return userInfo.data;
-};
-
-export const fetchCodeforcesSubmissions = async (handle: string) => {
-  const result = await loadCodeforcesResult("user.status", { handle }, handle);
-
-  if (!Array.isArray(result)) {
-    throw new Error(`Codeforces user.status ${handle} result is not an array`);
+    throw new Error(
+      `Codeforces user.status ${params.handle} result is not an array`
+    );
   }
 
   return result;
+};
+
+export const codeforcesSource = {
+  userInfo,
+  userStatus,
 };

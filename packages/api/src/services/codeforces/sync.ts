@@ -1,8 +1,8 @@
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 
 import type { Context } from "../../context";
+import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
 import { refreshDefaults } from "../refresh/constants";
-import { fetchCodeforcesSubmissions, fetchCodeforcesUserInfo } from "./api";
 import { summarizeAcceptedProblems } from "./summary";
 import type { CodeforcesAccount } from "./types";
 
@@ -35,8 +35,17 @@ export const syncCodeforcesAccountStats = async (
   account: CodeforcesAccount,
   now = new Date()
 ) => {
-  const userInfo = await fetchCodeforcesUserInfo(account.handle);
-  const submissions = await fetchCodeforcesSubmissions(userInfo.handle);
+  const [userInfo] = await codeforcesSource.userInfo({
+    handles: account.handle,
+  });
+
+  if (!userInfo) {
+    throw new Error(`Codeforces user.info ${account.handle} result is empty`);
+  }
+
+  const submissions = await codeforcesSource.userStatus({
+    handle: userInfo.handle,
+  });
   const nowSeconds = Math.floor(now.getTime() / 1000);
   const summary = summarizeAcceptedProblems(submissions, {
     acceptedSinceSeconds: nowSeconds - oneMonthSeconds,
