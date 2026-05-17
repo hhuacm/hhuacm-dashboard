@@ -83,6 +83,8 @@ const dormantSeconds = 30 * daySeconds;
 const rankTableMinWidth = 720;
 const filterSearchThreshold = 8;
 const rankColumnVisibilityStorageKey = "rank-codeforces-column-visibility-v1";
+const rankTableColumnClassName = "whitespace-nowrap text-center font-bold";
+const rankTableCellClassName = "text-center";
 
 const statusConfig = {
   empty: {
@@ -640,7 +642,8 @@ function FilterMenu({
 
 function NumberFilterMenu({ minimums, onChange }: NumberFilterMenuProps) {
   const activeCount = getActiveNumberFilterCount(minimums);
-  const buttonLabel = activeCount > 0 ? `数值 ${activeCount}` : "数值";
+  const buttonLabel =
+    activeCount > 0 ? `Rating 与 AC 数 ${activeCount}` : "Rating 与 AC 数";
 
   return (
     <Popover>
@@ -805,7 +808,7 @@ function SortableColumnHeader({
   sortDirection?: SortDirection;
 }) {
   return (
-    <span className="flex items-center justify-between gap-2">
+    <span className="flex items-center justify-center gap-2">
       <span>{children}</span>
       <ArrowUpDown
         className={`size-3 transition-transform ${
@@ -871,6 +874,7 @@ function RankTable({
             {visibleColumns.map((column) => (
               <Table.Column
                 allowsSorting={isRankSortColumn(column.id)}
+                className={rankTableColumnClassName}
                 id={column.id}
                 isRowHeader={column.id === "index"}
                 key={column.id}
@@ -894,7 +898,7 @@ function RankTable({
                 >
                   {visibleColumns.map((column) => (
                     <Table.Cell
-                      className={column.cellClassName}
+                      className={`${rankTableCellClassName} ${column.cellClassName}`}
                       key={column.id}
                     >
                       {renderRankCell(column.id, row, index)}
