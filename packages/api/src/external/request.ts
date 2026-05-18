@@ -1,0 +1,54 @@
+interface ExternalRequestOptions {
+  label: string;
+  maxAttempts: number;
+  request: (signal: AbortSignal) => Promise<Response>;
+  retryableStatus: (status: number) => boolean;
+  retryDelayMs: number;
+  timeoutMs: number;
+}
+
+const sleep = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Unknown external request error";
+
+export const isCommonRetryableHttpStatus = (status: number) =>
+  status === 429 || status >= 500;
+
+export const requestExternalResource = async ({
+  label,
+  maxAttempts,
+  request,
+  retryDelayMs,
+  retryableStatus,
+  timeoutMs,
+}: ExternalRequestOptions) => {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await request(AbortSignal.timeout(timeoutMs));
+
+      if (response.ok || !retryableStatus(response.status)) {
+        return response;
+      }
+
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < maxAttempts) {
+      await sleep(retryDelayMs);
+    }
+  }
+
+  throw new Error(
+    `${label} request failed after ${maxAttempts} attempts: ${getErrorMessage(
+      lastError
+    )}`
+  );
+};

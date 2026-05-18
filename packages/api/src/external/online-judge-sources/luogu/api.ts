@@ -1,6 +1,13 @@
 import { z } from "zod";
 
+import {
+  isCommonRetryableHttpStatus,
+  requestExternalResource,
+} from "../../request";
+
 const luoguBaseUrl = "https://www.luogu.com.cn";
+const requestMaxAttempts = 3;
+const requestRetryDelayMs = 500;
 const requestTimeoutMs = 2000;
 const luoguCdnCookieTtlMs = 270_000;
 
@@ -157,16 +164,24 @@ const getLuoguCdnCookie = async (url: URL, forceRefresh = false) => {
     return await luoguCdnCookieRequest;
   }
 
-  luoguCdnCookieRequest = fetch(url, {
-    headers: {
-      accept: "application/json, text/plain, */*",
-      referer: url.toString(),
-      "user-agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      "x-lentille-request": "content-only",
-    },
-    redirect: "manual",
-    signal: AbortSignal.timeout(requestTimeoutMs),
+  luoguCdnCookieRequest = requestExternalResource({
+    label: "Luogu CDN cookie",
+    maxAttempts: requestMaxAttempts,
+    request: async (signal) =>
+      await fetch(url, {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          referer: url.toString(),
+          "user-agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          "x-lentille-request": "content-only",
+        },
+        redirect: "manual",
+        signal,
+      }),
+    retryDelayMs: requestRetryDelayMs,
+    retryableStatus: isCommonRetryableHttpStatus,
+    timeoutMs: requestTimeoutMs,
   })
     .then((response) => {
       const cookie = getLuoguCdnCookieFromHeaders(response.headers);
@@ -189,17 +204,25 @@ const getLuoguCdnCookie = async (url: URL, forceRefresh = false) => {
 
 const fetchLuoguPageData = async (url: URL) => {
   const request = async (cookie: string) =>
-    await fetch(url, {
-      headers: {
-        accept: "application/json, text/plain, */*",
-        cookie,
-        referer: url.toString(),
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-        "x-lentille-request": "content-only",
-      },
-      redirect: "manual",
-      signal: AbortSignal.timeout(requestTimeoutMs),
+    await requestExternalResource({
+      label: "Luogu page data",
+      maxAttempts: requestMaxAttempts,
+      request: async (signal) =>
+        await fetch(url, {
+          headers: {
+            accept: "application/json, text/plain, */*",
+            cookie,
+            referer: url.toString(),
+            "user-agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "x-lentille-request": "content-only",
+          },
+          redirect: "manual",
+          signal,
+        }),
+      retryDelayMs: requestRetryDelayMs,
+      retryableStatus: isCommonRetryableHttpStatus,
+      timeoutMs: requestTimeoutMs,
     });
 
   const cookie = await getLuoguCdnCookie(url);
@@ -224,8 +247,13 @@ const fetchLuoguPageData = async (url: URL) => {
 const searchUsers = async (params: { keyword: string }) => {
   const url = buildLuoguUserSearchUrl(params.keyword);
 
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(requestTimeoutMs),
+  const response = await requestExternalResource({
+    label: "Luogu user/search",
+    maxAttempts: requestMaxAttempts,
+    request: async (signal) => await fetch(url, { signal }),
+    retryDelayMs: requestRetryDelayMs,
+    retryableStatus: isCommonRetryableHttpStatus,
+    timeoutMs: requestTimeoutMs,
   });
 
   if (!response.ok) {

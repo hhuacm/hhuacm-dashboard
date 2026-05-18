@@ -78,7 +78,7 @@ const mockJsonResponse = (payload: unknown) => {
   });
 };
 
-const mockFetchResponses = (responses: Response[]) => {
+const mockFetchResponses = (responses: Array<Error | Response>) => {
   const requests: RequestInit[] = [];
 
   globalThis.fetch = Object.assign(
@@ -87,7 +87,11 @@ const mockFetchResponses = (responses: Response[]) => {
       const response = responses.shift();
 
       if (response === undefined) {
-        throw new Error("Unexpected fetch call");
+        return Promise.reject(new Error("Unexpected fetch call"));
+      }
+
+      if (response instanceof Error) {
+        return Promise.reject(response);
       }
 
       return Promise.resolve(response);
@@ -138,6 +142,30 @@ describe("luoguSource", () => {
         uid: 1,
       },
     ]);
+  });
+
+  it("retries retryable user search responses", async () => {
+    const requests = mockFetchResponses([
+      Response.json({}, { status: 502 }),
+      Response.json({
+        users: [
+          {
+            name: "kkksc03",
+            uid: 1,
+          },
+        ],
+      }),
+    ]);
+
+    await expect(
+      luoguSource.searchUsers({ keyword: "kkksc03" })
+    ).resolves.toEqual([
+      {
+        name: "kkksc03",
+        uid: 1,
+      },
+    ]);
+    expect(requests).toHaveLength(2);
   });
 
   it("loads practice data after warming the Luogu CDN cookie", async () => {

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
+import {
+  isCommonRetryableHttpStatus,
+  requestExternalResource,
+} from "../../request";
+
 const codeforcesApiBaseUrl = "https://codeforces.com/api";
+const requestMaxAttempts = 3;
+const requestRetryDelayMs = 500;
 const requestTimeoutMs = 10_000;
 
 const codeforcesEnvelopeSchema = z.object({
@@ -62,8 +69,13 @@ const loadCodeforcesResult = async (
   requestLabel: string
 ) => {
   const url = buildCodeforcesApiUrl(endpoint, searchParams);
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(requestTimeoutMs),
+  const response = await requestExternalResource({
+    label: `Codeforces ${endpoint} ${requestLabel}`,
+    maxAttempts: requestMaxAttempts,
+    request: async (signal) => await fetch(url, { signal }),
+    retryDelayMs: requestRetryDelayMs,
+    retryableStatus: isCommonRetryableHttpStatus,
+    timeoutMs: requestTimeoutMs,
   });
 
   if (!response.ok) {

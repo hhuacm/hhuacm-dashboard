@@ -87,19 +87,29 @@ export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
 
   const startRunnerLoop = async () => {
     while (!isStopped) {
-      const result = await runRefreshWorkerOnce(db);
+      try {
+        const result = await runRefreshWorkerOnce(db);
 
-      if (!result) {
+        if (!result) {
+          await sleep(refreshDefaults.workerPollIntervalMs);
+        } else if (result.cooldownMs > 0) {
+          await sleep(result.cooldownMs);
+        }
+      } catch (error) {
+        console.error("Refresh runner iteration failed", error);
         await sleep(refreshDefaults.workerPollIntervalMs);
-      } else if (result.cooldownMs > 0) {
-        await sleep(result.cooldownMs);
       }
     }
   };
 
   const startProducerLoop = async () => {
     while (!isStopped) {
-      await enqueueStaleRefreshTargets(db);
+      try {
+        await enqueueStaleRefreshTargets(db);
+      } catch (error) {
+        console.error("Refresh producer iteration failed", error);
+      }
+
       await sleep(refreshDefaults.staleScanIntervalMs);
     }
   };
