@@ -132,7 +132,7 @@ const attachPublicOjAccountData = async (
     }
 
     if (account.platform === "luogu") {
-      publicAccount.luogu = await getLuoguStatsForProfile(account);
+      publicAccount.luogu = await getLuoguStatsForProfile(db, account);
     }
 
     publicAccounts.push(publicAccount);

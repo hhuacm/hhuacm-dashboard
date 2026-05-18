@@ -1,7 +1,10 @@
 import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const refreshJobKinds = ["codeforces.accountStats"] as const;
+export const refreshJobKinds = [
+  "codeforces.accountStats",
+  "luogu.accountStats",
+] as const;
 export const refreshJobTargetTypes = ["ojAccount"] as const;
 export const refreshJobStatuses = ["pending", "running"] as const;
 

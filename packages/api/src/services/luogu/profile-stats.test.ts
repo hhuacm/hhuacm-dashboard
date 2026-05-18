@@ -1,43 +1,16 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
+import {
+  luoguAcceptedProblem,
+  luoguAccountStats,
+} from "@hhuacm-dashboard/db/schema/luogu-account-stats";
+import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 
+import { createServiceTestDb } from "../test-db";
 import {
   getLuoguStatsForProfile,
   parseLuoguUidFromProfileUrl,
   summarizeLuoguPractice,
 } from "./profile-stats";
-
-const originalFetch = globalThis.fetch;
-
-const mockLuoguPracticeHttpFailure = () => {
-  let requestCount = 0;
-
-  globalThis.fetch = Object.assign(
-    (_url: string | URL | Request, _init?: RequestInit) => {
-      requestCount += 1;
-
-      if (requestCount === 1) {
-        return Promise.resolve(
-          new Response(null, {
-            headers: {
-              location: "https://www.luogu.com.cn/user/97238/practice",
-              "set-cookie": "C3VK=test; Max-Age=300; Path=/",
-            },
-            status: 302,
-          })
-        );
-      }
-
-      return Promise.resolve(new Response("server error", { status: 500 }));
-    },
-    {
-      preconnect: originalFetch.preconnect,
-    }
-  );
-};
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
 
 describe("Luogu profile stats", () => {
   it("parses UID from Luogu profile URL", () => {
@@ -66,6 +39,8 @@ describe("Luogu profile stats", () => {
     });
 
     expect(summary.acceptedProblemCount).toBe(9);
+    expect(summary.acceptedWeightedScore).toBe(8);
+    expect(summary.averageAcceptedDifficulty).toBe(2);
     expect(summary.difficultyCounts).toEqual([
       { count: 1, difficulty: 0, label: "暂无评定" },
       { count: 2, difficulty: 1, label: "入门" },
@@ -88,8 +63,14 @@ describe("Luogu profile stats", () => {
   });
 
   it("returns empty stats when UID is missing", async () => {
+    const db = await createServiceTestDb();
+
     await expect(
-      getLuoguStatsForProfile({ profileUrl: "" })
+      getLuoguStatsForProfile(db, {
+        handle: "",
+        id: "account-luogu",
+        profileUrl: "",
+      })
     ).resolves.toMatchObject({
       acceptedProblemCount: null,
       lastError: "Luogu UID is missing",
@@ -97,17 +78,68 @@ describe("Luogu profile stats", () => {
     });
   });
 
-  it("returns failed stats when Luogu practice request fails", async () => {
-    mockLuoguPracticeHttpFailure();
+  it("reads cached stats and accepted problem difficulty counts", async () => {
+    const db = await createServiceTestDb();
+    const fetchedAt = new Date();
+
+    await db.insert(luoguAccountStats).values({
+      acceptedProblemCount: 3,
+      acceptedWeightedScore: 8,
+      accountId: "account-luogu",
+      averageAcceptedDifficulty: 4,
+      fetchedAt,
+      lastAttemptedAt: fetchedAt,
+      lastError: null,
+      uid: 97_238,
+    });
+    await db.insert(luoguAcceptedProblem).values([
+      {
+        accountId: "account-luogu",
+        difficulty: 1,
+        firstSeenAt: fetchedAt,
+        lastSeenAt: fetchedAt,
+        name: "A+B Problem",
+        pid: "P1001",
+        type: "P",
+      },
+      {
+        accountId: "account-luogu",
+        difficulty: 7,
+        firstSeenAt: fetchedAt,
+        lastSeenAt: fetchedAt,
+        name: "Hard Problem",
+        pid: "P9999",
+        type: "P",
+      },
+    ]);
 
     await expect(
-      getLuoguStatsForProfile({
+      getLuoguStatsForProfile(db, {
+        handle: "forlight",
+        id: "account-luogu",
         profileUrl: "https://www.luogu.com.cn/user/97238",
       })
     ).resolves.toMatchObject({
-      acceptedProblemCount: null,
-      lastError: "Luogu page data HTTP 500",
-      syncStatus: "failed",
+      acceptedProblemCount: 3,
+      acceptedWeightedScore: 8,
+      averageAcceptedDifficulty: 4,
+      fetchedAt: fetchedAt.toISOString(),
+      syncStatus: "ready",
     });
+  });
+
+  it("enqueues refresh jobs for missing local stats", async () => {
+    const db = await createServiceTestDb();
+
+    const stats = await getLuoguStatsForProfile(db, {
+      handle: "forlight",
+      id: "account-luogu",
+      profileUrl: "https://www.luogu.com.cn/user/97238",
+    });
+    const jobs = await db.select().from(refreshJob);
+
+    expect(stats?.syncStatus).toBe("refreshing");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.targetId).toBe("account-luogu");
   });
 });

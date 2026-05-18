@@ -6,11 +6,14 @@ import { and, asc, eq, ne } from "drizzle-orm";
 
 import type { Context } from "../context";
 import { deleteCodeforcesStats } from "./codeforces/stats-cache";
+import { deleteLuoguStats } from "./luogu/sync";
 import { isPublicActivityMemberStatus } from "./member-status";
 import { buildOjProfileUrl } from "./oj-profile-url";
 import {
   deleteCodeforcesAccountStatsRefreshJob,
+  deleteLuoguAccountStatsRefreshJob,
   enqueueCodeforcesAccountStatsRefresh,
+  enqueueLuoguAccountStatsRefresh,
 } from "./refresh/queue";
 
 type Database = Context["db"];
@@ -83,15 +86,17 @@ export const clearCodeforcesStatsIfNeeded = async (
   }
 };
 
-const enqueueCodeforcesStatsIfNeeded = async (
+export const clearLuoguStatsIfNeeded = async (
   db: Database,
-  account: { id: string; platform: OjPlatform },
-  userId: string
+  account: { id: string; platform: OjPlatform }
 ) => {
-  if (account.platform !== "codeforces") {
-    return;
+  if (account.platform === "luogu") {
+    await deleteLuoguStats(db, account.id);
+    await deleteLuoguAccountStatsRefreshJob(db, account.id);
   }
+};
 
+const isPublicActivityUser = async (db: Database, userId: string) => {
   const [profile] = await db
     .select({ memberStatus: userProfile.memberStatus })
     .from(userProfile)
@@ -99,11 +104,29 @@ const enqueueCodeforcesStatsIfNeeded = async (
     .limit(1);
   const memberStatus = profile?.memberStatus ?? defaultMemberStatus;
 
-  if (!isPublicActivityMemberStatus(memberStatus)) {
+  return isPublicActivityMemberStatus(memberStatus);
+};
+
+const enqueueOjStatsIfNeeded = async (
+  db: Database,
+  account: { id: string; platform: OjPlatform },
+  userId: string
+) => {
+  if (!(account.platform === "codeforces" || account.platform === "luogu")) {
     return;
   }
 
-  await enqueueCodeforcesAccountStatsRefresh(db, account.id);
+  if (!(await isPublicActivityUser(db, userId))) {
+    return;
+  }
+
+  if (account.platform === "codeforces") {
+    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
+  }
+
+  if (account.platform === "luogu") {
+    await enqueueLuoguAccountStatsRefresh(db, account.id);
+  }
 };
 
 const assertNoHandleOwner = async (
@@ -152,7 +175,7 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  await enqueueCodeforcesStatsIfNeeded(db, account, input.userId);
+  await enqueueOjStatsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
@@ -181,7 +204,8 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
   }
 
   await clearCodeforcesStatsIfNeeded(db, account);
-  await enqueueCodeforcesStatsIfNeeded(db, account, input.userId);
+  await clearLuoguStatsIfNeeded(db, account);
+  await enqueueOjStatsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
@@ -277,6 +301,7 @@ export const deleteOjAccount = async (
   }
 
   await clearCodeforcesStatsIfNeeded(db, account);
+  await clearLuoguStatsIfNeeded(db, account);
 
   return toPublicOjAccount(account);
 };

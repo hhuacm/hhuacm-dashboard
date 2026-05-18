@@ -4,6 +4,7 @@ import { and, asc, eq, or } from "drizzle-orm";
 import type { Context } from "../../context";
 import {
   codeforcesAccountStatsJobKind,
+  luoguAccountStatsJobKind,
   ojAccountTargetType,
   type RefreshJobKind,
   type RefreshJobTargetType,
@@ -81,10 +82,23 @@ export const enqueueCodeforcesAccountStatsRefresh = (
     targetType: ojAccountTargetType,
   });
 
+export const enqueueLuoguAccountStatsRefresh = (
+  db: Database,
+  accountId: string
+) =>
+  enqueueRefreshJob(db, {
+    kind: luoguAccountStatsJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
+
 export const getRefreshJobForCodeforcesAccount = (
   db: Database,
   accountId: string
 ) => getRefreshJobsForTarget(db, { targetId: accountId });
+
+export const getRefreshJobForLuoguAccount = (db: Database, accountId: string) =>
+  getRefreshJobsForTarget(db, { targetId: accountId });
 
 export const takeNextRefreshJob = async (db: Database) => {
   const [candidate] = await db
@@ -109,6 +123,18 @@ export const takeNextRefreshJob = async (db: Database) => {
     .returning(refreshJobFields);
 
   return claimedJob ?? null;
+};
+
+export const resetRunningRefreshJobs = async (db: Database) => {
+  const recoveredJobs = await db
+    .update(refreshJob)
+    .set({
+      status: "pending",
+    })
+    .where(eq(refreshJob.status, "running"))
+    .returning(refreshJobFields);
+
+  return recoveredJobs.length;
 };
 
 export const deleteRefreshJob = async (db: Database, jobId: string) => {
@@ -167,6 +193,16 @@ export const deleteCodeforcesAccountStatsRefreshJob = (
 ) =>
   deleteRefreshJobsForTarget(db, {
     kind: codeforcesAccountStatsJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
+
+export const deleteLuoguAccountStatsRefreshJob = (
+  db: Database,
+  accountId: string
+) =>
+  deleteRefreshJobsForTarget(db, {
+    kind: luoguAccountStatsJobKind,
     targetId: accountId,
     targetType: ojAccountTargetType,
   });

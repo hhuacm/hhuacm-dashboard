@@ -30,11 +30,16 @@ describe("addOjAccount", () => {
     }
   };
 
-  it("enqueues Codeforces stats only for public activity members", async () => {
+  it("enqueues OJ stats only for public activity members", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "active-user", memberStatus: "active" });
+    await createUser(db, { id: "active-luogu-user", memberStatus: "active" });
     await createUser(db, { id: "retired-user", memberStatus: "retired" });
+    await createUser(db, {
+      id: "retired-luogu-user",
+      memberStatus: "retired",
+    });
 
     await addOjAccount(db, {
       handle: "activeHandle",
@@ -46,10 +51,23 @@ describe("addOjAccount", () => {
       platform: "codeforces",
       userId: "retired-user",
     });
+    await addOjAccount(db, {
+      handle: "activeLuogu",
+      platform: "luogu",
+      userId: "active-luogu-user",
+    });
+    await addOjAccount(db, {
+      handle: "retiredLuogu",
+      platform: "luogu",
+      userId: "retired-luogu-user",
+    });
 
     const refreshJobs = await db.select().from(refreshJob);
 
-    expect(refreshJobs).toHaveLength(1);
-    expect(refreshJobs[0]?.targetId).toBeTruthy();
+    expect(refreshJobs).toHaveLength(2);
+    expect(refreshJobs.map((job) => job.kind).sort()).toEqual([
+      "codeforces.accountStats",
+      "luogu.accountStats",
+    ]);
   });
 });

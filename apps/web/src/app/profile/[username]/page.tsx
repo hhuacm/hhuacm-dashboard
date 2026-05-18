@@ -66,13 +66,16 @@ interface PublicOjAccount {
   handle: string;
   luogu?: null | {
     acceptedProblemCount: null | number;
+    acceptedWeightedScore: null | number;
+    averageAcceptedDifficulty: null | number;
     difficultyCounts: {
       count: number;
       difficulty: number;
       label: string;
     }[];
+    fetchedAt: null | string;
     lastError: null | string;
-    syncStatus: "empty" | "failed" | "ready";
+    syncStatus: "empty" | "failed" | "ready" | "refreshing";
   };
   platform: OjPlatform;
   profileUrl: string;
@@ -240,8 +243,12 @@ function getLuoguStatusText(luogu: PublicOjAccount["luogu"] | undefined) {
     return "等待数据";
   }
 
+  if (luogu.syncStatus === "refreshing") {
+    return luogu.fetchedAt ? "后台刷新中" : "等待数据";
+  }
+
   if (luogu.syncStatus === "failed") {
-    return "读取失败";
+    return luogu.fetchedAt ? "刷新失败，显示旧数据" : "读取失败";
   }
 
   return "数据已更新";
@@ -312,10 +319,25 @@ function LuoguStatsContent({
 }) {
   return (
     <div className="mt-4 grid gap-3">
-      <CodeforcesMetric
-        label="总过题数"
-        value={formatNumber(luogu?.acceptedProblemCount ?? null)}
-      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <CodeforcesMetric
+          label="总过题数"
+          value={formatNumber(luogu?.acceptedProblemCount ?? null)}
+        />
+        <CodeforcesMetric
+          label="AC 加权分"
+          value={formatNumber(luogu?.acceptedWeightedScore ?? null)}
+        />
+        <CodeforcesMetric
+          label="平均难度"
+          value={
+            luogu?.averageAcceptedDifficulty === null ||
+            luogu?.averageAcceptedDifficulty === undefined
+              ? "—"
+              : luogu.averageAcceptedDifficulty.toFixed(2)
+          }
+        />
+      </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {luogu?.difficultyCounts.map((item) => (
           <LuoguDifficultyRow
@@ -335,6 +357,12 @@ function LuoguStatsContent({
           </dd>
         </div>
       ) : null}
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+        <dt className="text-muted text-xs">数据更新</dt>
+        <dd className="mt-1 font-medium text-foreground">
+          {formatDateTime(luogu?.fetchedAt ?? null)}
+        </dd>
+      </div>
     </div>
   );
 }

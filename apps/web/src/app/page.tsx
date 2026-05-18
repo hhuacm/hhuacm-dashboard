@@ -244,6 +244,15 @@ function QuickLinksCard() {
           <Trophy className="size-4" />
           Codeforces 排行榜
         </Button>
+        <Button
+          className="justify-start"
+          onPress={() => router.push("/rank/luogu" as Route)}
+          size="lg"
+          variant="outline"
+        >
+          <Trophy className="size-4" />
+          洛谷排行榜
+        </Button>
       </Card.Content>
     </Card>
   );

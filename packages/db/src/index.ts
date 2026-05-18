@@ -15,6 +15,12 @@ import {
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
 } from "./schema/codeforces-account-stats";
+import {
+  luoguAcceptedProblem,
+  luoguAcceptedProblemRelations,
+  luoguAccountStats,
+  luoguAccountStatsRelations,
+} from "./schema/luogu-account-stats";
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import { userProfile, userProfileRelations } from "./schema/profile";
 import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
@@ -24,6 +30,10 @@ const schema = {
   accountRelations,
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
+  luoguAcceptedProblem,
+  luoguAcceptedProblemRelations,
+  luoguAccountStats,
+  luoguAccountStatsRelations,
   refreshJob,
   refreshJobRelations,
   session,

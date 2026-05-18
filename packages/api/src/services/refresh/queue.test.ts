@@ -18,6 +18,7 @@ import {
   deleteRefreshJobsForTarget,
   enqueueRefreshJob,
   getRefreshJobsForTarget,
+  resetRunningRefreshJobs,
   takeNextRefreshJob,
 } from "./queue";
 
@@ -103,6 +104,20 @@ describe("refresh queue", () => {
 
     expect(claimedJob?.targetId).toBe("first");
     expect(claimedJob?.status).toBe("running");
+  });
+
+  it("resets interrupted running jobs", async () => {
+    const { db, directory } = await createTestDb();
+    testDirectory = directory;
+
+    await createJob(db);
+    await takeNextRefreshJob(db);
+
+    const recoveredCount = await resetRunningRefreshJobs(db);
+    const jobs = await getRefreshJobsForTarget(db, { targetId: "account-1" });
+
+    expect(recoveredCount).toBe(1);
+    expect(jobs[0]?.status).toBe("pending");
   });
 
   it("deletes completed jobs", async () => {

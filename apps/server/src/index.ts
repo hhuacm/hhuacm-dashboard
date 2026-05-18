@@ -5,18 +5,21 @@ import { startRefreshRuntime } from "@hhuacm-dashboard/api/services/refresh/runt
 import { auth } from "@hhuacm-dashboard/auth";
 import { db } from "@hhuacm-dashboard/db";
 import { trpcServer } from "@hono/trpc-server";
+import { type Server, serve } from "bun";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 const app = new Hono();
 const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:3001";
-const refreshRuntimeStore = globalThis as typeof globalThis & {
+const runtimeStore = globalThis as typeof globalThis & {
+  __hhuacmServer?: Server<unknown>;
   __hhuacmRefreshRuntime?: ReturnType<typeof startRefreshRuntime>;
 };
 
-refreshRuntimeStore.__hhuacmRefreshRuntime?.stop();
-refreshRuntimeStore.__hhuacmRefreshRuntime = startRefreshRuntime({ db });
+runtimeStore.__hhuacmRefreshRuntime?.stop();
+runtimeStore.__hhuacmServer?.stop(true);
+runtimeStore.__hhuacmRefreshRuntime = startRefreshRuntime({ db });
 
 app.use(logger());
 app.use(
@@ -41,4 +44,12 @@ app.use(
 
 app.get("/", (c) => c.text("OK"));
 
-export default app;
+const port = Number(process.env.PORT ?? "3000");
+const server = serve({
+  fetch: app.fetch,
+  port,
+});
+
+runtimeStore.__hhuacmServer = server;
+
+console.log(`Started server: ${server.url}`);

@@ -87,11 +87,11 @@ const luoguUserPracticeSchema = z.object({
   user: luoguUserPracticeUserSchema,
 });
 
+export type LuoguUserPracticeDto = z.infer<typeof luoguUserPracticeSchema>;
+
 const luoguUserPracticeResponseSchema = z.object({
   data: luoguUserPracticeSchema,
 });
-
-export type LuoguUserPracticeDto = z.infer<typeof luoguUserPracticeSchema>;
 
 const buildLuoguUrl = (
   path: string,

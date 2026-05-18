@@ -1,7 +1,13 @@
 import type { Context } from "../../context";
 import { refreshDefaults } from "./constants";
 import { codeforcesAccountStatsRefreshJobDefinition } from "./jobs/codeforces-account-stats";
-import { deleteRefreshJob, type RefreshJob, takeNextRefreshJob } from "./queue";
+import { luoguAccountStatsRefreshJobDefinition } from "./jobs/luogu-account-stats";
+import {
+  deleteRefreshJob,
+  type RefreshJob,
+  resetRunningRefreshJobs,
+  takeNextRefreshJob,
+} from "./queue";
 
 type Database = Context["db"];
 
@@ -18,6 +24,7 @@ export interface RefreshJobDefinition {
 
 const refreshJobDefinitions = [
   codeforcesAccountStatsRefreshJobDefinition,
+  luoguAccountStatsRefreshJobDefinition,
 ] as const satisfies RefreshJobDefinition[];
 
 const getRefreshJobDefinition = (
@@ -78,6 +85,9 @@ export const runRefreshWorkerOnce = async (
 export const enqueueStaleRefreshTargets = (db: Database) =>
   scanStaleRefreshTargets(refreshJobDefinitions, db);
 
+export const recoverInterruptedRefreshJobs = (db: Database) =>
+  resetRunningRefreshJobs(db);
+
 export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
   let isStopped = false;
 
@@ -113,6 +123,10 @@ export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
       await sleep(refreshDefaults.staleScanIntervalMs);
     }
   };
+
+  recoverInterruptedRefreshJobs(db).catch((error) => {
+    console.error("Refresh job recovery failed", error);
+  });
 
   startRunnerLoop().catch((error) => {
     console.error("Refresh runner stopped unexpectedly", error);

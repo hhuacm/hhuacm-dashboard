@@ -1,5 +1,11 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
+import {
+  luoguAcceptedProblem,
+  luoguAccountStats,
+} from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
@@ -64,6 +70,32 @@ create table codeforces_account_stats (
 )
 `,
   `
+create table luogu_account_stats (
+  account_id text primary key not null,
+  uid integer,
+  accepted_problem_count integer,
+  accepted_weighted_score integer,
+  average_accepted_difficulty real,
+  fetched_at integer,
+  last_attempted_at integer not null,
+  last_error text,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+)
+`,
+  `
+create table luogu_accepted_problem (
+  account_id text not null,
+  pid text not null,
+  name text not null,
+  type text not null,
+  difficulty integer,
+  first_seen_at integer not null,
+  last_seen_at integer not null,
+  primary key (account_id, pid)
+)
+`,
+  `
 create table refresh_job (
   id text primary key not null,
   kind text not null,
@@ -77,6 +109,8 @@ create table refresh_job (
 
 const testSchema = {
   codeforcesAccountStats,
+  luoguAcceptedProblem,
+  luoguAccountStats,
   refreshJob,
   user,
   userOjAccount,
@@ -84,7 +118,12 @@ const testSchema = {
 } as const;
 
 export const createServiceTestDb = async () => {
-  const client = createClient({ url: ":memory:" });
+  const client = createClient({
+    url: `file:${path.join(
+      tmpdir(),
+      `hhuacm-service-test-${crypto.randomUUID()}.db`
+    )}`,
+  });
 
   for (const statement of createTableStatements) {
     await client.execute(statement);

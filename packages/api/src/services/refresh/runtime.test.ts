@@ -12,9 +12,10 @@ import {
   codeforcesAccountStatsJobKind,
   ojAccountTargetType,
 } from "./constants";
-import { enqueueRefreshJob } from "./queue";
+import { enqueueRefreshJob, takeNextRefreshJob } from "./queue";
 import {
   type RefreshJobDefinition,
+  recoverInterruptedRefreshJobs,
   runRefreshWorkerOnce,
   scanStaleRefreshTargets,
 } from "./runtime";
@@ -122,6 +123,18 @@ describe("refresh runtime", () => {
     const remainingJobs = await db.select().from(refreshJob);
 
     expect(remainingJobs).toHaveLength(0);
+  });
+
+  it("recovers jobs left running by interrupted workers", async () => {
+    const { db, directory } = await createTestDb();
+    testDirectory = directory;
+    await enqueueTestJob(db);
+    await takeNextRefreshJob(db);
+
+    await recoverInterruptedRefreshJobs(db);
+    const [job] = await db.select().from(refreshJob);
+
+    expect(job?.status).toBe("pending");
   });
 
   it("rejects unsupported job kinds", async () => {
