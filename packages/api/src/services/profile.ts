@@ -13,6 +13,7 @@ import { getCodeforcesStatsForProfile } from "./codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "./codeforces/types";
 import type { PublicLuoguStats } from "./luogu/profile-stats";
 import { getLuoguStatsForProfile } from "./luogu/profile-stats";
+import { isStatsDisabledMemberStatus } from "./member-status";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
@@ -105,9 +106,11 @@ export const getProfileByUserId = async (db: Database, userId: string) => {
 
 const attachPublicOjAccountData = async (
   db: Database,
-  accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>
+  accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>,
+  memberStatus: MemberStatus
 ): Promise<PublicOjAccount[]> => {
   const publicAccounts: PublicOjAccount[] = [];
+  const shouldAttachStats = !isStatsDisabledMemberStatus(memberStatus);
 
   for (const account of accounts) {
     const publicAccount: PublicOjAccount = {
@@ -115,6 +118,11 @@ const attachPublicOjAccountData = async (
       platform: account.platform,
       profileUrl: account.profileUrl,
     };
+
+    if (!shouldAttachStats) {
+      publicAccounts.push(publicAccount);
+      continue;
+    }
 
     if (account.platform === "codeforces") {
       publicAccount.codeforces = await getCodeforcesStatsForProfile(
@@ -141,7 +149,8 @@ export const getPublicProfile = async (
   const profile = await getProfileByUserId(db, targetUser.id);
   const ojAccounts = await attachPublicOjAccountData(
     db,
-    await listInternalOjAccountsByUserId(db, targetUser.id)
+    await listInternalOjAccountsByUserId(db, targetUser.id),
+    profile.memberStatus
   );
   const currentUser = input.currentUserId
     ? (

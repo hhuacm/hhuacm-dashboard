@@ -1,10 +1,12 @@
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import type { OjPlatform } from "@hhuacm-dashboard/domain";
+import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, ne } from "drizzle-orm";
 
 import type { Context } from "../context";
 import { deleteCodeforcesStats } from "./codeforces/stats-cache";
+import { isPublicActivityMemberStatus } from "./member-status";
 import { buildOjProfileUrl } from "./oj-profile-url";
 import {
   deleteCodeforcesAccountStatsRefreshJob,
@@ -83,11 +85,25 @@ export const clearCodeforcesStatsIfNeeded = async (
 
 const enqueueCodeforcesStatsIfNeeded = async (
   db: Database,
-  account: { id: string; platform: OjPlatform }
+  account: { id: string; platform: OjPlatform },
+  userId: string
 ) => {
-  if (account.platform === "codeforces") {
-    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
+  if (account.platform !== "codeforces") {
+    return;
   }
+
+  const [profile] = await db
+    .select({ memberStatus: userProfile.memberStatus })
+    .from(userProfile)
+    .where(eq(userProfile.userId, userId))
+    .limit(1);
+  const memberStatus = profile?.memberStatus ?? defaultMemberStatus;
+
+  if (!isPublicActivityMemberStatus(memberStatus)) {
+    return;
+  }
+
+  await enqueueCodeforcesAccountStatsRefresh(db, account.id);
 };
 
 const assertNoHandleOwner = async (
@@ -136,7 +152,7 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  await enqueueCodeforcesStatsIfNeeded(db, account);
+  await enqueueCodeforcesStatsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
@@ -165,7 +181,7 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
   }
 
   await clearCodeforcesStatsIfNeeded(db, account);
-  await enqueueCodeforcesStatsIfNeeded(db, account);
+  await enqueueCodeforcesStatsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };

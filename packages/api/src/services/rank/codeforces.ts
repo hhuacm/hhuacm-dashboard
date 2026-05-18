@@ -3,9 +3,14 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import {
+  defaultMemberStatus,
+  type MemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
+import { publicActivityMemberStatuses } from "../member-status";
 import {
   codeforcesAccountStatsJobKind,
   ojAccountTargetType,
@@ -23,6 +28,7 @@ export type CodeforcesRankStatus =
   | "stale";
 
 const usernameSortExpression = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`;
+const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
@@ -87,7 +93,12 @@ export const listCodeforcesRankRows = async (db: Database) => {
       codeforcesAccountStats,
       eq(codeforcesAccountStats.accountId, userOjAccount.id)
     )
-    .where(eq(userOjAccount.platform, "codeforces"))
+    .where(
+      and(
+        eq(userOjAccount.platform, "codeforces"),
+        inArray(memberStatusExpression, publicActivityMemberStatuses)
+      )
+    )
     .orderBy(asc(usernameSortExpression), asc(user.id));
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []

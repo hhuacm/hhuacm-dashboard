@@ -93,6 +93,11 @@ const isMemberStatus = (
   status: null | string | undefined
 ): status is MemberStatus => Boolean(status && status in memberStatusConfig);
 
+const isStatsDisabledMemberStatus = (
+  status: null | string | undefined
+): status is "frozen" | "retired" =>
+  status === "frozen" || status === "retired";
+
 function MemberStatusBadge({ status }: { status: null | string | undefined }) {
   const memberStatus = isMemberStatus(status) ? status : "selection";
   const config = memberStatusConfig[memberStatus];
@@ -334,7 +339,13 @@ function LuoguStatsContent({
   );
 }
 
-function OjAccountCard({ account }: { account: PublicOjAccount }) {
+function OjAccountCard({
+  account,
+  isStatsDisabled,
+}: {
+  account: PublicOjAccount;
+  isStatsDisabled: boolean;
+}) {
   const platform = getOjPlatformConfig(account.platform);
   const isCodeforces = account.platform === "codeforces";
   const isLuogu = account.platform === "luogu";
@@ -362,7 +373,7 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
             <p className="font-medium text-foreground">
               {platform?.label ?? account.platform}
             </p>
-            {isCodeforces ? (
+            {isCodeforces && !isStatsDisabled ? (
               <p
                 className={`mt-1 inline-flex items-center gap-1 text-sm ${getCodeforcesStatusClassName(
                   codeforces
@@ -374,7 +385,7 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
                 {getCodeforcesStatusText(codeforces)}
               </p>
             ) : null}
-            {isLuogu ? (
+            {isLuogu && !isStatsDisabled ? (
               <p
                 className={`mt-1 inline-flex items-center gap-1 text-sm ${getLuoguStatusClassName(
                   luogu
@@ -392,7 +403,7 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
         {account.profileUrl ? (
           <a
             className={`inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline ${
-              isCodeforces
+              isCodeforces && !isStatsDisabled
                 ? getCodeforcesRatingClassName(codeforces?.rating)
                 : "text-accent"
             }`}
@@ -410,9 +421,11 @@ function OjAccountCard({ account }: { account: PublicOjAccount }) {
         )}
       </div>
 
-      {isCodeforces ? <CodeforcesStatsContent codeforces={codeforces} /> : null}
+      {isCodeforces && !isStatsDisabled ? (
+        <CodeforcesStatsContent codeforces={codeforces} />
+      ) : null}
 
-      {isLuogu ? <LuoguStatsContent luogu={luogu} /> : null}
+      {isLuogu && !isStatsDisabled ? <LuoguStatsContent luogu={luogu} /> : null}
     </div>
   );
 }
@@ -438,6 +451,9 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
   const canOpenSettings = profile?.permissions.isOwner;
   const canOpenAdmin = Boolean(
     profile?.permissions.isAdmin && !profile.permissions.isOwner
+  );
+  const isOjStatsDisabled = isStatsDisabledMemberStatus(
+    profile?.profile.memberStatus
   );
 
   return (
@@ -553,7 +569,11 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
                 {profile.ojAccounts.length > 0 ? (
                   <div className="grid gap-3">
                     {profile.ojAccounts.map((account) => (
-                      <OjAccountCard account={account} key={account.platform} />
+                      <OjAccountCard
+                        account={account}
+                        isStatsDisabled={isOjStatsDisabled}
+                        key={account.platform}
+                      />
                     ))}
                   </div>
                 ) : (
