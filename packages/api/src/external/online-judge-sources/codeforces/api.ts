@@ -16,26 +16,24 @@ const codeforcesEnvelopeSchema = z.object({
   status: z.string(),
 });
 
-const codeforcesUserInfoSchema = z
-  .object({
-    avatar: z.string().optional(),
-    city: z.string().optional(),
-    contribution: z.number().optional(),
-    country: z.string().optional(),
-    firstName: z.string().optional(),
-    friendOfCount: z.number().optional(),
-    handle: z.string(),
-    lastName: z.string().optional(),
-    lastOnlineTimeSeconds: z.number().optional(),
-    maxRank: z.string().optional(),
-    maxRating: z.number().optional(),
-    organization: z.string().optional(),
-    rank: z.string().optional(),
-    rating: z.number().optional(),
-    registrationTimeSeconds: z.number().optional(),
-    titlePhoto: z.string().optional(),
-  })
-  .passthrough();
+const codeforcesUserInfoSchema = z.looseObject({
+  avatar: z.string().optional(),
+  city: z.string().optional(),
+  contribution: z.number().optional(),
+  country: z.string().optional(),
+  firstName: z.string().optional(),
+  friendOfCount: z.number().optional(),
+  handle: z.string(),
+  lastName: z.string().optional(),
+  lastOnlineTimeSeconds: z.number().optional(),
+  maxRank: z.string().optional(),
+  maxRating: z.number().optional(),
+  organization: z.string().optional(),
+  rank: z.string().optional(),
+  rating: z.number().optional(),
+  registrationTimeSeconds: z.number().optional(),
+  titlePhoto: z.string().optional(),
+});
 
 const codeforcesUserInfoResultSchema = z.array(codeforcesUserInfoSchema);
 
@@ -43,56 +41,48 @@ export type CodeforcesUserInfoResult = z.infer<
   typeof codeforcesUserInfoResultSchema
 >;
 
-const codeforcesProblemSchema = z
-  .object({
-    contestId: z.number().optional(),
-    index: z.union([z.number(), z.string()]),
-    name: z.string().optional(),
-    points: z.number().optional(),
-    problemsetName: z.string().optional(),
-    rating: z.number().optional(),
-    tags: z.array(z.string()).optional(),
-    type: z.string().optional(),
-  })
-  .passthrough();
+const codeforcesProblemSchema = z.looseObject({
+  contestId: z.number().optional(),
+  index: z.union([z.number(), z.string()]),
+  name: z.string().optional(),
+  points: z.number().optional(),
+  problemsetName: z.string().optional(),
+  rating: z.number().optional(),
+  tags: z.array(z.string()).optional(),
+  type: z.string().optional(),
+});
 
-const codeforcesPartyMemberSchema = z
-  .object({
-    handle: z.string().optional(),
-    name: z.string().optional(),
-  })
-  .passthrough();
+const codeforcesPartyMemberSchema = z.looseObject({
+  handle: z.string().optional(),
+  name: z.string().optional(),
+});
 
-const codeforcesAuthorSchema = z
-  .object({
-    contestId: z.number().optional(),
-    ghost: z.boolean().optional(),
-    members: z.array(codeforcesPartyMemberSchema).optional(),
-    participantId: z.number().optional(),
-    participantType: z.string().optional(),
-    room: z.number().optional(),
-    startTimeSeconds: z.number().optional(),
-    teamId: z.number().optional(),
-    teamName: z.string().optional(),
-  })
-  .passthrough();
+const codeforcesAuthorSchema = z.looseObject({
+  contestId: z.number().optional(),
+  ghost: z.boolean().optional(),
+  members: z.array(codeforcesPartyMemberSchema).optional(),
+  participantId: z.number().optional(),
+  participantType: z.string().optional(),
+  room: z.number().optional(),
+  startTimeSeconds: z.number().optional(),
+  teamId: z.number().optional(),
+  teamName: z.string().optional(),
+});
 
-const codeforcesSubmissionSchema = z
-  .object({
-    author: codeforcesAuthorSchema.optional(),
-    contestId: z.number().optional(),
-    creationTimeSeconds: z.number(),
-    id: z.number(),
-    memoryConsumedBytes: z.number().optional(),
-    passedTestCount: z.number().optional(),
-    problem: codeforcesProblemSchema,
-    programmingLanguage: z.string().optional(),
-    relativeTimeSeconds: z.number().optional(),
-    testset: z.string().optional(),
-    timeConsumedMillis: z.number().optional(),
-    verdict: z.string().optional(),
-  })
-  .passthrough();
+const codeforcesSubmissionSchema = z.looseObject({
+  author: codeforcesAuthorSchema.optional(),
+  contestId: z.number().optional(),
+  creationTimeSeconds: z.number(),
+  id: z.number(),
+  memoryConsumedBytes: z.number().optional(),
+  passedTestCount: z.number().optional(),
+  problem: codeforcesProblemSchema,
+  programmingLanguage: z.string().optional(),
+  relativeTimeSeconds: z.number().optional(),
+  testset: z.string().optional(),
+  timeConsumedMillis: z.number().optional(),
+  verdict: z.string().optional(),
+});
 
 const codeforcesSubmissionResultSchema = z.array(codeforcesSubmissionSchema);
 

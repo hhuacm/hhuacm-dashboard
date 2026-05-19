@@ -16,131 +16,105 @@ let luoguCdnCookieExpiresAt = 0;
 let luoguCdnCookieRequest: Promise<string> | null = null;
 let luoguCdnCookieFetch: typeof fetch | null = null;
 
-const luoguUserSchema = z
-  .object({
-    avatar: z.string(),
-    background: z.string(),
-    badge: z.unknown().nullable(),
-    ccfLevel: z.number(),
-    color: z.string(),
-    isAdmin: z.boolean(),
-    isBanned: z.boolean(),
-    name: z.string(),
-    slogan: z.string(),
-    uid: z.number(),
-    xcpcLevel: z.number(),
-  })
-  .passthrough();
+const luoguUserSchema = z.looseObject({
+  avatar: z.string(),
+  background: z.string(),
+  badge: z.unknown().nullable(),
+  ccfLevel: z.number(),
+  color: z.string(),
+  isAdmin: z.boolean(),
+  isBanned: z.boolean(),
+  name: z.string(),
+  slogan: z.string(),
+  uid: z.number(),
+  xcpcLevel: z.number(),
+});
 
-const luoguUserSearchResultSchema = z
-  .object({
-    users: z.array(luoguUserSchema),
-  })
-  .passthrough();
+const luoguUserSearchResultSchema = z.looseObject({
+  users: z.array(luoguUserSchema),
+});
 
 export type LuoguUserSearchResult = z.infer<typeof luoguUserSearchResultSchema>;
 
-const luoguProblemSummarySchema = z
-  .object({
-    difficulty: z.number().nullable(),
-    name: z.string(),
-    pid: z.string(),
-    type: z.string(),
-  })
-  .passthrough();
+const luoguProblemSummarySchema = z.looseObject({
+  difficulty: z.number().nullable(),
+  name: z.string(),
+  pid: z.string(),
+  type: z.string(),
+});
 
-const luoguContestSummarySchema = z
-  .object({
-    endTime: z.number(),
-    id: z.number(),
-    name: z.string(),
-    startTime: z.number(),
-  })
-  .passthrough();
+const luoguContestSummarySchema = z.looseObject({
+  endTime: z.number(),
+  id: z.number(),
+  name: z.string(),
+  startTime: z.number(),
+});
 
-const luoguEloRatingSchema = z
-  .object({
-    contest: luoguContestSummarySchema.optional(),
-    latest: z.boolean(),
-    prevDiff: z.number().nullable(),
-    rating: z.number(),
-    time: z.number(),
-    userCount: z.number(),
-  })
-  .passthrough();
+const luoguEloRatingSchema = z.looseObject({
+  contest: luoguContestSummarySchema.optional(),
+  latest: z.boolean(),
+  prevDiff: z.number().nullable(),
+  rating: z.number(),
+  time: z.number(),
+  userCount: z.number(),
+});
 
-const luoguPracticeUserSchema = luoguUserSchema
-  .extend({
-    elo: z.unknown().nullable(),
-    eloValue: z.number().nullable(),
-    followerCount: z.number(),
-    followingCount: z.number(),
-    introduction: z.string().nullable(),
-    passedProblemCount: z.number().nullable(),
-    prize: z.array(z.unknown()),
-    ranking: z.number().nullable(),
-    registerTime: z.number(),
-    submittedProblemCount: z.number().nullable(),
-  })
-  .passthrough();
+const luoguPracticeUserSchema = luoguUserSchema.extend({
+  elo: z.unknown().nullable(),
+  eloValue: z.number().nullable(),
+  followerCount: z.number(),
+  followingCount: z.number(),
+  introduction: z.string().nullable(),
+  passedProblemCount: z.number().nullable(),
+  prize: z.array(z.unknown()),
+  ranking: z.number().nullable(),
+  registerTime: z.number(),
+  submittedProblemCount: z.number().nullable(),
+});
 
-const luoguPracticePageDataSchema = z
-  .object({
-    elo: z.array(luoguEloRatingSchema),
-    passed: z.array(luoguProblemSummarySchema),
-    submitted: z.array(luoguProblemSummarySchema),
-    user: luoguPracticeUserSchema,
-  })
-  .passthrough();
+const luoguPracticePageDataSchema = z.looseObject({
+  elo: z.array(luoguEloRatingSchema),
+  passed: z.array(luoguProblemSummarySchema),
+  submitted: z.array(luoguProblemSummarySchema),
+  user: luoguPracticeUserSchema,
+});
 
 export type LuoguPracticePageData = z.infer<typeof luoguPracticePageDataSchema>;
 
-const luoguPrizeSchema = z
-  .object({
-    prize: z
-      .object({
-        contest: z.string(),
-        event: z.string().nullable(),
-        prize: z.string(),
-        year: z.number(),
-      })
-      .passthrough(),
-  })
-  .passthrough();
+const luoguPrizeSchema = z.looseObject({
+  prize: z.looseObject({
+    contest: z.string(),
+    event: z.string().nullable(),
+    prize: z.string(),
+    year: z.number(),
+  }),
+});
 
-const luoguGuScoresSchema = z
-  .object({
-    basic: z.number(),
-    contest: z.number(),
-    practice: z.number(),
-    prize: z.number(),
-    rating: z.number(),
-    social: z.number(),
-  })
-  .passthrough();
+const luoguGuScoresSchema = z.looseObject({
+  basic: z.number(),
+  contest: z.number(),
+  practice: z.number(),
+  prize: z.number(),
+  rating: z.number(),
+  social: z.number(),
+});
 
-const luoguUserPageDataSchema = z
-  .object({
-    dailyCounts: z.array(z.unknown()),
-    elo: z.array(luoguEloRatingSchema),
-    gu: z
-      .object({
-        scores: luoguGuScoresSchema,
-      })
-      .passthrough(),
-    prizes: z.array(luoguPrizeSchema),
-    user: luoguPracticeUserSchema,
-  })
-  .passthrough();
+const luoguUserPageDataSchema = z.looseObject({
+  dailyCounts: z.array(z.unknown()),
+  elo: z.array(luoguEloRatingSchema),
+  gu: z.looseObject({
+    scores: luoguGuScoresSchema,
+  }),
+  prizes: z.array(luoguPrizeSchema),
+  user: luoguPracticeUserSchema,
+});
 
 export type LuoguUserPageData = z.infer<typeof luoguUserPageDataSchema>;
 
-const luoguPageResponseSchema = z
-  .object({
-    data: z.unknown(),
-    status: z.number(),
-  })
-  .passthrough();
+const luoguPageResponseSchema = z.looseObject({
+  data: z.unknown(),
+  status: z.number(),
+});
 
 const buildLuoguUrl = (
   path: string,
