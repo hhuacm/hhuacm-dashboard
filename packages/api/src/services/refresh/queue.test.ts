@@ -11,6 +11,7 @@ import { drizzle } from "drizzle-orm/libsql";
 import type { Context } from "../../context";
 import {
   codeforcesAccountStatsJobKind,
+  luoguAccountStatsJobKind,
   ojAccountTargetType,
 } from "./constants";
 import {
@@ -83,6 +84,24 @@ describe("refresh queue", () => {
     expect(secondJob?.status).toBe("pending");
     expect(secondJob?.id).toBe(firstJob?.id);
     expect(jobs).toHaveLength(1);
+  });
+
+  it("keeps separate active jobs for separate kinds", async () => {
+    const { db, directory } = await createTestDb();
+    testDirectory = directory;
+
+    await createJob(db);
+    await enqueueRefreshJob(db, {
+      kind: luoguAccountStatsJobKind,
+      targetId: "account-1",
+      targetType: ojAccountTargetType,
+    });
+    const jobs = await getRefreshJobsForTarget(db, { targetId: "account-1" });
+
+    expect(jobs.map((job) => job.kind).sort()).toEqual([
+      "codeforces.accountStats",
+      "luogu.accountStats",
+    ]);
   });
 
   it("takes pending jobs by creation order", async () => {

@@ -9,6 +9,10 @@ import {
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import {
+  userAward,
+  userAwardSync,
+} from "@hhuacm-dashboard/db/schema/user-award";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
@@ -105,6 +109,35 @@ create table refresh_job (
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
 )
 `,
+  `
+create table user_award (
+  id text primary key not null,
+  user_id text not null,
+  source text not null,
+  source_handle text not null,
+  source_profile_url text not null,
+  year integer not null,
+  contest text not null,
+  event text,
+  level text not null,
+  sort_order integer not null,
+  fetched_at integer not null,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+)
+`,
+  `
+create table user_award_sync (
+  user_id text not null,
+  source text not null,
+  fetched_at integer,
+  last_attempted_at integer not null,
+  last_error text,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  primary key (user_id, source)
+)
+`,
 ] as const;
 
 const testSchema = {
@@ -113,6 +146,8 @@ const testSchema = {
   luoguAccountStats,
   refreshJob,
   user,
+  userAward,
+  userAwardSync,
   userOjAccount,
   userProfile,
 } as const;

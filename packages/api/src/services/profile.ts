@@ -18,6 +18,10 @@ import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
 } from "./oj-account";
+import {
+  getAwardsForPublicProfile,
+  type PublicProfileAwards,
+} from "./profile-awards";
 
 type Database = Context["db"];
 
@@ -45,6 +49,10 @@ export interface PublicOjAccount {
   platform: OjPlatform;
   profileUrl: string;
 }
+
+const getLuoguAccountId = (
+  accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>
+) => accounts.find((account) => account.platform === "luogu")?.id ?? null;
 
 interface ProfileUpdateValues {
   grade?: string;
@@ -147,11 +155,20 @@ export const getPublicProfile = async (
 ) => {
   const targetUser = await getTargetUserByUsername(db, input.username);
   const profile = await getProfileByUserId(db, targetUser.id);
+  const internalOjAccounts = await listInternalOjAccountsByUserId(
+    db,
+    targetUser.id
+  );
   const ojAccounts = await attachPublicOjAccountData(
     db,
-    await listInternalOjAccountsByUserId(db, targetUser.id),
+    internalOjAccounts,
     profile.memberStatus
   );
+  const awards: PublicProfileAwards = await getAwardsForPublicProfile(db, {
+    canRefresh: !isStatsDisabledMemberStatus(profile.memberStatus),
+    luoguAccountId: getLuoguAccountId(internalOjAccounts),
+    userId: targetUser.id,
+  });
   const currentUser = input.currentUserId
     ? (
         await db
@@ -163,6 +180,7 @@ export const getPublicProfile = async (
     : null;
 
   return {
+    awards,
     ojAccounts,
     permissions: {
       isAdmin: currentUser?.role === "admin",

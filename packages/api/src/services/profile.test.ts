@@ -3,6 +3,10 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import {
+  userAward,
+  userAwardSync,
+} from "@hhuacm-dashboard/db/schema/user-award";
 
 import { getPublicProfile } from "./profile";
 import { createServiceTestDb } from "./test-db";
@@ -46,6 +50,12 @@ describe("getPublicProfile", () => {
     });
     const refreshJobs = await db.select().from(refreshJob);
 
+    expect(profile.awards).toEqual({
+      fetchedAt: null,
+      items: [],
+      lastError: null,
+      syncStatus: "empty",
+    });
     expect(profile.profile.memberStatus).toBe("retired");
     expect(profile.ojAccounts).toEqual([
       {
@@ -60,5 +70,106 @@ describe("getPublicProfile", () => {
       },
     ]);
     expect(refreshJobs).toHaveLength(0);
+  });
+
+  it("returns retired users' cached awards without refresh jobs", async () => {
+    const db = await createServiceTestDb();
+    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
+
+    await db.insert(user).values({
+      email: "retired-award@example.com",
+      id: "user-retired-award",
+      name: "retired award",
+      username: "retired-award",
+    });
+    await db.insert(userProfile).values({
+      memberStatus: "retired",
+      userId: "user-retired-award",
+    });
+    await db.insert(userOjAccount).values({
+      handle: "forlight",
+      id: "account-luogu-award",
+      normalizedHandle: "forlight",
+      platform: "luogu",
+      profileUrl: "https://www.luogu.com.cn/user/97238",
+      userId: "user-retired-award",
+    });
+    await db.insert(userAwardSync).values({
+      fetchedAt,
+      lastAttemptedAt: fetchedAt,
+      source: "luogu",
+      userId: "user-retired-award",
+    });
+    await db.insert(userAward).values({
+      contest: "ICPC Regional",
+      event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
+      fetchedAt,
+      level: "铜牌",
+      sortOrder: 0,
+      source: "luogu",
+      sourceHandle: "forlight",
+      sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
+      userId: "user-retired-award",
+      year: 2023,
+    });
+
+    const profile = await getPublicProfile(db, {
+      currentUserId: null,
+      username: "retired-award",
+    });
+    const refreshJobs = await db.select().from(refreshJob);
+
+    expect(profile.awards).toEqual({
+      fetchedAt: fetchedAt.toISOString(),
+      items: [
+        {
+          contest: "ICPC Regional",
+          event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
+          level: "铜牌",
+          source: "luogu",
+          sourceHandle: "forlight",
+          sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
+          year: 2023,
+        },
+      ],
+      lastError: null,
+      syncStatus: "ready",
+    });
+    expect(refreshJobs).toHaveLength(0);
+  });
+
+  it("enqueues missing awards refresh for public activity users", async () => {
+    const db = await createServiceTestDb();
+
+    await db.insert(user).values({
+      email: "active-award@example.com",
+      id: "user-active-award",
+      name: "active award",
+      username: "active-award",
+    });
+    await db.insert(userProfile).values({
+      memberStatus: "active",
+      userId: "user-active-award",
+    });
+    await db.insert(userOjAccount).values({
+      handle: "forlight",
+      id: "account-luogu-active-award",
+      normalizedHandle: "forlight",
+      platform: "luogu",
+      profileUrl: "https://www.luogu.com.cn/user/97238",
+      userId: "user-active-award",
+    });
+
+    const profile = await getPublicProfile(db, {
+      currentUserId: null,
+      username: "active-award",
+    });
+    const refreshJobs = await db.select().from(refreshJob);
+
+    expect(profile.awards.syncStatus).toBe("refreshing");
+    expect(refreshJobs.map((job) => job.kind)).toEqual([
+      "luogu.accountStats",
+      "user.awardsFromLuogu",
+    ]);
   });
 });

@@ -24,6 +24,12 @@ import {
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import { userProfile, userProfileRelations } from "./schema/profile";
 import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
+import {
+  userAward,
+  userAwardRelations,
+  userAwardSync,
+  userAwardSyncRelations,
+} from "./schema/user-award";
 
 const schema = {
   account,
@@ -39,6 +45,10 @@ const schema = {
   session,
   sessionRelations,
   user,
+  userAward,
+  userAwardRelations,
+  userAwardSync,
+  userAwardSyncRelations,
   userOjAccount,
   userOjAccountRelations,
   userProfile,

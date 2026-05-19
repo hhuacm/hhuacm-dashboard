@@ -4,6 +4,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const refreshJobKinds = [
   "codeforces.accountStats",
   "luogu.accountStats",
+  "user.awardsFromLuogu",
 ] as const;
 export const refreshJobTargetTypes = ["ojAccount"] as const;
 export const refreshJobStatuses = ["pending", "running"] as const;

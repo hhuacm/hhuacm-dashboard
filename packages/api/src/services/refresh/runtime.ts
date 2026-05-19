@@ -2,6 +2,7 @@ import type { Context } from "../../context";
 import { refreshDefaults } from "./constants";
 import { codeforcesAccountStatsRefreshJobDefinition } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsRefreshJobDefinition } from "./jobs/luogu-account-stats";
+import { userAwardsFromLuoguRefreshJobDefinition } from "./jobs/user-awards-from-luogu";
 import {
   deleteRefreshJob,
   type RefreshJob,
@@ -25,6 +26,7 @@ export interface RefreshJobDefinition {
 const refreshJobDefinitions = [
   codeforcesAccountStatsRefreshJobDefinition,
   luoguAccountStatsRefreshJobDefinition,
+  userAwardsFromLuoguRefreshJobDefinition,
 ] as const satisfies RefreshJobDefinition[];
 
 const getRefreshJobDefinition = (

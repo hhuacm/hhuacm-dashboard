@@ -8,6 +8,7 @@ import {
   ojAccountTargetType,
   type RefreshJobKind,
   type RefreshJobTargetType,
+  userAwardsFromLuoguJobKind,
 } from "./constants";
 
 type Database = Context["db"];
@@ -95,10 +96,39 @@ export const enqueueLuoguAccountStatsRefresh = (
 export const getRefreshJobForCodeforcesAccount = (
   db: Database,
   accountId: string
-) => getRefreshJobsForTarget(db, { targetId: accountId });
+) =>
+  getRefreshJobsForTarget(db, {
+    kind: codeforcesAccountStatsJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
 
 export const getRefreshJobForLuoguAccount = (db: Database, accountId: string) =>
-  getRefreshJobsForTarget(db, { targetId: accountId });
+  getRefreshJobsForTarget(db, {
+    kind: luoguAccountStatsJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
+
+export const enqueueUserAwardsFromLuoguRefresh = (
+  db: Database,
+  accountId: string
+) =>
+  enqueueRefreshJob(db, {
+    kind: userAwardsFromLuoguJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
+
+export const getRefreshJobForUserAwardsFromLuogu = (
+  db: Database,
+  accountId: string
+) =>
+  getRefreshJobsForTarget(db, {
+    kind: userAwardsFromLuoguJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
 
 export const takeNextRefreshJob = async (db: Database) => {
   const [candidate] = await db
@@ -203,6 +233,16 @@ export const deleteLuoguAccountStatsRefreshJob = (
 ) =>
   deleteRefreshJobsForTarget(db, {
     kind: luoguAccountStatsJobKind,
+    targetId: accountId,
+    targetType: ojAccountTargetType,
+  });
+
+export const deleteUserAwardsFromLuoguRefreshJob = (
+  db: Database,
+  accountId: string
+) =>
+  deleteRefreshJobsForTarget(db, {
+    kind: userAwardsFromLuoguJobKind,
     targetId: accountId,
     targetType: ojAccountTargetType,
   });

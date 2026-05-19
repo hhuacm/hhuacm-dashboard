@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
@@ -6,6 +6,39 @@ import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { addOjAccount } from "./oj-account";
 import { createServiceTestDb } from "./test-db";
+
+const originalFetch = globalThis.fetch;
+
+beforeEach(() => {
+  globalThis.fetch = ((input) => {
+    const url = new URL(input.toString());
+    const keyword = url.searchParams.get("keyword") ?? "";
+
+    return Promise.resolve(
+      Response.json({
+        users: [
+          {
+            avatar: "",
+            background: "",
+            badge: null,
+            ccfLevel: 0,
+            color: "Blue",
+            isAdmin: false,
+            isBanned: false,
+            name: keyword,
+            slogan: "",
+            uid: 97_238,
+            xcpcLevel: 0,
+          },
+        ],
+      })
+    );
+  }) as typeof fetch;
+});
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
 describe("addOjAccount", () => {
   const createUser = async (
@@ -30,7 +63,7 @@ describe("addOjAccount", () => {
     }
   };
 
-  it("enqueues OJ stats only for public activity members", async () => {
+  it("enqueues OJ refreshes only for public activity members", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "active-user", memberStatus: "active" });
@@ -64,10 +97,11 @@ describe("addOjAccount", () => {
 
     const refreshJobs = await db.select().from(refreshJob);
 
-    expect(refreshJobs).toHaveLength(2);
+    expect(refreshJobs).toHaveLength(3);
     expect(refreshJobs.map((job) => job.kind).sort()).toEqual([
       "codeforces.accountStats",
       "luogu.accountStats",
+      "user.awardsFromLuogu",
     ]);
   });
 });

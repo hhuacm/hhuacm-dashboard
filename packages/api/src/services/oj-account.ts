@@ -12,8 +12,10 @@ import { buildOjProfileUrl } from "./oj-profile-url";
 import {
   deleteCodeforcesAccountStatsRefreshJob,
   deleteLuoguAccountStatsRefreshJob,
+  deleteUserAwardsFromLuoguRefreshJob,
   enqueueCodeforcesAccountStatsRefresh,
   enqueueLuoguAccountStatsRefresh,
+  enqueueUserAwardsFromLuoguRefresh,
 } from "./refresh/queue";
 
 type Database = Context["db"];
@@ -96,6 +98,15 @@ export const clearLuoguStatsIfNeeded = async (
   }
 };
 
+export const clearLuoguAwardRefreshIfNeeded = async (
+  db: Database,
+  account: { id: string; platform: OjPlatform }
+) => {
+  if (account.platform === "luogu") {
+    await deleteUserAwardsFromLuoguRefreshJob(db, account.id);
+  }
+};
+
 const isPublicActivityUser = async (db: Database, userId: string) => {
   const [profile] = await db
     .select({ memberStatus: userProfile.memberStatus })
@@ -126,6 +137,7 @@ const enqueueOjStatsIfNeeded = async (
 
   if (account.platform === "luogu") {
     await enqueueLuoguAccountStatsRefresh(db, account.id);
+    await enqueueUserAwardsFromLuoguRefresh(db, account.id);
   }
 };
 
@@ -205,6 +217,7 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
 
   await clearCodeforcesStatsIfNeeded(db, account);
   await clearLuoguStatsIfNeeded(db, account);
+  await clearLuoguAwardRefreshIfNeeded(db, account);
   await enqueueOjStatsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
@@ -302,6 +315,7 @@ export const deleteOjAccount = async (
 
   await clearCodeforcesStatsIfNeeded(db, account);
   await clearLuoguStatsIfNeeded(db, account);
+  await clearLuoguAwardRefreshIfNeeded(db, account);
 
   return toPublicOjAccount(account);
 };
