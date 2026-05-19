@@ -1,8 +1,8 @@
-import type { CodeforcesSubmissionDto } from "../../external/online-judge-sources/codeforces/api";
+import type { CodeforcesSubmissionResult } from "../../external/online-judge-sources/codeforces/api";
 import type { CodeforcesProblemSummary } from "./types";
 
 export const summarizeAcceptedProblems = (
-  submissions: CodeforcesSubmissionDto[],
+  submissions: CodeforcesSubmissionResult,
   options: { acceptedSinceSeconds: number }
 ): CodeforcesProblemSummary => {
   const firstAcceptedAtByProblem = new Map<string, number>();
@@ -14,6 +14,11 @@ export const summarizeAcceptedProblems = (
 
     const problemNamespace =
       submission.problem.contestId ?? submission.problem.problemsetName;
+
+    if (problemNamespace === undefined) {
+      continue;
+    }
+
     const problemIndex = submission.problem.index;
     const createdAt = submission.creationTimeSeconds;
 

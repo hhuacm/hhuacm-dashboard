@@ -56,6 +56,7 @@ const practiceData = {
     slogan: "",
     submittedProblemCount: 489,
     uid: 97_238,
+    userExtra: "kept",
     xcpcLevel: 3,
   },
 };
@@ -117,31 +118,39 @@ describe("luoguSource", () => {
     ).rejects.toThrow("Luogu user/search returned invalid JSON");
   });
 
-  it("filters users without the fields used by the service layer", async () => {
+  it("keeps full user search payload fields", async () => {
     mockJsonResponse({
+      searchExtra: "kept",
       users: [
         {
           avatar: "https://cdn.luogu.com.cn/upload/usericon/1.png",
+          background: "",
+          badge: null,
+          ccfLevel: 0,
+          color: "Red",
+          isAdmin: false,
+          isBanned: false,
           name: "kkksc03",
+          slogan: "",
           uid: 1,
-        },
-        {
-          name: "missing-uid",
-        },
-        {
-          uid: 2,
+          userExtra: "kept",
+          xcpcLevel: 0,
         },
       ],
     });
 
     await expect(
       luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).resolves.toEqual([
-      {
-        name: "kkksc03",
-        uid: 1,
-      },
-    ]);
+    ).resolves.toEqual({
+      searchExtra: "kept",
+      users: [
+        expect.objectContaining({
+          name: "kkksc03",
+          uid: 1,
+          userExtra: "kept",
+        }),
+      ],
+    });
   });
 
   it("retries retryable user search responses", async () => {
@@ -150,8 +159,17 @@ describe("luoguSource", () => {
       Response.json({
         users: [
           {
+            avatar: "https://cdn.luogu.com.cn/upload/usericon/1.png",
+            background: "",
+            badge: null,
+            ccfLevel: 0,
+            color: "Red",
+            isAdmin: false,
+            isBanned: false,
             name: "kkksc03",
+            slogan: "",
             uid: 1,
+            xcpcLevel: 0,
           },
         ],
       }),
@@ -159,19 +177,30 @@ describe("luoguSource", () => {
 
     await expect(
       luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).resolves.toEqual([
-      {
-        name: "kkksc03",
-        uid: 1,
-      },
-    ]);
+    ).resolves.toEqual({
+      users: [expect.objectContaining({ name: "kkksc03", uid: 1 })],
+    });
     expect(requests).toHaveLength(2);
+  });
+
+  it("throws when user search users have an invalid raw shape", async () => {
+    mockJsonResponse({
+      users: [
+        {
+          name: "missing-uid",
+        },
+      ],
+    });
+
+    await expect(
+      luoguSource.searchUsers({ keyword: "kkksc03" })
+    ).rejects.toThrow("Luogu user/search returned invalid JSON");
   });
 
   it("loads practice data after warming the Luogu CDN cookie", async () => {
     const requests = mockFetchResponses([
       createCdnRedirectResponse("C3VK=first"),
-      Response.json({ data: practiceData }),
+      Response.json({ data: practiceData, status: 200 }),
     ]);
 
     await expect(luoguSource.practice({ uid: 97_238 })).resolves.toEqual(
@@ -189,8 +218,8 @@ describe("luoguSource", () => {
   it("reuses the cached Luogu CDN cookie across practice calls", async () => {
     const requests = mockFetchResponses([
       createCdnRedirectResponse("C3VK=reused"),
-      Response.json({ data: practiceData }),
-      Response.json({ data: practiceData }),
+      Response.json({ data: practiceData, status: 200 }),
+      Response.json({ data: practiceData, status: 200 }),
     ]);
 
     await luoguSource.practice({ uid: 97_238 });
@@ -206,7 +235,7 @@ describe("luoguSource", () => {
       createCdnRedirectResponse("C3VK=stale"),
       createRedirectResponse(),
       createCdnRedirectResponse("C3VK=fresh"),
-      Response.json({ data: practiceData }),
+      Response.json({ data: practiceData, status: 200 }),
     ]);
 
     await expect(luoguSource.practice({ uid: 97_238 })).resolves.toEqual(
@@ -221,7 +250,7 @@ describe("luoguSource", () => {
   it("throws when practice response has invalid JSON shape", async () => {
     mockFetchResponses([
       createCdnRedirectResponse("C3VK=invalid"),
-      Response.json({ data: {} }),
+      Response.json({ data: {}, status: 200 }),
     ]);
 
     await expect(luoguSource.practice({ uid: 97_238 })).rejects.toThrow(

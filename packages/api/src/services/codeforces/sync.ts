@@ -1,6 +1,7 @@
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 
 import type { Context } from "../../context";
+import type { CodeforcesUserInfoResult } from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
 import { refreshDefaults } from "../refresh/constants";
 import { summarizeAcceptedProblems } from "./summary";
@@ -30,18 +31,30 @@ const getErrorMessage = (error: unknown) =>
 const truncateError = (message: string) =>
   message.slice(0, refreshDefaults.maxErrorLength);
 
+const selectCodeforcesUserInfo = (
+  userInfoList: CodeforcesUserInfoResult,
+  handle: string
+) => {
+  const [userInfo] = userInfoList;
+
+  if (!userInfo) {
+    throw new Error(`Codeforces user.info ${handle} result is empty`);
+  }
+
+  return userInfo;
+};
+
 export const syncCodeforcesAccountStats = async (
   db: Database,
   account: CodeforcesAccount,
   now = new Date()
 ) => {
-  const [userInfo] = await codeforcesSource.userInfo({
-    handles: account.handle,
-  });
-
-  if (!userInfo) {
-    throw new Error(`Codeforces user.info ${account.handle} result is empty`);
-  }
+  const userInfo = selectCodeforcesUserInfo(
+    await codeforcesSource.userInfo({
+      handles: account.handle,
+    }),
+    account.handle
+  );
 
   const submissions = await codeforcesSource.userStatus({
     handle: userInfo.handle,

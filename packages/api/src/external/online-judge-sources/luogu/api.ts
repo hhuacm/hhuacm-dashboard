@@ -16,82 +16,91 @@ let luoguCdnCookieExpiresAt = 0;
 let luoguCdnCookieRequest: Promise<string> | null = null;
 let luoguCdnCookieFetch: typeof fetch | null = null;
 
-const luoguUserSearchSchema = z.object({
-  users: z.array(z.unknown()),
-});
+const luoguUserSchema = z
+  .object({
+    avatar: z.string(),
+    background: z.string(),
+    badge: z.unknown().nullable(),
+    ccfLevel: z.number(),
+    color: z.string(),
+    isAdmin: z.boolean(),
+    isBanned: z.boolean(),
+    name: z.string(),
+    slogan: z.string(),
+    uid: z.number(),
+    xcpcLevel: z.number(),
+  })
+  .passthrough();
 
-const luoguSearchUserSchema = z.object({
-  name: z.string(),
-  uid: z.number(),
-});
+const luoguUserSearchResultSchema = z
+  .object({
+    users: z.array(luoguUserSchema),
+  })
+  .passthrough();
 
-export type LuoguSearchUserDto = z.infer<typeof luoguSearchUserSchema>;
+export type LuoguUserSearchResult = z.infer<typeof luoguUserSearchResultSchema>;
 
-const luoguProblemSummarySchema = z.object({
-  difficulty: z.number().nullable(),
-  name: z.string(),
-  pid: z.string(),
-  type: z.string(),
-});
+const luoguProblemSummarySchema = z
+  .object({
+    difficulty: z.number().nullable(),
+    name: z.string(),
+    pid: z.string(),
+    type: z.string(),
+  })
+  .passthrough();
 
-const luoguContestSummarySchema = z.object({
-  endTime: z.number(),
-  id: z.number(),
-  name: z.string(),
-  startTime: z.number(),
-});
+const luoguContestSummarySchema = z
+  .object({
+    endTime: z.number(),
+    id: z.number(),
+    name: z.string(),
+    startTime: z.number(),
+  })
+  .passthrough();
 
-const luoguEloRatingSchema = z.object({
-  contest: luoguContestSummarySchema.optional(),
-  latest: z.boolean(),
-  prevDiff: z.number().nullable(),
-  rating: z.number(),
-  time: z.number(),
-  userCount: z.number(),
-});
+const luoguEloRatingSchema = z
+  .object({
+    contest: luoguContestSummarySchema.optional(),
+    latest: z.boolean(),
+    prevDiff: z.number().nullable(),
+    rating: z.number(),
+    time: z.number(),
+    userCount: z.number(),
+  })
+  .passthrough();
 
-const luoguUserPracticeUserSchema = z.object({
-  avatar: z.string(),
-  background: z.string(),
-  badge: z.unknown().nullable(),
-  ccfLevel: z.number(),
-  color: z.string(),
-  elo: z.unknown().nullable(),
-  eloValue: z.number().nullable(),
-  followerCount: z.number(),
-  followingCount: z.number(),
-  introduction: z.string().nullable(),
-  isAdmin: z.boolean(),
-  isBanned: z.boolean(),
-  name: z.string(),
-  passedProblemCount: z.number().nullable(),
-  prize: z.array(
-    z.object({
-      contestName: z.string(),
-      prize: z.string(),
-      year: z.number(),
-    })
-  ),
-  ranking: z.number().nullable(),
-  registerTime: z.number(),
-  slogan: z.string(),
-  submittedProblemCount: z.number().nullable(),
-  uid: z.number(),
-  xcpcLevel: z.number(),
-});
+const luoguPracticeUserSchema = luoguUserSchema
+  .extend({
+    elo: z.unknown().nullable(),
+    eloValue: z.number().nullable(),
+    followerCount: z.number(),
+    followingCount: z.number(),
+    introduction: z.string().nullable(),
+    passedProblemCount: z.number().nullable(),
+    prize: z.array(z.unknown()),
+    ranking: z.number().nullable(),
+    registerTime: z.number(),
+    submittedProblemCount: z.number().nullable(),
+  })
+  .passthrough();
 
-const luoguUserPracticeSchema = z.object({
-  elo: z.array(luoguEloRatingSchema),
-  passed: z.array(luoguProblemSummarySchema),
-  submitted: z.array(luoguProblemSummarySchema),
-  user: luoguUserPracticeUserSchema,
-});
+const luoguPracticePageDataSchema = z
+  .object({
+    elo: z.array(luoguEloRatingSchema),
+    passed: z.array(luoguProblemSummarySchema),
+    submitted: z.array(luoguProblemSummarySchema),
+    user: luoguPracticeUserSchema,
+  })
+  .passthrough();
 
-export type LuoguUserPracticeDto = z.infer<typeof luoguUserPracticeSchema>;
+export type LuoguPracticePageData = z.infer<typeof luoguPracticePageDataSchema>;
 
-const luoguUserPracticeResponseSchema = z.object({
-  data: luoguUserPracticeSchema,
-});
+const luoguUserPracticeResponseSchema = z
+  .object({
+    data: z.unknown(),
+    status: z.number(),
+  })
+  .passthrough();
 
 const buildLuoguUrl = (
   path: string,
@@ -244,7 +253,9 @@ const fetchLuoguPageData = async (url: URL) => {
   return (await response.json()) as unknown;
 };
 
-const searchUsers = async (params: { keyword: string }) => {
+const searchUsers = async (params: {
+  keyword: string;
+}): Promise<LuoguUserSearchResult> => {
   const url = buildLuoguUserSearchUrl(params.keyword);
 
   const response = await requestExternalResource({
@@ -261,30 +272,34 @@ const searchUsers = async (params: { keyword: string }) => {
   }
 
   const payload: unknown = await response.json();
-  const data = luoguUserSearchSchema.safeParse(payload);
+  const data = luoguUserSearchResultSchema.safeParse(payload);
 
   if (!data.success) {
     throw new Error("Luogu user/search returned invalid JSON");
   }
 
-  return data.data.users.flatMap((user) => {
-    const parsedUser = luoguSearchUserSchema.safeParse(user);
-
-    return parsedUser.success ? [parsedUser.data] : [];
-  });
+  return data.data;
 };
 
-const practice = async (params: { uid: number }) => {
+const practice = async (params: {
+  uid: number;
+}): Promise<LuoguPracticePageData> => {
   const payload = await fetchLuoguPageData(
     buildLuoguUserPracticeUrl(params.uid)
   );
   const data = luoguUserPracticeResponseSchema.safeParse(payload);
 
-  if (!data.success) {
+  if (!data.success || data.data.status !== 200) {
     throw new Error("Luogu user practice returned invalid JSON");
   }
 
-  return data.data.data;
+  const practice = luoguPracticePageDataSchema.safeParse(data.data.data);
+
+  if (!practice.success) {
+    throw new Error("Luogu user practice returned invalid JSON");
+  }
+
+  return practice.data;
 };
 
 export const luoguSource = {

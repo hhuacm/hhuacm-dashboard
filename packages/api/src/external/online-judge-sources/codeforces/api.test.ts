@@ -105,29 +105,32 @@ describe("codeforcesSource", () => {
     ).rejects.toThrow("Codeforces user.info nope returned FAILED");
   });
 
-  it("throws when user.info result has an invalid shape", async () => {
+  it("keeps known and extra user.info fields", async () => {
     mockJsonResponse({
-      result: [{ handle: 1 }],
+      result: [
+        {
+          avatar: "https://userpic.codeforces.org/422/avatar.jpg",
+          customField: "kept",
+          handle: "tourist",
+          rating: 3470,
+        },
+      ],
       status: "OK",
     });
 
     await expect(
       codeforcesSource.userInfo({ handles: "tourist" })
-    ).rejects.toThrow("Codeforces user.info tourist result is invalid");
+    ).resolves.toEqual([
+      {
+        avatar: "https://userpic.codeforces.org/422/avatar.jpg",
+        customField: "kept",
+        handle: "tourist",
+        rating: 3470,
+      },
+    ]);
   });
 
-  it("throws when user.status result is not an array", async () => {
-    mockJsonResponse({
-      result: {},
-      status: "OK",
-    });
-
-    await expect(
-      codeforcesSource.userStatus({ handle: "tourist" })
-    ).rejects.toThrow("Codeforces user.status tourist result is not an array");
-  });
-
-  it("returns only submission fields used by the service layer", async () => {
+  it("keeps known and extra user.status fields", async () => {
     mockJsonResponse({
       result: [
         {
@@ -135,14 +138,17 @@ describe("codeforcesSource", () => {
           id: 372_526_393,
           problem: {
             contestId: 2222,
+            customProblemField: "kept",
             index: "H",
             name: "Counting Sort?",
             rating: 4000,
           },
+          unexpectedSubmissionField: "kept",
           verdict: "OK",
         },
         {
           creationTimeSeconds: 1_777_136_191,
+          id: 372_526_394,
           problem: {
             index: "A",
           },
@@ -157,12 +163,53 @@ describe("codeforcesSource", () => {
     ).resolves.toEqual([
       {
         creationTimeSeconds: 1_777_136_565,
+        id: 372_526_393,
         problem: {
           contestId: 2222,
+          customProblemField: "kept",
           index: "H",
+          name: "Counting Sort?",
+          rating: 4000,
+        },
+        unexpectedSubmissionField: "kept",
+        verdict: "OK",
+      },
+      {
+        creationTimeSeconds: 1_777_136_191,
+        id: 372_526_394,
+        problem: {
+          index: "A",
         },
         verdict: "OK",
       },
     ]);
+  });
+
+  it("throws when user.status result has an invalid raw shape", async () => {
+    mockJsonResponse({
+      result: {
+        unexpected: true,
+      },
+      status: "OK",
+    });
+
+    await expect(
+      codeforcesSource.userStatus({ handle: "tourist" })
+    ).rejects.toThrow("Codeforces user.status tourist result is invalid");
+  });
+
+  it("throws when user.info result has an invalid raw shape", async () => {
+    mockJsonResponse({
+      result: [
+        {
+          handle: 1,
+        },
+      ],
+      status: "OK",
+    });
+
+    await expect(
+      codeforcesSource.userInfo({ handles: "tourist" })
+    ).rejects.toThrow("Codeforces user.info tourist result is invalid");
   });
 });

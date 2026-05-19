@@ -12,21 +12,25 @@ describe("summarizeAcceptedProblems", () => {
       [
         {
           creationTimeSeconds: old,
+          id: 1,
           problem: { contestId: 1, index: "A" },
           verdict: "OK",
         },
         {
           creationTimeSeconds: recent,
+          id: 2,
           problem: { contestId: 1, index: "A" },
           verdict: "OK",
         },
         {
           creationTimeSeconds: recent,
+          id: 3,
           problem: { contestId: 2, index: "B" },
           verdict: "OK",
         },
         {
           creationTimeSeconds: recent,
+          id: 4,
           problem: { contestId: 3, index: "C" },
           verdict: "WRONG_ANSWER",
         },
@@ -48,6 +52,7 @@ describe("summarizeAcceptedProblems", () => {
       [
         {
           creationTimeSeconds: recent,
+          id: 1,
           problem: { index: "A", problemsetName: "custom" },
           verdict: "OK",
         },
@@ -68,16 +73,19 @@ describe("summarizeAcceptedProblems", () => {
       [
         {
           creationTimeSeconds: 499,
+          id: 1,
           problem: { contestId: 1, index: "A" },
           verdict: "OK",
         },
         {
           creationTimeSeconds: 500,
+          id: 2,
           problem: { contestId: 2, index: "B" },
           verdict: "OK",
         },
         {
           creationTimeSeconds: 700,
+          id: 3,
           problem: { contestId: 3, index: "C" },
           verdict: "OK",
         },
@@ -88,6 +96,28 @@ describe("summarizeAcceptedProblems", () => {
     expect(summary).toEqual({
       acceptedProblemCount: 3,
       acceptedProblemCountSince: 2,
+    });
+  });
+
+  it("ignores accepted submissions without a stable problem namespace", () => {
+    const now = 1_000_000;
+    const recent = now - 5 * 24 * 60 * 60;
+
+    const summary = summarizeAcceptedProblems(
+      [
+        {
+          creationTimeSeconds: recent,
+          id: 1,
+          problem: { index: "A" },
+          verdict: "OK",
+        },
+      ],
+      { acceptedSinceSeconds: now - 30 * 24 * 60 * 60 }
+    );
+
+    expect(summary).toEqual({
+      acceptedProblemCount: 0,
+      acceptedProblemCountSince: 0,
     });
   });
 });

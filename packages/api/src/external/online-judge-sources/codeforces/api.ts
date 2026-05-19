@@ -16,36 +16,88 @@ const codeforcesEnvelopeSchema = z.object({
   status: z.string(),
 });
 
-const codeforcesUserInfoSchema = z.object({
-  handle: z.string(),
-  lastOnlineTimeSeconds: z.number().optional(),
-  maxRating: z.number().optional(),
-  rating: z.number().optional(),
-});
+const codeforcesUserInfoSchema = z
+  .object({
+    avatar: z.string().optional(),
+    city: z.string().optional(),
+    contribution: z.number().optional(),
+    country: z.string().optional(),
+    firstName: z.string().optional(),
+    friendOfCount: z.number().optional(),
+    handle: z.string(),
+    lastName: z.string().optional(),
+    lastOnlineTimeSeconds: z.number().optional(),
+    maxRank: z.string().optional(),
+    maxRating: z.number().optional(),
+    organization: z.string().optional(),
+    rank: z.string().optional(),
+    rating: z.number().optional(),
+    registrationTimeSeconds: z.number().optional(),
+    titlePhoto: z.string().optional(),
+  })
+  .passthrough();
 
-const codeforcesUserInfoListSchema = z.array(codeforcesUserInfoSchema);
+const codeforcesUserInfoResultSchema = z.array(codeforcesUserInfoSchema);
 
-export type CodeforcesUserInfoDto = z.infer<typeof codeforcesUserInfoSchema>;
+export type CodeforcesUserInfoResult = z.infer<
+  typeof codeforcesUserInfoResultSchema
+>;
 
-const codeforcesSubmissionProblemSchema = z
+const codeforcesProblemSchema = z
   .object({
     contestId: z.number().optional(),
     index: z.union([z.number(), z.string()]),
+    name: z.string().optional(),
+    points: z.number().optional(),
     problemsetName: z.string().optional(),
+    rating: z.number().optional(),
+    tags: z.array(z.string()).optional(),
+    type: z.string().optional(),
   })
-  .refine(
-    (problem) =>
-      problem.contestId !== undefined || problem.problemsetName !== undefined
-  );
+  .passthrough();
 
-const codeforcesSubmissionSchema = z.object({
-  creationTimeSeconds: z.number(),
-  problem: codeforcesSubmissionProblemSchema,
-  verdict: z.string().optional(),
-});
+const codeforcesPartyMemberSchema = z
+  .object({
+    handle: z.string().optional(),
+    name: z.string().optional(),
+  })
+  .passthrough();
 
-export type CodeforcesSubmissionDto = z.infer<
-  typeof codeforcesSubmissionSchema
+const codeforcesAuthorSchema = z
+  .object({
+    contestId: z.number().optional(),
+    ghost: z.boolean().optional(),
+    members: z.array(codeforcesPartyMemberSchema).optional(),
+    participantId: z.number().optional(),
+    participantType: z.string().optional(),
+    room: z.number().optional(),
+    startTimeSeconds: z.number().optional(),
+    teamId: z.number().optional(),
+    teamName: z.string().optional(),
+  })
+  .passthrough();
+
+const codeforcesSubmissionSchema = z
+  .object({
+    author: codeforcesAuthorSchema.optional(),
+    contestId: z.number().optional(),
+    creationTimeSeconds: z.number(),
+    id: z.number(),
+    memoryConsumedBytes: z.number().optional(),
+    passedTestCount: z.number().optional(),
+    problem: codeforcesProblemSchema,
+    programmingLanguage: z.string().optional(),
+    relativeTimeSeconds: z.number().optional(),
+    testset: z.string().optional(),
+    timeConsumedMillis: z.number().optional(),
+    verdict: z.string().optional(),
+  })
+  .passthrough();
+
+const codeforcesSubmissionResultSchema = z.array(codeforcesSubmissionSchema);
+
+export type CodeforcesSubmissionResult = z.infer<
+  typeof codeforcesSubmissionResultSchema
 >;
 
 type CodeforcesEndpoint = "user.info" | "user.status";
@@ -104,7 +156,9 @@ const loadCodeforcesResult = async (
   return envelope.data.result;
 };
 
-const userInfo = async (params: { handles: string }) => {
+const userInfo = async (params: {
+  handles: string;
+}): Promise<CodeforcesUserInfoResult> => {
   const result = await loadCodeforcesResult(
     "user.info",
     {
@@ -112,16 +166,18 @@ const userInfo = async (params: { handles: string }) => {
     },
     params.handles
   );
-  const userInfoList = codeforcesUserInfoListSchema.safeParse(result);
+  const userInfo = codeforcesUserInfoResultSchema.safeParse(result);
 
-  if (!userInfoList.success) {
+  if (!userInfo.success) {
     throw new Error(`Codeforces user.info ${params.handles} result is invalid`);
   }
 
-  return userInfoList.data;
+  return userInfo.data;
 };
 
-const userStatus = async (params: { handle: string }) => {
+const userStatus = async (params: {
+  handle: string;
+}): Promise<CodeforcesSubmissionResult> => {
   const result = await loadCodeforcesResult(
     "user.status",
     {
@@ -129,18 +185,15 @@ const userStatus = async (params: { handle: string }) => {
     },
     params.handle
   );
+  const submissions = codeforcesSubmissionResultSchema.safeParse(result);
 
-  if (!Array.isArray(result)) {
+  if (!submissions.success) {
     throw new Error(
-      `Codeforces user.status ${params.handle} result is not an array`
+      `Codeforces user.status ${params.handle} result is invalid`
     );
   }
 
-  return result.flatMap((submission) => {
-    const parsedSubmission = codeforcesSubmissionSchema.safeParse(submission);
-
-    return parsedSubmission.success ? [parsedSubmission.data] : [];
-  });
+  return submissions.data;
 };
 
 export const codeforcesSource = {

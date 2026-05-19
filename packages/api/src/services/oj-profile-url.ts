@@ -1,12 +1,20 @@
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 
+import type { LuoguUserSearchResult } from "../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
 
+const selectMatchedLuoguUser = (
+  result: LuoguUserSearchResult,
+  handle: string
+) => result.users.find((user) => user.name === handle);
+
 const buildLuoguProfileUrl = async (handle: string) => {
-  const users = await luoguSource.searchUsers({
-    keyword: handle,
-  });
-  const matchedUser = users.find((user) => user.name === handle);
+  const matchedUser = selectMatchedLuoguUser(
+    await luoguSource.searchUsers({
+      keyword: handle,
+    }),
+    handle
+  );
 
   if (!matchedUser) {
     return "";

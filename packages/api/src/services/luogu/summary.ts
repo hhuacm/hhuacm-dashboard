@@ -1,7 +1,12 @@
-import type { LuoguUserPracticeDto } from "../../external/online-judge-sources/luogu/api";
+import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 
 interface LuoguAcceptedProblemInput {
   difficulty: null | number;
+}
+
+interface LuoguPracticeStatsInput {
+  passed: LuoguPracticePageData["passed"];
+  passedProblemCount: LuoguPracticePageData["user"]["passedProblemCount"];
 }
 
 export interface LuoguStatsSummary {
@@ -38,8 +43,7 @@ export const summarizeLuoguAcceptedProblems = (
   };
 };
 
-export const summarizeLuoguPracticeStats = (practice: LuoguUserPracticeDto) =>
-  summarizeLuoguAcceptedProblems(
-    practice.passed,
-    practice.user.passedProblemCount
-  );
+export const summarizeLuoguPracticeStats = (
+  practice: LuoguPracticeStatsInput
+) =>
+  summarizeLuoguAcceptedProblems(practice.passed, practice.passedProblemCount);

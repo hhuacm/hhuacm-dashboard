@@ -7,7 +7,7 @@ import {
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 
-import type { LuoguUserPracticeDto } from "../../external/online-judge-sources/luogu/api";
+import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { createServiceTestDb } from "../test-db";
 import {
   markLuoguAccountStatsRefreshFailed,
@@ -15,9 +15,9 @@ import {
 } from "./sync";
 
 const createPractice = (
-  passed: LuoguUserPracticeDto["passed"],
+  passed: LuoguPracticePageData["passed"],
   passedProblemCount: null | number = passed.length
-): LuoguUserPracticeDto => ({
+): LuoguPracticePageData => ({
   elo: [],
   passed,
   submitted: [],

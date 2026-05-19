@@ -5,7 +5,7 @@ import {
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import type { LuoguUserPracticeDto } from "../../external/online-judge-sources/luogu/api";
+import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 import { refreshDefaults } from "../refresh/constants";
 import { parseLuoguUidFromProfileUrl } from "./profile-stats";
@@ -16,6 +16,11 @@ type Database = Context["db"];
 type LuoguPracticeLoader = typeof luoguSource.practice;
 
 const acceptedProblemChunkSize = 300;
+
+interface LuoguPracticeStatsFields {
+  passed: LuoguPracticePageData["passed"];
+  passedProblemCount: LuoguPracticePageData["user"]["passedProblemCount"];
+}
 
 const luoguStatsFields = {
   acceptedProblemCount: luoguAccountStats.acceptedProblemCount,
@@ -44,10 +49,17 @@ const getErrorMessage = (error: unknown) =>
 const truncateError = (message: string) =>
   message.slice(0, refreshDefaults.maxErrorLength);
 
+const selectLuoguPracticeStatsFields = (
+  practice: LuoguPracticePageData
+): LuoguPracticeStatsFields => ({
+  passed: practice.passed,
+  passedProblemCount: practice.user.passedProblemCount,
+});
+
 const writeAcceptedProblems = async (
   tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
   account: LuoguAccount,
-  practice: LuoguUserPracticeDto,
+  practice: LuoguPracticeStatsFields,
   fetchedAt: Date
 ) => {
   for (const chunk of chunks(practice.passed, acceptedProblemChunkSize)) {
@@ -101,7 +113,7 @@ export const syncLuoguAccountStats = async (
     throw new Error("Luogu UID is missing");
   }
 
-  const practice = await loadPractice({ uid });
+  const practice = selectLuoguPracticeStatsFields(await loadPractice({ uid }));
   const summary = summarizeLuoguPracticeStats(practice);
   const fetchedAt = now;
 
