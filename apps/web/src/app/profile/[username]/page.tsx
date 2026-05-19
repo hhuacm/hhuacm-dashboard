@@ -10,6 +10,7 @@ import {
   CircleAlert,
   ExternalLink,
   LayoutDashboard,
+  Medal,
   Settings,
   UserRound,
 } from "lucide-react";
@@ -81,6 +82,23 @@ interface PublicOjAccount {
   profileUrl: string;
 }
 
+interface PublicProfileAward {
+  contest: string;
+  event: null | string;
+  level: string;
+  source: "luogu";
+  sourceHandle: string;
+  sourceProfileUrl: string;
+  year: number;
+}
+
+interface PublicProfileAwards {
+  fetchedAt: null | string;
+  items: PublicProfileAward[];
+  lastError: null | string;
+  syncStatus: "empty" | "failed" | "ready" | "refreshing";
+}
+
 const luoguDifficultyClassNames = [
   "bg-[rgb(191,191,191)] text-[#333333]",
   "bg-[rgb(254,76,97)] text-white",
@@ -91,6 +109,16 @@ const luoguDifficultyClassNames = [
   "bg-[rgb(156,61,207)] text-white",
   "bg-[rgb(14,29,105)] text-white",
 ] as const;
+
+const awardLevelClassNames = {
+  bronze:
+    "!border-[#c7834f] !bg-[#e7b48a] !text-[#542b12] dark:!border-[#c4895a] dark:!bg-[#6b3f22] dark:!text-[#ffe6d0]",
+  default:
+    "!border-[#d8e0ea] !bg-[#eef2f7] !text-[#475569] dark:!border-[#3b4c68] dark:!bg-[#253349] dark:!text-[#d7e1ef]",
+  gold: "!border-[#e5b94e] !bg-[#f9dfa0] !text-[#533700] dark:!border-[#d8aa42] dark:!bg-[#6f4e13] dark:!text-[#fff2c2]",
+  silver:
+    "!border-[#cbd5e1] !bg-[#e5e7eb] !text-[#334155] dark:!border-[#94a3b8] dark:!bg-[#475569] dark:!text-[#f8fafc]",
+} as const;
 
 const isMemberStatus = (
   status: null | string | undefined
@@ -140,6 +168,134 @@ function formatDateTime(value: null | string) {
     timeZone: "Asia/Shanghai",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function getAwardLevelClassName(level: string) {
+  if (level.includes("金") || level.includes("一等")) {
+    return awardLevelClassNames.gold;
+  }
+
+  if (level.includes("银") || level.includes("二等")) {
+    return awardLevelClassNames.silver;
+  }
+
+  if (level.includes("铜") || level.includes("三等")) {
+    return awardLevelClassNames.bronze;
+  }
+
+  return awardLevelClassNames.default;
+}
+
+function AwardLevelChip({ level }: { level: string }) {
+  return (
+    <Chip
+      className={`${getAwardLevelClassName(level)} min-h-9 border px-4 font-semibold text-base`}
+      size="md"
+      variant="soft"
+    >
+      {level}
+    </Chip>
+  );
+}
+
+function ProfileAwardRow({ award }: { award: PublicProfileAward }) {
+  return (
+    <div className="grid gap-3 rounded-md border border-border bg-surface-secondary px-3 py-2.5 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-start">
+      <time
+        className="inline-flex h-9 w-fit min-w-18 items-center justify-center rounded-md border border-border bg-surface px-3 font-semibold text-base text-foreground sm:w-20"
+        dateTime={String(award.year)}
+      >
+        {award.year}
+      </time>
+      <div className="min-w-0 sm:self-center">
+        <p className="wrap-break-word font-semibold text-foreground">
+          {award.contest}
+        </p>
+        {award.event ? (
+          <p className="wrap-break-word mt-1 text-muted text-sm leading-6">
+            {award.event}
+          </p>
+        ) : null}
+      </div>
+      <div className="sm:self-center sm:justify-self-end">
+        <AwardLevelChip level={award.level} />
+      </div>
+    </div>
+  );
+}
+
+function getAwardStatusText(awards: PublicProfileAwards) {
+  if (awards.syncStatus === "refreshing") {
+    return "后台刷新中";
+  }
+
+  if (awards.syncStatus === "failed") {
+    return "刷新失败，显示旧数据";
+  }
+
+  return null;
+}
+
+function ProfileAwardsSection({
+  awards,
+}: {
+  awards: PublicProfileAwards | undefined;
+}) {
+  if (!awards || awards.items.length === 0) {
+    return null;
+  }
+
+  const statusText = getAwardStatusText(awards);
+  const sourceProfileUrl = awards.items[0]?.sourceProfileUrl ?? "";
+
+  return (
+    <Card>
+      <Card.Header className="flex items-center gap-3 pb-2">
+        <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
+          <Medal className="size-4" />
+        </div>
+        <Card.Title className="text-xl">获奖经历</Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <div className="grid gap-2">
+          {awards.items.map((award, index) => (
+            <ProfileAwardRow
+              award={award}
+              key={`${award.source}-${award.year}-${award.contest}-${award.level}-${index}`}
+            />
+          ))}
+        </div>
+        <div className="mt-3 flex flex-col gap-2 text-muted text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {awards.fetchedAt ? (
+              <span>更新于 {formatDateTime(awards.fetchedAt)}</span>
+            ) : null}
+            {statusText ? (
+              <span
+                className={
+                  awards.syncStatus === "failed" ? "text-danger" : "text-accent"
+                }
+              >
+                {statusText}
+                {awards.lastError ? `：${awards.lastError}` : ""}
+              </span>
+            ) : null}
+          </div>
+          {sourceProfileUrl ? (
+            <a
+              className="inline-flex w-fit items-center gap-1 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
+              href={sourceProfileUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              来源：洛谷
+              <ExternalLink className="size-3.5 shrink-0" />
+            </a>
+          ) : null}
+        </div>
+      </Card.Content>
+    </Card>
+  );
 }
 
 function CodeforcesMetric({
@@ -588,6 +744,8 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
                 </dl>
               </Card.Content>
             </Card>
+
+            <ProfileAwardsSection awards={profile.awards} />
 
             <Card>
               <Card.Header className="pb-2">

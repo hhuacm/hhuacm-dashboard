@@ -18,6 +18,7 @@ export default defineConfig({
     "./src/schema/codeforces-account-stats.ts",
     "./src/schema/luogu-account-stats.ts",
     "./src/schema/refresh-job.ts",
+    "./src/schema/user-award.ts",
   ],
   out: "./src/migrations",
   dialect: "turso",
