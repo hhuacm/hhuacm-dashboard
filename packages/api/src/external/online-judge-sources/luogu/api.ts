@@ -95,7 +95,47 @@ const luoguPracticePageDataSchema = z
 
 export type LuoguPracticePageData = z.infer<typeof luoguPracticePageDataSchema>;
 
-const luoguUserPracticeResponseSchema = z
+const luoguPrizeSchema = z
+  .object({
+    prize: z
+      .object({
+        contest: z.string(),
+        event: z.string().nullable(),
+        prize: z.string(),
+        year: z.number(),
+      })
+      .passthrough(),
+  })
+  .passthrough();
+
+const luoguGuScoresSchema = z
+  .object({
+    basic: z.number(),
+    contest: z.number(),
+    practice: z.number(),
+    prize: z.number(),
+    rating: z.number(),
+    social: z.number(),
+  })
+  .passthrough();
+
+const luoguUserPageDataSchema = z
+  .object({
+    dailyCounts: z.array(z.unknown()),
+    elo: z.array(luoguEloRatingSchema),
+    gu: z
+      .object({
+        scores: luoguGuScoresSchema,
+      })
+      .passthrough(),
+    prizes: z.array(luoguPrizeSchema),
+    user: luoguPracticeUserSchema,
+  })
+  .passthrough();
+
+export type LuoguUserPageData = z.infer<typeof luoguUserPageDataSchema>;
+
+const luoguPageResponseSchema = z
   .object({
     data: z.unknown(),
     status: z.number(),
@@ -117,6 +157,8 @@ const buildLuoguUrl = (
 
 const buildLuoguUserSearchUrl = (keyword: string) =>
   buildLuoguUrl("/api/user/search", { keyword });
+
+const buildLuoguUserUrl = (uid: number) => buildLuoguUrl(`/user/${uid}`);
 
 const buildLuoguUserPracticeUrl = (uid: number) =>
   buildLuoguUrl(`/user/${uid}/practice`);
@@ -281,13 +323,30 @@ const searchUsers = async (params: {
   return data.data;
 };
 
+const user = async (params: { uid: number }): Promise<LuoguUserPageData> => {
+  const payload = await fetchLuoguPageData(buildLuoguUserUrl(params.uid));
+  const data = luoguPageResponseSchema.safeParse(payload);
+
+  if (!data.success || data.data.status !== 200) {
+    throw new Error("Luogu user returned invalid JSON");
+  }
+
+  const userData = luoguUserPageDataSchema.safeParse(data.data.data);
+
+  if (!userData.success) {
+    throw new Error("Luogu user returned invalid JSON");
+  }
+
+  return userData.data;
+};
+
 const practice = async (params: {
   uid: number;
 }): Promise<LuoguPracticePageData> => {
   const payload = await fetchLuoguPageData(
     buildLuoguUserPracticeUrl(params.uid)
   );
-  const data = luoguUserPracticeResponseSchema.safeParse(payload);
+  const data = luoguPageResponseSchema.safeParse(payload);
 
   if (!data.success || data.data.status !== 200) {
     throw new Error("Luogu user practice returned invalid JSON");
@@ -305,4 +364,5 @@ const practice = async (params: {
 export const luoguSource = {
   practice,
   searchUsers,
+  user,
 };

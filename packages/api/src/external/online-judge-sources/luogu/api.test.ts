@@ -3,6 +3,68 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { luoguSource } from "./api";
 
 const originalFetch = globalThis.fetch;
+const userData = {
+  dailyCounts: [],
+  elo: [
+    {
+      contest: {
+        endTime: 1_741_957_200,
+        id: 235_262,
+        name: "Luogu Round",
+        startTime: 1_741_950_000,
+      },
+      latest: true,
+      prevDiff: 120,
+      rating: 1080,
+      time: 1_741_957_200,
+      userCount: 7,
+    },
+  ],
+  gu: {
+    scores: {
+      basic: 100,
+      contest: 1,
+      practice: 0,
+      prize: 20,
+      rating: 121,
+      social: 0,
+    },
+  },
+  prizes: [
+    {
+      prize: {
+        contest: "NOIP 提高组",
+        event: null,
+        prize: "二等奖",
+        year: 2018,
+      },
+    },
+  ],
+  user: {
+    avatar: "https://cdn.luogu.com.cn/upload/usericon/97238.png",
+    background: "",
+    badge: null,
+    ccfLevel: 0,
+    color: "Green",
+    elo: null,
+    eloValue: null,
+    followerCount: 17,
+    followingCount: 0,
+    introduction: "",
+    isAdmin: false,
+    isBanned: false,
+    name: "forlight",
+    passedProblemCount: 436,
+    prize: [],
+    ranking: 46_589,
+    registerTime: 1_523_780_429,
+    slogan: "",
+    submittedProblemCount: 489,
+    uid: 97_238,
+    xcpcLevel: 3,
+  },
+  userPageExtra: "kept",
+};
 const practiceData = {
   elo: [
     {
@@ -65,6 +127,15 @@ const createCdnRedirectResponse = (cookie: string) =>
   new Response(null, {
     headers: {
       location: "https://www.luogu.com.cn/user/97238/practice",
+      "set-cookie": `${cookie}; Max-Age=300; Path=/`,
+    },
+    status: 302,
+  });
+
+const createUserRedirectResponse = (cookie: string) =>
+  new Response(null, {
+    headers: {
+      location: "https://www.luogu.com.cn/user/97238",
       "set-cookie": `${cookie}; Max-Age=300; Path=/`,
     },
     status: 302,
@@ -213,6 +284,33 @@ describe("luoguSource", () => {
       cookie: "C3VK=first",
       "x-lentille-request": "content-only",
     });
+  });
+
+  it("loads user page data with public prizes", async () => {
+    const requests = mockFetchResponses([
+      createUserRedirectResponse("C3VK=user"),
+      Response.json({ data: userData, status: 200 }),
+    ]);
+
+    await expect(luoguSource.user({ uid: 97_238 })).resolves.toEqual(userData);
+
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.redirect).toBe("manual");
+    expect(requests[1]?.headers).toMatchObject({
+      cookie: "C3VK=user",
+      "x-lentille-request": "content-only",
+    });
+  });
+
+  it("throws when user page response has invalid JSON shape", async () => {
+    mockFetchResponses([
+      createUserRedirectResponse("C3VK=invalid-user"),
+      Response.json({ data: {}, status: 200 }),
+    ]);
+
+    await expect(luoguSource.user({ uid: 97_238 })).rejects.toThrow(
+      "Luogu user returned invalid JSON"
+    );
   });
 
   it("reuses the cached Luogu CDN cookie across practice calls", async () => {
