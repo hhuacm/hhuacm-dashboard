@@ -2,9 +2,11 @@ import type { Context } from "../../context";
 import { refreshDefaults } from "./constants";
 import { codeforcesAccountStatsRefreshJobDefinition } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsRefreshJobDefinition } from "./jobs/luogu-account-stats";
+import { luoguProblemDetailsRefreshJobDefinition } from "./jobs/luogu-problem-details";
 import { userAwardsFromLuoguRefreshJobDefinition } from "./jobs/user-awards-from-luogu";
 import {
   deleteRefreshJob,
+  enqueueRefreshJob,
   type RefreshJob,
   resetRunningRefreshJobs,
   takeNextRefreshJob,
@@ -16,9 +18,13 @@ interface RefreshRuntimeOptions {
   db: Database;
 }
 
+export interface RefreshJobHandleResult {
+  requeue?: boolean;
+}
+
 export interface RefreshJobDefinition {
   cooldownMs: number;
-  handle: (db: Database, job: RefreshJob) => Promise<void>;
+  handle: (db: Database, job: RefreshJob) => Promise<unknown>;
   kind: RefreshJob["kind"];
   scanStaleTargets: (db: Database) => Promise<number>;
 }
@@ -26,6 +32,7 @@ export interface RefreshJobDefinition {
 const refreshJobDefinitions = [
   codeforcesAccountStatsRefreshJobDefinition,
   luoguAccountStatsRefreshJobDefinition,
+  luoguProblemDetailsRefreshJobDefinition,
   userAwardsFromLuoguRefreshJobDefinition,
 ] as const satisfies RefreshJobDefinition[];
 
@@ -60,6 +67,14 @@ const sleep = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
+const shouldRequeueJob = (result: unknown) =>
+  Boolean(
+    result &&
+      typeof result === "object" &&
+      "requeue" in result &&
+      result.requeue === true
+  );
+
 export const runRefreshWorkerOnce = async (
   db: Database,
   definitions: RefreshJobDefinition[] = refreshJobDefinitions
@@ -71,11 +86,20 @@ export const runRefreshWorkerOnce = async (
   }
 
   const definition = getRefreshJobDefinition(definitions, job.kind);
+  let result: unknown;
 
   try {
-    await definition.handle(db, job);
+    result = await definition.handle(db, job);
   } finally {
     await deleteRefreshJob(db, job.id);
+  }
+
+  if (shouldRequeueJob(result)) {
+    await enqueueRefreshJob(db, {
+      kind: job.kind,
+      targetId: job.targetId,
+      targetType: job.targetType,
+    });
   }
 
   return {

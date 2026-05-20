@@ -22,6 +22,12 @@ import {
   luoguAccountStatsRelations,
 } from "./schema/luogu-account-stats";
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
+import {
+  problemSet,
+  problemSetProblem,
+  problemSetProblemRelations,
+  problemSetRelations,
+} from "./schema/problem-set";
 import { userProfile, userProfileRelations } from "./schema/profile";
 import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
 import {
@@ -40,6 +46,10 @@ const schema = {
   luoguAcceptedProblemRelations,
   luoguAccountStats,
   luoguAccountStatsRelations,
+  problemSet,
+  problemSetProblem,
+  problemSetProblemRelations,
+  problemSetRelations,
   refreshJob,
   refreshJobRelations,
   session,

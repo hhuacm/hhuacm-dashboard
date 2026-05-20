@@ -101,3 +101,31 @@ export const adminUserOjAccountInputSchema = adminUserInputSchema.extend({
 export const adminUserOjAccountDeleteInputSchema = adminUserInputSchema.extend({
   platform: ojPlatformSchema,
 });
+
+export const problemSetIdInputSchema = z.object({
+  id: trimmedStringSchema,
+});
+
+const problemSetPidSchema = trimmedStringSchema;
+
+export const adminProblemSetInputSchema = z.object({
+  descriptionMarkdown: z.string(),
+  pids: z.array(problemSetPidSchema).min(1),
+  title: trimmedStringSchema,
+});
+
+export const adminProblemSetUpdateInputSchema = problemSetIdInputSchema
+  .extend({
+    descriptionMarkdown: z.string().optional(),
+    pids: z.array(problemSetPidSchema).min(1).optional(),
+    title: trimmedStringSchema.optional(),
+  })
+  .refine(
+    (input) =>
+      input.descriptionMarkdown !== undefined ||
+      input.pids !== undefined ||
+      input.title !== undefined,
+    {
+      message: "Problem set update requires at least one field",
+    }
+  );

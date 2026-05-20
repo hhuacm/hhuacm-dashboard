@@ -5,6 +5,8 @@ import type {
 
 export const codeforcesAccountStatsJobKind = "codeforces.accountStats";
 export const luoguAccountStatsJobKind = "luogu.accountStats";
+export const luoguProblemDetailsJobKind = "luogu.problemDetails";
+export const luoguProblemTargetType = "luoguProblem";
 export const ojAccountTargetType = "ojAccount";
 export const userAwardsFromLuoguJobKind = "user.awardsFromLuogu";
 

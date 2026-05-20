@@ -43,6 +43,24 @@ const luoguProblemSummarySchema = z.looseObject({
   type: z.string(),
 });
 
+const luoguLegacyProblemSchema = z.looseObject({
+  difficulty: z.number().nullable(),
+  name: z.string(),
+  pid: z.string(),
+  type: z.string(),
+});
+
+const luoguProblemListDataSchema = z.looseObject({
+  page: z.number().optional(),
+  problems: z.looseObject({
+    count: z.number(),
+    perPage: z.number(),
+    result: z.array(luoguLegacyProblemSchema),
+  }),
+});
+
+export type LuoguProblemListData = z.infer<typeof luoguProblemListDataSchema>;
+
 const luoguContestSummarySchema = z.looseObject({
   endTime: z.number(),
   id: z.number(),
@@ -131,6 +149,9 @@ const buildLuoguUrl = (
 
 const buildLuoguUserSearchUrl = (keyword: string) =>
   buildLuoguUrl("/api/user/search", { keyword });
+
+const buildLuoguProblemListUrl = (keyword: string) =>
+  buildLuoguUrl("/problem/list", { keyword });
 
 const buildLuoguUserUrl = (uid: number) => buildLuoguUrl(`/user/${uid}`);
 
@@ -314,6 +335,27 @@ const user = async (params: { uid: number }): Promise<LuoguUserPageData> => {
   return userData.data;
 };
 
+const problemList = async (params: {
+  keyword: string;
+}): Promise<LuoguProblemListData> => {
+  const payload = await fetchLuoguPageData(
+    buildLuoguProblemListUrl(params.keyword)
+  );
+  const data = luoguPageResponseSchema.safeParse(payload);
+
+  if (!data.success || data.data.status !== 200) {
+    throw new Error("Luogu problem list returned invalid JSON");
+  }
+
+  const problemListData = luoguProblemListDataSchema.safeParse(data.data.data);
+
+  if (!problemListData.success) {
+    throw new Error("Luogu problem list returned invalid JSON");
+  }
+
+  return problemListData.data;
+};
+
 const practice = async (params: {
   uid: number;
 }): Promise<LuoguPracticePageData> => {
@@ -337,6 +379,7 @@ const practice = async (params: {
 
 export const luoguSource = {
   practice,
+  problemList,
   searchUsers,
   user,
 };

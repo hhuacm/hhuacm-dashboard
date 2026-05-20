@@ -302,6 +302,36 @@ describe("luoguSource", () => {
     });
   });
 
+  it("loads problem list data", async () => {
+    const problemListData = {
+      page: 1,
+      problems: {
+        count: 1,
+        perPage: 50,
+        result: [
+          {
+            difficulty: 2,
+            name: "[NOIP 2016 提高组] 玩具谜题",
+            pid: "P1563",
+            type: "P",
+          },
+        ],
+      },
+    };
+    const requests = mockFetchResponses([
+      createCdnRedirectResponse("C3VK=problem"),
+      Response.json({ data: problemListData, status: 200 }),
+    ]);
+
+    await expect(
+      luoguSource.problemList({ keyword: "P1563" })
+    ).resolves.toEqual(problemListData);
+    expect(requests[1]?.headers).toMatchObject({
+      cookie: "C3VK=problem",
+      "x-lentille-request": "content-only",
+    });
+  });
+
   it("throws when user page response has invalid JSON shape", async () => {
     mockFetchResponses([
       createUserRedirectResponse("C3VK=invalid-user"),

@@ -104,6 +104,29 @@ describe("refresh runtime", () => {
     expect(remainingJobs).toHaveLength(0);
   });
 
+  it("requeues jobs after handlers request it", async () => {
+    const { db, directory } = await createTestDb();
+    testDirectory = directory;
+    await enqueueTestJob(db);
+    const definitions = [
+      {
+        cooldownMs: 0,
+        handle: () => Promise.resolve({ requeue: true }),
+        kind: codeforcesAccountStatsJobKind,
+        scanStaleTargets: async () => 0,
+      },
+    ] satisfies RefreshJobDefinition[];
+
+    const result = await runRefreshWorkerOnce(db, definitions);
+    const remainingJobs = await db.select().from(refreshJob);
+
+    expect(result?.job.targetId).toBe("account-1");
+    expect(remainingJobs).toHaveLength(1);
+    expect(remainingJobs[0]?.id).not.toBe(result?.job.id);
+    expect(remainingJobs[0]?.status).toBe("pending");
+    expect(remainingJobs[0]?.targetId).toBe("account-1");
+  });
+
   it("deletes jobs after failed handlers", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;

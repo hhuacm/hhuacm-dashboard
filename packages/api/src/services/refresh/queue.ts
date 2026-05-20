@@ -5,6 +5,8 @@ import type { Context } from "../../context";
 import {
   codeforcesAccountStatsJobKind,
   luoguAccountStatsJobKind,
+  luoguProblemDetailsJobKind,
+  luoguProblemTargetType,
   ojAccountTargetType,
   type RefreshJobKind,
   type RefreshJobTargetType,
@@ -91,6 +93,13 @@ export const enqueueLuoguAccountStatsRefresh = (
     kind: luoguAccountStatsJobKind,
     targetId: accountId,
     targetType: ojAccountTargetType,
+  });
+
+export const enqueueLuoguProblemDetailsRefresh = (db: Database, pid: string) =>
+  enqueueRefreshJob(db, {
+    kind: luoguProblemDetailsJobKind,
+    targetId: pid,
+    targetType: luoguProblemTargetType,
   });
 
 export const getRefreshJobForCodeforcesAccount = (
@@ -235,6 +244,16 @@ export const deleteLuoguAccountStatsRefreshJob = (
     kind: luoguAccountStatsJobKind,
     targetId: accountId,
     targetType: ojAccountTargetType,
+  });
+
+export const deleteLuoguProblemDetailsRefreshJob = (
+  db: Database,
+  pid: string
+) =>
+  deleteRefreshJobsForTarget(db, {
+    kind: luoguProblemDetailsJobKind,
+    targetId: pid,
+    targetType: luoguProblemTargetType,
   });
 
 export const deleteUserAwardsFromLuoguRefreshJob = (

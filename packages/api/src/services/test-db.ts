@@ -7,6 +7,10 @@ import {
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import {
+  problemSet,
+  problemSetProblem,
+} from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 import {
@@ -100,6 +104,28 @@ create table luogu_accepted_problem (
 )
 `,
   `
+create table problem_set (
+  id text primary key not null,
+  title text not null,
+  description_markdown text default '' not null,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+)
+`,
+  `
+create table problem_set_problem (
+  id text primary key not null,
+  problem_set_id text not null references problem_set(id) on delete cascade,
+  pid text not null,
+  title text not null,
+  difficulty integer,
+  sort_order integer not null,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  unique (problem_set_id, pid)
+)
+`,
+  `
 create table refresh_job (
   id text primary key not null,
   kind text not null,
@@ -144,6 +170,8 @@ const testSchema = {
   codeforcesAccountStats,
   luoguAcceptedProblem,
   luoguAccountStats,
+  problemSet,
+  problemSetProblem,
   refreshJob,
   user,
   userAward,
@@ -159,6 +187,8 @@ export const createServiceTestDb = async () => {
       `hhuacm-service-test-${crypto.randomUUID()}.db`
     )}`,
   });
+
+  await client.execute("pragma foreign_keys = on");
 
   for (const statement of createTableStatements) {
     await client.execute(statement);

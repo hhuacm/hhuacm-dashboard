@@ -6,17 +6,42 @@ import {
   listAdminUsers,
 } from "../services/admin-users";
 import { deleteOjAccount, upsertOjAccount } from "../services/oj-account";
+import {
+  createProblemSet,
+  deleteProblemSet,
+  updateProblemSet,
+} from "../services/problem-set";
 import { getTargetUser, updateUserProfile } from "../services/profile";
 import {
+  adminProblemSetInputSchema,
+  adminProblemSetUpdateInputSchema,
   adminUserDeleteInputSchema,
   adminUserInputSchema,
   adminUserOjAccountDeleteInputSchema,
   adminUserOjAccountInputSchema,
   adminUserProfileUpdateInputSchema,
   adminUsersListInputSchema,
+  problemSetIdInputSchema,
 } from "./schemas";
 
 export const adminRouter = router({
+  problemSets: router({
+    create: adminProcedure
+      .input(adminProblemSetInputSchema)
+      .mutation(
+        async ({ ctx, input }) => await createProblemSet(ctx.db, input)
+      ),
+    delete: adminProcedure
+      .input(problemSetIdInputSchema)
+      .mutation(
+        async ({ ctx, input }) => await deleteProblemSet(ctx.db, input.id)
+      ),
+    update: adminProcedure
+      .input(adminProblemSetUpdateInputSchema)
+      .mutation(
+        async ({ ctx, input }) => await updateProblemSet(ctx.db, input)
+      ),
+  }),
   users: router({
     get: adminProcedure
       .input(adminUserInputSchema)

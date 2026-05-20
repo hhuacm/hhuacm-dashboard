@@ -17,6 +17,7 @@ export default defineConfig({
     "./src/schema/oj-account.ts",
     "./src/schema/codeforces-account-stats.ts",
     "./src/schema/luogu-account-stats.ts",
+    "./src/schema/problem-set.ts",
     "./src/schema/refresh-job.ts",
     "./src/schema/user-award.ts",
   ],
