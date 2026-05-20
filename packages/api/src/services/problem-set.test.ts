@@ -9,13 +9,16 @@ import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
+import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import type { MemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 
 import {
   createProblemSet,
   deleteProblemSet,
   getProblemSet,
+  listProblemSetCompletions,
   listProblemSets,
   updateProblemSet,
 } from "./problem-set";
@@ -23,14 +26,32 @@ import { createServiceTestDb } from "./test-db";
 
 const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,
-  input: { fetchedAt?: Date; id: string }
+  input: {
+    displayUsername?: null | string;
+    fetchedAt?: Date;
+    id: string;
+    memberStatus?: MemberStatus;
+    name?: string;
+    realName?: null | string;
+    username?: null | string;
+  }
 ) => {
   await db.insert(user).values({
     email: `${input.id}@example.com`,
     id: input.id,
-    name: input.id,
-    username: input.id,
+    name: input.name ?? input.id,
+    displayUsername: input.displayUsername,
+    username: input.username === undefined ? input.id : input.username,
   });
+
+  if (input.memberStatus || input.realName !== undefined) {
+    await db.insert(userProfile).values({
+      memberStatus: input.memberStatus ?? "selection",
+      realName: input.realName,
+      userId: input.id,
+    });
+  }
+
   await db.insert(userOjAccount).values({
     handle: input.id,
     id: `account-${input.id}`,
@@ -49,6 +70,26 @@ const createLuoguUser = async (
       uid: 97_238,
     });
   }
+};
+
+const createAcceptedProblem = async (
+  db: Awaited<ReturnType<typeof createServiceTestDb>>,
+  input: {
+    accountId: string;
+    pid: string;
+  }
+) => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+
+  await db.insert(luoguAcceptedProblem).values({
+    accountId: input.accountId,
+    difficulty: 2,
+    firstSeenAt: now,
+    lastSeenAt: now,
+    name: input.pid,
+    pid: input.pid,
+    type: "P",
+  });
 };
 
 describe("problem sets", () => {
@@ -250,6 +291,102 @@ describe("problem sets", () => {
     expect(problems.find((problem) => problem.pid === "P1563")?.title).toBe(
       "玩具谜题"
     );
+  });
+
+  it("lists completions for eligible users by current problem set PIDs", async () => {
+    const db = await createServiceTestDb();
+    const created = await createProblemSet(db, {
+      descriptionMarkdown: "",
+      pids: ["P1563", "P1328"],
+      title: "基础题单",
+    });
+    await createLuoguUser(db, {
+      id: "selection-user",
+      memberStatus: "selection",
+      realName: "张三",
+    });
+    await createLuoguUser(db, {
+      displayUsername: "active-display",
+      id: "active-user",
+      memberStatus: "active",
+      username: null,
+    });
+    await createLuoguUser(db, { id: "missing-profile-user" });
+    await createLuoguUser(db, {
+      id: "retired-user",
+      memberStatus: "retired",
+    });
+    await createLuoguUser(db, {
+      id: "frozen-user",
+      memberStatus: "frozen",
+    });
+    await createLuoguUser(db, {
+      id: "zero-user",
+      memberStatus: "selection",
+    });
+
+    await createAcceptedProblem(db, {
+      accountId: "account-selection-user",
+      pid: "P1563",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-selection-user",
+      pid: "P1328",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-selection-user",
+      pid: "P2615",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-active-user",
+      pid: "P1563",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-missing-profile-user",
+      pid: "P1328",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-retired-user",
+      pid: "P1563",
+    });
+    await createAcceptedProblem(db, {
+      accountId: "account-frozen-user",
+      pid: "P1563",
+    });
+
+    const rows = await listProblemSetCompletions(db, created.id);
+    const rowsByUserId = new Map(rows.map((row) => [row.userId, row]));
+
+    expect(rows).toHaveLength(3);
+    expect(rowsByUserId.get("selection-user")).toEqual({
+      completedProblemCount: 2,
+      displayName: "张三",
+      userId: "selection-user",
+      username: "selection-user",
+    });
+    expect(rowsByUserId.get("active-user")).toEqual({
+      completedProblemCount: 1,
+      displayName: "active-display",
+      userId: "active-user",
+      username: null,
+    });
+    expect(rowsByUserId.get("missing-profile-user")).toEqual({
+      completedProblemCount: 1,
+      displayName: "missing-profile-user",
+      userId: "missing-profile-user",
+      username: "missing-profile-user",
+    });
+    expect(rowsByUserId.has("retired-user")).toBe(false);
+    expect(rowsByUserId.has("frozen-user")).toBe(false);
+    expect(rowsByUserId.has("zero-user")).toBe(false);
+  });
+
+  it("throws NOT_FOUND when listing completions for a missing problem set", async () => {
+    const db = await createServiceTestDb();
+
+    await expect(
+      listProblemSetCompletions(db, "missing-set")
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("deletes a problem set and its problems", async () => {

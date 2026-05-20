@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Home,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Settings,
   Trophy,
@@ -150,6 +151,15 @@ function MainNavigation() {
       >
         <Trophy className="size-4" />
         排行榜
+      </Button>
+      <Button
+        isDisabled={pathname.startsWith("/problem-sets")}
+        onPress={() => router.push("/problem-sets" as Route)}
+        size="sm"
+        variant="outline"
+      >
+        <ListChecks className="size-4" />
+        题单
       </Button>
     </nav>
   );

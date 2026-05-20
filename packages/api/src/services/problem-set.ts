@@ -1,3 +1,4 @@
+import { user } from "@hhuacm-dashboard/db/schema/auth";
 import {
   luoguAcceptedProblem,
   luoguAccountStats,
@@ -7,10 +8,16 @@ import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
+import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import {
+  defaultMemberStatus,
+  type MemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
 import type { Context } from "../context";
+import { publicActivityMemberStatuses } from "./member-status";
 import { refreshDefaults } from "./refresh/constants";
 import {
   enqueueLuoguAccountStatsRefresh,
@@ -51,6 +58,8 @@ const problemSetProblemFields = {
   sortOrder: problemSetProblem.sortOrder,
   title: problemSetProblem.title,
 } as const;
+
+const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const toIsoString = (date: Date) => date.toISOString();
 
@@ -370,6 +379,61 @@ export const getProblemSet = async (
     title: item.title,
     updatedAt: toIsoString(item.updatedAt),
   };
+};
+
+export const listProblemSetCompletions = async (db: Database, id: string) => {
+  await getProblemSetOrThrow(db, id);
+
+  const rows = await db
+    .select({
+      completedProblemCount: count(luoguAcceptedProblem.pid),
+      displayUsername: user.displayUsername,
+      name: user.name,
+      realName: userProfile.realName,
+      userId: user.id,
+      username: user.username,
+    })
+    .from(problemSetProblem)
+    .innerJoin(
+      luoguAcceptedProblem,
+      eq(luoguAcceptedProblem.pid, problemSetProblem.pid)
+    )
+    .innerJoin(
+      userOjAccount,
+      and(
+        eq(userOjAccount.id, luoguAcceptedProblem.accountId),
+        eq(userOjAccount.platform, "luogu")
+      )
+    )
+    .innerJoin(user, eq(user.id, userOjAccount.userId))
+    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .where(
+      and(
+        eq(problemSetProblem.problemSetId, id),
+        inArray(memberStatusExpression, publicActivityMemberStatuses)
+      )
+    )
+    .groupBy(
+      user.id,
+      user.name,
+      user.username,
+      user.displayUsername,
+      userProfile.realName
+    );
+
+  return rows
+    .filter((row) => row.completedProblemCount > 0)
+    .map((row) => ({
+      completedProblemCount: row.completedProblemCount,
+      displayName:
+        row.realName ??
+        row.displayUsername ??
+        row.username ??
+        row.name ??
+        "未命名用户",
+      userId: row.userId,
+      username: row.username,
+    }));
 };
 
 export const createProblemSet = async (

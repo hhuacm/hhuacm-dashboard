@@ -1,8 +1,18 @@
 import { publicProcedure, router } from "../index";
-import { getProblemSet, listProblemSets } from "../services/problem-set";
+import {
+  getProblemSet,
+  listProblemSetCompletions,
+  listProblemSets,
+} from "../services/problem-set";
 import { problemSetIdInputSchema } from "./schemas";
 
 export const problemSetRouter = router({
+  completions: publicProcedure
+    .input(problemSetIdInputSchema)
+    .query(
+      async ({ ctx, input }) =>
+        await listProblemSetCompletions(ctx.db, input.id)
+    ),
   get: publicProcedure.input(problemSetIdInputSchema).query(
     async ({ ctx, input }) =>
       await getProblemSet(ctx.db, {

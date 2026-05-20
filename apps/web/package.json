@@ -9,11 +9,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@heroui/react": "catalog:",
     "@hhuacm-dashboard/api": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "@hhuacm-dashboard/ui": "workspace:*",
-    "@heroui/react": "catalog:",
     "@tanstack/react-form": "^1.28.0",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "catalog:",
@@ -26,6 +26,8 @@
     "next": "^16.2.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "zod": "catalog:"
   },
   "devDependencies": {
