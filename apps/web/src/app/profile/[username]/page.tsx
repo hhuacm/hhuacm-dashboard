@@ -627,11 +627,7 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
     )
   );
   const profile = profileQuery.data;
-  const nameLabel =
-    profile?.user.displayUsername ??
-    profile?.user.username ??
-    profile?.user.name ??
-    username;
+  const nameLabel = profile?.user.username ?? profile?.user.name ?? username;
   const canOpenSettings = profile?.permissions.isOwner;
   const canOpenAdmin = Boolean(
     profile?.permissions.isAdmin && !profile.permissions.isOwner

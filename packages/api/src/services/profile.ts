@@ -34,7 +34,6 @@ export const profileFields = {
 } as const;
 
 const userFields = {
-  displayUsername: user.displayUsername,
   email: user.email,
   id: user.id,
   name: user.name,
@@ -188,7 +187,6 @@ export const getPublicProfile = async (
     },
     profile,
     user: {
-      displayUsername: targetUser.displayUsername,
       email: targetUser.email,
       name: targetUser.name,
       username: targetUser.username,
@@ -205,7 +203,6 @@ export const getSettingsProfile = async (db: Database, userId: string) => {
     ojAccounts,
     profile,
     user: {
-      displayUsername: currentUser.displayUsername,
       email: currentUser.email,
       name: currentUser.name,
       username: currentUser.username,

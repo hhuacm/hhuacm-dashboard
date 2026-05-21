@@ -183,7 +183,6 @@ export default function RegisterPage() {
 
     try {
       const response = await authClient.signUp.email({
-        displayUsername: normalizedUsername,
         email: normalizedEmail,
         name: normalizedUsername,
         password,

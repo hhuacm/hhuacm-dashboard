@@ -18,7 +18,6 @@ import {
 const createUser = (
   input: Partial<AdminUserTableRow> & { id: string }
 ): AdminUserTableRow => ({
-  displayUsername: input.displayUsername ?? null,
   email: input.email ?? `${input.id}@example.com`,
   grade: input.grade ?? null,
   id: input.id,
@@ -33,11 +32,10 @@ const createUser = (
 });
 
 describe("admin users helpers", () => {
-  it("picks the first available display username", () => {
+  it("picks the first available username label", () => {
     expect(
       getAdminDisplayUsername(
         createUser({
-          displayUsername: "",
           id: "user-1",
           name: "Name",
           username: "username",

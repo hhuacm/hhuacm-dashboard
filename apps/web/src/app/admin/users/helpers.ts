@@ -108,7 +108,6 @@ export interface AdminUserProfile {
 }
 
 export interface AdminUserDetail {
-  displayUsername: null | string;
   email: string;
   id: string;
   name: string;
@@ -119,7 +118,6 @@ export interface AdminUserDetail {
 }
 
 export interface AdminUserTableRow {
-  displayUsername: null | string;
   email: string;
   grade: null | string;
   id: string;
@@ -252,12 +250,8 @@ export const calculatePageSize = (element: HTMLDivElement | null) => {
   return clampPageSize(visibleRows);
 };
 
-const getDisplayUsername = (user: {
-  displayUsername: null | string;
-  name: string;
-  username: null | string;
-}) => {
-  const candidates = [user.displayUsername, user.username, user.name];
+const getUsernameLabel = (user: { name: string; username: null | string }) => {
+  const candidates = [user.username, user.name];
 
   for (const candidate of candidates) {
     const value = candidate?.trim();
@@ -271,11 +265,11 @@ const getDisplayUsername = (user: {
 };
 
 export const getAdminDisplayUsername = (user: AdminUserTableRow) =>
-  getDisplayUsername(user);
+  getUsernameLabel(user);
 
 export const getAdminDetailDisplayUsername = (
   user: AdminUserDetail | AdminUserTableRow | null | undefined
-) => (user ? getDisplayUsername(user) : "未设置");
+) => (user ? getUsernameLabel(user) : "未设置");
 
 export const isMemberStatus = (status: string): status is MemberStatus =>
   status in memberStatusConfig;

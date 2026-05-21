@@ -65,7 +65,7 @@ export interface AdminUserOjAccount {
   profileUrl: string;
 }
 
-const usernameSortExpression = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`;
+const usernameSortExpression = sql<string>`coalesce(${user.username}, ${user.name}, '')`;
 const memberStatusSortExpression = sql<string>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const getAdminUsersSortExpression = (column: AdminUsersSortColumn) => {
@@ -191,7 +191,6 @@ export const listAdminUsers = async (
 
   const users = await db
     .select({
-      displayUsername: user.displayUsername,
       email: user.email,
       grade: userProfile.grade,
       id: user.id,
@@ -318,7 +317,6 @@ export const deleteAdminUser = async (
     .delete(user)
     .where(eq(user.id, input.userId))
     .returning({
-      displayUsername: user.displayUsername,
       email: user.email,
       id: user.id,
       name: user.name,

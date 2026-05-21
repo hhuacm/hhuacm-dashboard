@@ -123,7 +123,7 @@ export default function ProfileSettingsPage() {
   }
 
   const account = profileQuery.data?.user ?? user;
-  const username = account.displayUsername ?? account.username ?? account.name;
+  const username = account.username ?? account.name;
 
   return (
     <AppShell

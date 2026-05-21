@@ -1201,7 +1201,7 @@ function AdminUserEditDialog({
     )
   );
   const detail = detailQuery.data;
-  const displayUsername = getAdminDetailDisplayUsername(detail ?? user);
+  const usernameLabel = getAdminDetailDisplayUsername(detail ?? user);
   const isOpen = Boolean(user);
 
   return (
@@ -1222,7 +1222,7 @@ function AdminUserEditDialog({
             </Modal.Icon>
             <div>
               <Modal.Heading>编辑用户</Modal.Heading>
-              <p className="mt-1 text-muted text-sm">{displayUsername}</p>
+              <p className="mt-1 text-muted text-sm">{usernameLabel}</p>
             </div>
           </Modal.Header>
           <Modal.Body className="grid max-h-[72vh] gap-5 overflow-y-auto px-0.5 pt-3 pb-0.5">
@@ -1241,7 +1241,7 @@ function AdminUserEditDialog({
               </div>
               <div>
                 <span className="text-muted">显示名</span>
-                <p className="mt-1 break-all">{displayUsername}</p>
+                <p className="mt-1 break-all">{usernameLabel}</p>
               </div>
             </div>
 
@@ -1449,14 +1449,14 @@ function AdminUsersTable({
           </Table.Header>
           <Table.Body>
             {users.map((user) => {
-              const displayUsername = getAdminDisplayUsername(user);
+              const usernameLabel = getAdminDisplayUsername(user);
 
               return (
                 <Table.Row
                   className="h-14"
                   id={user.id}
                   key={user.id}
-                  textValue={displayUsername}
+                  textValue={usernameLabel}
                 >
                   {visibleColumns.map((column) => (
                     <Table.Cell

@@ -27,7 +27,6 @@ import { createServiceTestDb } from "./test-db";
 const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,
   input: {
-    displayUsername?: null | string;
     fetchedAt?: Date;
     id: string;
     memberStatus?: MemberStatus;
@@ -40,7 +39,6 @@ const createLuoguUser = async (
     email: `${input.id}@example.com`,
     id: input.id,
     name: input.name ?? input.id,
-    displayUsername: input.displayUsername,
     username: input.username === undefined ? input.id : input.username,
   });
 
@@ -321,7 +319,6 @@ describe("problem sets", () => {
       realName: "张三",
     });
     await createLuoguUser(db, {
-      displayUsername: "active-display",
       id: "active-user",
       memberStatus: "active",
       username: "active-user",

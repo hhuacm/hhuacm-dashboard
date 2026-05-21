@@ -589,7 +589,6 @@ const importPlannedUsers = async (
 
         await tx.insert(user).values({
           createdAt: now,
-          displayUsername: candidate.username,
           email: candidate.email,
           emailVerified: true,
           id: plan.userId,

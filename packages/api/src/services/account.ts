@@ -9,7 +9,6 @@ type Database = Context["db"];
 export const getCurrentUser = async (db: Database, userId: string) => {
   const [currentUser] = await db
     .select({
-      displayUsername: user.displayUsername,
       email: user.email,
       id: user.id,
       name: user.name,

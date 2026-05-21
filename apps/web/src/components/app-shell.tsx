@@ -175,7 +175,7 @@ function HeaderActions({ action }: { action?: ReactNode }) {
     })
   );
   const isAdmin = accountMe.data?.role === "admin";
-  const displayUsername = user ? getPreferredUsername(user) : "";
+  const username = user ? getPreferredUsername(user) : "";
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -188,7 +188,7 @@ function HeaderActions({ action }: { action?: ReactNode }) {
       {user ? (
         <AccountMenu
           isAdmin={isAdmin}
-          nameLabel={formatNameLabel(displayUsername)}
+          nameLabel={formatNameLabel(username)}
           onLogout={handleLogout}
           username={user.username}
         />
