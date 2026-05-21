@@ -5,22 +5,17 @@ import {
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { eq } from "drizzle-orm";
 
-import type { LuoguProblemListData } from "../../external/online-judge-sources/luogu/api";
+import type { LuoguProblemPageData } from "../../external/online-judge-sources/luogu/api";
 import { createServiceTestDb } from "../test-db";
 import {
   enrichProblemSetProblemsByPid,
   findLuoguProblemDetails,
 } from "./problem-details";
 
-const createProblemList = (
-  problems: LuoguProblemListData["problems"]["result"]
-): LuoguProblemListData => ({
-  page: 1,
-  problems: {
-    count: problems.length,
-    perPage: 50,
-    result: problems,
-  },
+const createProblemPage = (
+  problem: LuoguProblemPageData["problem"]
+): LuoguProblemPageData => ({
+  problem,
 });
 
 const createProblemSetWithPid = async (
@@ -41,13 +36,15 @@ const createProblemSetWithPid = async (
 };
 
 describe("Luogu problem details", () => {
-  it("selects the exact PID from problem search results", async () => {
+  it("loads problem details by PID", async () => {
     await expect(
       findLuoguProblemDetails("P1563", async () =>
-        createProblemList([
-          { difficulty: 1, name: "Other", pid: "P9999", type: "P" },
-          { difficulty: 2, name: "玩具谜题", pid: "P1563", type: "P" },
-        ])
+        createProblemPage({
+          difficulty: 2,
+          name: "玩具谜题",
+          pid: "P1563",
+          type: "P",
+        })
       )
     ).resolves.toEqual({
       difficulty: 2,
@@ -56,14 +53,21 @@ describe("Luogu problem details", () => {
     });
   });
 
-  it("throws when the exact PID is missing", async () => {
+  it("loads multi-letter problem details by PID", async () => {
     await expect(
-      findLuoguProblemDetails("P1563", async () =>
-        createProblemList([
-          { difficulty: 1, name: "Other", pid: "P9999", type: "P" },
-        ])
+      findLuoguProblemDetails("CF1027G", async () =>
+        createProblemPage({
+          difficulty: 7,
+          name: "X-mouse in the Campus",
+          pid: "CF1027G",
+          type: "CF",
+        })
       )
-    ).rejects.toThrow("Luogu problem does not exist: P1563");
+    ).resolves.toEqual({
+      difficulty: 7,
+      pid: "CF1027G",
+      title: "X-mouse in the Campus",
+    });
   });
 
   it("updates all problem set problems with the same PID", async () => {
@@ -72,9 +76,12 @@ describe("Luogu problem details", () => {
     await createProblemSetWithPid(db, { id: "set-b", pid: "P1563" });
 
     await enrichProblemSetProblemsByPid(db, "P1563", async () =>
-      createProblemList([
-        { difficulty: 2, name: "玩具谜题", pid: "P1563", type: "P" },
-      ])
+      createProblemPage({
+        difficulty: 2,
+        name: "玩具谜题",
+        pid: "P1563",
+        type: "P",
+      })
     );
     const problems = await db
       .select()
@@ -96,7 +103,14 @@ describe("Luogu problem details", () => {
       enrichProblemSetProblemsByPid(db, "P1563", () => {
         didCallLuogu = true;
 
-        return Promise.resolve(createProblemList([]));
+        return Promise.resolve(
+          createProblemPage({
+            difficulty: 2,
+            name: "玩具谜题",
+            pid: "P1563",
+            type: "P",
+          })
+        );
       })
     ).resolves.toBe("unused");
     expect(didCallLuogu).toBe(false);

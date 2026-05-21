@@ -136,6 +136,21 @@ describe("problem sets", () => {
     ).rejects.toThrow("Duplicate Luogu PID: P1563");
   });
 
+  it("accepts multi-letter problem PIDs", async () => {
+    const db = await createServiceTestDb();
+
+    const created = await createProblemSet(db, {
+      descriptionMarkdown: "",
+      pids: ["P1676", "CF1027G"],
+      title: "混合题号题单",
+    });
+
+    expect(created.problems.map((problem) => problem.pid)).toEqual([
+      "P1676",
+      "CF1027G",
+    ]);
+  });
+
   it("returns null accepted status without a Luogu account", async () => {
     const db = await createServiceTestDb();
     const created = await createProblemSet(db, {

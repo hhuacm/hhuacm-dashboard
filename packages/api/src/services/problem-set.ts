@@ -41,7 +41,7 @@ export interface ProblemSetUpdateInput {
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
-const pidPattern = /^[A-Z]\d+[A-Z0-9]*$/;
+const pidPattern = /^[A-Z0-9][A-Z0-9_-]*$/i;
 
 const problemSetFields = {
   createdAt: problemSet.createdAt,
@@ -71,7 +71,7 @@ const normalizePids = (pids: string[]) => {
     if (!pidPattern.test(pid)) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: `Invalid Luogu PID: ${pid}`,
+        message: `Invalid problem PID: ${pid}`,
       });
     }
 

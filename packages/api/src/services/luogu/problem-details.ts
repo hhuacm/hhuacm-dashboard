@@ -5,7 +5,7 @@ import type { Context } from "../../context";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 
 type Database = Context["db"];
-export type LuoguProblemListLoader = typeof luoguSource.problemList;
+export type LuoguProblemLoader = typeof luoguSource.problem;
 
 export interface LuoguProblemDetails {
   difficulty: null | number;
@@ -15,14 +15,10 @@ export interface LuoguProblemDetails {
 
 export const findLuoguProblemDetails = async (
   pid: string,
-  loadProblemList: LuoguProblemListLoader = luoguSource.problemList
+  loadProblem: LuoguProblemLoader = luoguSource.problem
 ): Promise<LuoguProblemDetails> => {
-  const problemList = await loadProblemList({ keyword: pid });
-  const problem = problemList.problems.result.find((item) => item.pid === pid);
-
-  if (!problem) {
-    throw new Error(`Luogu problem does not exist: ${pid}`);
-  }
+  const problemData = await loadProblem({ pid });
+  const problem = problemData.problem;
 
   return {
     difficulty: problem.difficulty,
@@ -34,7 +30,7 @@ export const findLuoguProblemDetails = async (
 export const enrichProblemSetProblemsByPid = async (
   db: Database,
   pid: string,
-  loadProblemList: LuoguProblemListLoader = luoguSource.problemList
+  loadProblem: LuoguProblemLoader = luoguSource.problem
 ) => {
   const [referencedProblem] = await db
     .select({ id: problemSetProblem.id })
@@ -46,7 +42,7 @@ export const enrichProblemSetProblemsByPid = async (
     return "unused" as const;
   }
 
-  const details = await findLuoguProblemDetails(pid, loadProblemList);
+  const details = await findLuoguProblemDetails(pid, loadProblem);
 
   await db
     .update(problemSetProblem)

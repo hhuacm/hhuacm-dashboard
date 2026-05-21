@@ -4,22 +4,17 @@ import {
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
 
-import type { LuoguProblemListData } from "../../../external/online-judge-sources/luogu/api";
+import type { LuoguProblemPageData } from "../../../external/online-judge-sources/luogu/api";
 import { createServiceTestDb } from "../../test-db";
 import {
   handleLuoguProblemDetailsJob,
   luoguProblemDetailsRefreshJobDefinition,
 } from "./luogu-problem-details";
 
-const createProblemList = (
-  problems: LuoguProblemListData["problems"]["result"]
-): LuoguProblemListData => ({
-  page: 1,
-  problems: {
-    count: problems.length,
-    perPage: 50,
-    result: problems,
-  },
+const createProblemPage = (
+  problem: LuoguProblemPageData["problem"]
+): LuoguProblemPageData => ({
+  problem,
 });
 
 describe("Luogu problem details refresh job", () => {
@@ -94,9 +89,12 @@ describe("Luogu problem details refresh job", () => {
           targetType: "luoguProblem",
         },
         async () =>
-          createProblemList([
-            { difficulty: 2, name: "玩具谜题", pid: "P1563", type: "P" },
-          ])
+          createProblemPage({
+            difficulty: 2,
+            name: "玩具谜题",
+            pid: "P1563",
+            type: "P",
+          })
       )
     ).resolves.toBeUndefined();
   });

@@ -1,7 +1,7 @@
 import type { Context } from "../../../context";
 import {
   enrichProblemSetProblemsByPid,
-  type LuoguProblemListLoader,
+  type LuoguProblemLoader,
 } from "../../luogu/problem-details";
 import { luoguProblemDetailsJobKind, refreshDefaults } from "../constants";
 import type { RefreshJobDefinition } from "../runtime";
@@ -11,10 +11,10 @@ type Database = Context["db"];
 export const handleLuoguProblemDetailsJob = async (
   db: Database,
   job: Parameters<RefreshJobDefinition["handle"]>[1],
-  loadProblemList?: LuoguProblemListLoader
+  loadProblem?: LuoguProblemLoader
 ) => {
   try {
-    await enrichProblemSetProblemsByPid(db, job.targetId, loadProblemList);
+    await enrichProblemSetProblemsByPid(db, job.targetId, loadProblem);
 
     return;
   } catch {

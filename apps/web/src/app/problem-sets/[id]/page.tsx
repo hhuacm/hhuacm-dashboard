@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   CircleMinus,
   CircleX,
-  ExternalLink,
   ListChecks,
 } from "lucide-react";
 import type { Route } from "next";
@@ -16,6 +15,7 @@ import { type ReactNode, use, useMemo } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { MarkdownContent } from "@/components/markdown-content";
+import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 interface ProblemSetDetailPageProps {
@@ -77,6 +77,67 @@ const luoguDifficultyLabels = [
   "NOI/NOI+/CTSC",
 ] as const;
 
+const problemTableColumnClassNames = {
+  index: "w-10 whitespace-nowrap text-center",
+  status: "w-24 whitespace-nowrap text-center",
+} as const;
+
+const getPidColumnWidthClassName = (maxPidLength: number) => {
+  if (maxPidLength > 7) {
+    return "w-24";
+  }
+
+  if (maxPidLength > 5) {
+    return "w-[5.5rem]";
+  }
+
+  return "w-20";
+};
+
+const getPidColumnClassName = (problems: ProblemSetProblem[]) => {
+  const maxPidLength = Math.max(
+    0,
+    ...problems.map((problem) => problem.pid.length)
+  );
+  const widthClassName = getPidColumnWidthClassName(maxPidLength);
+
+  return `${widthClassName} whitespace-nowrap px-3 text-left`;
+};
+
+const getDifficultyLabel = (difficulty: null | number) => {
+  if (difficulty === null) {
+    return "-";
+  }
+
+  return luoguDifficultyLabels[difficulty] ?? `难度 ${difficulty}`;
+};
+
+const getDifficultyColumnWidthClassName = (
+  maxDifficultyLabelLength: number
+) => {
+  if (maxDifficultyLabelLength >= luoguDifficultyLabels[7].length) {
+    return "w-[8.5rem]";
+  }
+
+  if (maxDifficultyLabelLength >= luoguDifficultyLabels[4].length) {
+    return "w-28";
+  }
+
+  return "w-20";
+};
+
+const getDifficultyColumnClassName = (problems: ProblemSetProblem[]) => {
+  const maxDifficultyLabelLength = Math.max(
+    0,
+    ...problems.map((problem) => getDifficultyLabel(problem.difficulty).length)
+  );
+  const widthClassName = getDifficultyColumnWidthClassName(
+    maxDifficultyLabelLength
+  );
+
+  return `${widthClassName} whitespace-nowrap text-center`;
+};
+
 const getLuoguProblemUrl = (pid: string) =>
   `https://www.luogu.com.cn/problem/${pid}`;
 
@@ -105,34 +166,62 @@ const getProgressText = (problems: ProblemSetProblem[]) => {
 function LinkedProblemText({
   children,
   href,
+  isTruncated = false,
+  title,
 }: {
   children: ReactNode;
   href: string;
+  isTruncated?: boolean;
+  title?: string;
 }) {
   return (
     <a
-      className="inline-flex min-w-0 items-center gap-1 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
+      className={`inline-flex min-w-0 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline ${
+        isTruncated ? "max-w-full" : "whitespace-nowrap"
+      }`}
       href={href}
       rel="noopener noreferrer"
       target="_blank"
+      title={title}
     >
-      <span className="truncate">{children}</span>
-      <ExternalLink className="size-3.5 shrink-0" />
+      <span className={isTruncated ? "block min-w-0 truncate" : undefined}>
+        {children}
+      </span>
     </a>
   );
 }
 
-function LinkedProfileName({ row }: { row: ProblemSetCompletion }) {
+function CurrentUserSuffix({ isCurrentUser }: { isCurrentUser: boolean }) {
+  if (!isCurrentUser) {
+    return null;
+  }
+
+  return <span className="shrink-0 text-accent">（我）</span>;
+}
+
+function LinkedProfileName({
+  isCurrentUser,
+  row,
+}: {
+  isCurrentUser: boolean;
+  row: ProblemSetCompletion;
+}) {
   if (!row.username) {
-    return <span className="truncate text-center">{row.displayName}</span>;
+    return (
+      <span className="inline-flex min-w-0 max-w-full justify-center">
+        <span className="truncate">{row.displayName}</span>
+        <CurrentUserSuffix isCurrentUser={isCurrentUser} />
+      </span>
+    );
   }
 
   return (
     <a
-      className="inline-flex min-w-0 items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
+      className="inline-flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
       href={getProfileUrl(row.username)}
     >
       <span className="truncate">{row.displayName}</span>
+      <CurrentUserSuffix isCurrentUser={isCurrentUser} />
     </a>
   );
 }
@@ -194,6 +283,10 @@ function ProblemStatusChip({ accepted }: ProblemStatusChipProps) {
   );
 }
 
+function CenteredTableChip({ children }: { children: ReactNode }) {
+  return <div className="flex justify-center">{children}</div>;
+}
+
 function DifficultyChip({ difficulty }: DifficultyChipProps) {
   if (difficulty === null) {
     return <span className="text-muted">-</span>;
@@ -201,7 +294,7 @@ function DifficultyChip({ difficulty }: DifficultyChipProps) {
 
   const className =
     luoguDifficultyClassNames[difficulty] ?? luoguDifficultyClassNames[0];
-  const label = luoguDifficultyLabels[difficulty] ?? `难度 ${difficulty}`;
+  const label = getDifficultyLabel(difficulty);
 
   return (
     <Chip className={`${className} font-semibold`} size="md" variant="soft">
@@ -212,6 +305,8 @@ function DifficultyChip({ difficulty }: DifficultyChipProps) {
 
 function ProblemTable({ problems }: ProblemTableProps) {
   const progress = getProgressText(problems);
+  const pidColumnClassName = getPidColumnClassName(problems);
+  const difficultyColumnClassName = getDifficultyColumnClassName(problems);
 
   return (
     <Card>
@@ -242,19 +337,23 @@ function ProblemTable({ problems }: ProblemTableProps) {
       <Card.Content>
         <Table variant="secondary">
           <Table.ScrollContainer>
-            <Table.Content aria-label="题单题目表格" className="min-w-[620px]">
+            <Table.Content
+              aria-label="题单题目表格"
+              className="min-w-[40rem] table-fixed"
+            >
               <Table.Header>
-                <Table.Column className="w-12 whitespace-nowrap" isRowHeader>
+                <Table.Column
+                  className={problemTableColumnClassNames.index}
+                  isRowHeader
+                >
                   #
                 </Table.Column>
-                <Table.Column className="w-24 whitespace-nowrap">
+                <Table.Column className={problemTableColumnClassNames.status}>
                   状态
                 </Table.Column>
-                <Table.Column className="w-24 whitespace-nowrap">
-                  PID
-                </Table.Column>
-                <Table.Column className="min-w-48">标题</Table.Column>
-                <Table.Column className="w-32 whitespace-nowrap">
+                <Table.Column className={pidColumnClassName}>PID</Table.Column>
+                <Table.Column>标题</Table.Column>
+                <Table.Column className={difficultyColumnClassName}>
                   难度
                 </Table.Column>
               </Table.Header>
@@ -269,24 +368,38 @@ function ProblemTable({ problems }: ProblemTableProps) {
                       key={problem.pid}
                       textValue={`${problem.pid} ${problem.title}`}
                     >
-                      <Table.Cell className="whitespace-nowrap text-muted">
+                      <Table.Cell
+                        className={`${problemTableColumnClassNames.index} text-muted`}
+                      >
                         {index + 1}
                       </Table.Cell>
-                      <Table.Cell className="whitespace-nowrap">
-                        <ProblemStatusChip accepted={problem.accepted} />
+                      <Table.Cell
+                        className={problemTableColumnClassNames.status}
+                      >
+                        <CenteredTableChip>
+                          <ProblemStatusChip accepted={problem.accepted} />
+                        </CenteredTableChip>
                       </Table.Cell>
-                      <Table.Cell className="whitespace-nowrap font-mono text-sm">
+                      <Table.Cell
+                        className={`${pidColumnClassName} font-mono text-sm`}
+                      >
                         <LinkedProblemText href={href}>
                           {problem.pid}
                         </LinkedProblemText>
                       </Table.Cell>
-                      <Table.Cell className="min-w-0">
-                        <LinkedProblemText href={href}>
+                      <Table.Cell className="min-w-0 overflow-hidden">
+                        <LinkedProblemText
+                          href={href}
+                          isTruncated
+                          title={problem.title}
+                        >
                           {problem.title}
                         </LinkedProblemText>
                       </Table.Cell>
-                      <Table.Cell className="whitespace-nowrap">
-                        <DifficultyChip difficulty={problem.difficulty} />
+                      <Table.Cell className={difficultyColumnClassName}>
+                        <CenteredTableChip>
+                          <DifficultyChip difficulty={problem.difficulty} />
+                        </CenteredTableChip>
                       </Table.Cell>
                     </Table.Row>
                   );
@@ -301,6 +414,8 @@ function ProblemTable({ problems }: ProblemTableProps) {
 }
 
 function CompletionLeaderboardCard({ problemSetId }: { problemSetId: string }) {
+  const session = authClient.useSession();
+  const currentUserId = session.data?.user.id ?? null;
   const completionsQuery = useQuery(
     trpc.problemSet.completions.queryOptions({ id: problemSetId })
   );
@@ -350,23 +465,32 @@ function CompletionLeaderboardCard({ problemSetId }: { problemSetId: string }) {
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {rows.map((row, index) => (
-                    <Table.Row
-                      id={row.userId}
-                      key={row.userId}
-                      textValue={`${row.displayName} ${row.completedProblemCount}`}
-                    >
-                      <Table.Cell className="text-center text-muted">
-                        {index + 1}
-                      </Table.Cell>
-                      <Table.Cell className="min-w-0 text-center">
-                        <LinkedProfileName row={row} />
-                      </Table.Cell>
-                      <Table.Cell className="text-center font-semibold">
-                        {row.completedProblemCount}
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
+                  {rows.map((row, index) => {
+                    const isCurrentUser = row.userId === currentUserId;
+                    const currentUserLabel = isCurrentUser ? " 我" : "";
+
+                    return (
+                      <Table.Row
+                        className={isCurrentUser ? "bg-accent-soft/60" : ""}
+                        id={row.userId}
+                        key={row.userId}
+                        textValue={`${row.displayName}${currentUserLabel} ${row.completedProblemCount}`}
+                      >
+                        <Table.Cell className="text-center text-muted">
+                          {index + 1}
+                        </Table.Cell>
+                        <Table.Cell className="min-w-0 text-center">
+                          <LinkedProfileName
+                            isCurrentUser={isCurrentUser}
+                            row={row}
+                          />
+                        </Table.Cell>
+                        <Table.Cell className="text-center font-semibold">
+                          {row.completedProblemCount}
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
@@ -383,7 +507,6 @@ function SummaryPanel({
 }: SummaryPanelProps) {
   return (
     <aside className="grid content-start gap-4">
-      <CompletionLeaderboardCard problemSetId={problemSetId} />
       <Card>
         <Card.Header>
           <Card.Title>题单说明</Card.Title>
@@ -395,6 +518,7 @@ function SummaryPanel({
           />
         </Card.Content>
       </Card>
+      <CompletionLeaderboardCard problemSetId={problemSetId} />
     </aside>
   );
 }

@@ -302,30 +302,23 @@ describe("luoguSource", () => {
     });
   });
 
-  it("loads problem list data", async () => {
-    const problemListData = {
-      page: 1,
-      problems: {
-        count: 1,
-        perPage: 50,
-        result: [
-          {
-            difficulty: 2,
-            name: "[NOIP 2016 提高组] 玩具谜题",
-            pid: "P1563",
-            type: "P",
-          },
-        ],
+  it("loads problem page data", async () => {
+    const problemData = {
+      problem: {
+        difficulty: 7,
+        name: "X-mouse in the Campus",
+        pid: "CF1027G",
+        type: "CF",
       },
     };
     const requests = mockFetchResponses([
       createCdnRedirectResponse("C3VK=problem"),
-      Response.json({ data: problemListData, status: 200 }),
+      Response.json({ data: problemData, status: 200 }),
     ]);
 
-    await expect(
-      luoguSource.problemList({ keyword: "P1563" })
-    ).resolves.toEqual(problemListData);
+    await expect(luoguSource.problem({ pid: "CF1027G" })).resolves.toEqual(
+      problemData
+    );
     expect(requests[1]?.headers).toMatchObject({
       cookie: "C3VK=problem",
       "x-lentille-request": "content-only",
