@@ -92,7 +92,6 @@ export default function AdminPage() {
           <Card>
             <Card.Header>
               <div>
-                <Card.Description>管理员工具</Card.Description>
                 <Card.Title className="mt-1">管理面板</Card.Title>
               </div>
             </Card.Header>

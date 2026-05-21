@@ -1584,7 +1584,6 @@ function AdminUsersTableSection({
       <Card.Header>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Card.Description>全部账号</Card.Description>
             <Card.Title className="mt-1">{total} 个用户</Card.Title>
           </div>
           <div className="flex items-center gap-3 text-muted text-sm">

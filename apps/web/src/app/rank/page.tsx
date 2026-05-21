@@ -20,7 +20,6 @@ export default function RankPage() {
       <Card>
         <Card.Header>
           <div>
-            <Card.Description>公开榜单</Card.Description>
             <Card.Title className="mt-1">排行榜</Card.Title>
           </div>
         </Card.Header>

@@ -558,7 +558,6 @@ export default function LuoguRankPage() {
         <Card.Header>
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Card.Description>公开榜单</Card.Description>
               <Card.Title className="mt-1">
                 {rankQuery.isSuccess && hasActiveFilters
                   ? `${rows.length} / ${total} 位成员`

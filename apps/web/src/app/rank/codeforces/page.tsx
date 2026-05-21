@@ -574,7 +574,7 @@ export default function CodeforcesRankPage() {
 
   return (
     <AppShell
-      description="队内成员 Codeforces 数据"
+      description="队内成员 CF 数据"
       icon={<Trophy className="size-4" />}
       title="Codeforces 排行榜"
     >
@@ -582,7 +582,6 @@ export default function CodeforcesRankPage() {
         <Card.Header>
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Card.Description>公开榜单</Card.Description>
               <Card.Title className="mt-1">
                 {rankQuery.isSuccess && hasActiveFilters
                   ? `${rows.length} / ${total} 位成员`
