@@ -30,6 +30,7 @@ import {
 } from "./schema/problem-set";
 import { userProfile, userProfileRelations } from "./schema/profile";
 import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
+import { siteSetting } from "./schema/site-setting";
 import {
   userAward,
   userAwardRelations,
@@ -54,6 +55,7 @@ const schema = {
   refreshJobRelations,
   session,
   sessionRelations,
+  siteSetting,
   user,
   userAward,
   userAwardRelations,

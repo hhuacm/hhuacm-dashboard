@@ -129,3 +129,7 @@ export const adminProblemSetUpdateInputSchema = problemSetIdInputSchema
       message: "Problem set update requires at least one field",
     }
   );
+
+export const adminHomeNoticeInputSchema = z.object({
+  markdown: z.string(),
+});

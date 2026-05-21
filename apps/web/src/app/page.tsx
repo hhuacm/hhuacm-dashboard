@@ -21,13 +21,14 @@ const healthChipColor = {
 
 type HealthTone = keyof typeof healthChipColor;
 
-const homeNoticeMarkdown =
-  "本网站为 HHUACM Dashboard，目前处于开发测试阶段，旨在协助校 ACM 队进行成员登记、练习状态统计与查询等功能的实现。";
-
 interface OverviewDetail {
   label: string;
   mono?: boolean;
   value: ReactNode;
+}
+
+interface HomeNoticeCardProps {
+  markdown: string;
 }
 
 interface OverviewSectionProps {
@@ -107,8 +108,8 @@ const formatUptime = (uptimeMs: number | undefined) => {
   return `${seconds} 秒`;
 };
 
-function HomeNoticeCard() {
-  const trimmedMarkdown = homeNoticeMarkdown.trim();
+function HomeNoticeCard({ markdown }: HomeNoticeCardProps) {
+  const trimmedMarkdown = markdown.trim();
 
   return (
     <Card>
@@ -266,6 +267,7 @@ function QuickLinksCard() {
 
 export default function Home() {
   const health = useQuery(trpc.health.queryOptions());
+  const homeNotice = useQuery(trpc.dashboard.homeNotice.queryOptions());
   const dashboardSummary = useQuery(trpc.dashboard.summary.queryOptions());
   const status = getHealthStatus(health.isLoading, health.isError);
   const healthTone = getHealthTone(health.isLoading, health.isError);
@@ -278,7 +280,7 @@ export default function Home() {
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
         <div className="grid gap-6">
-          <HomeNoticeCard />
+          <HomeNoticeCard markdown={homeNotice.data?.markdown ?? ""} />
           <QuickLinksCard />
         </div>
 

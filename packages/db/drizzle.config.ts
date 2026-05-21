@@ -19,6 +19,7 @@ export default defineConfig({
     "./src/schema/luogu-account-stats.ts",
     "./src/schema/problem-set.ts",
     "./src/schema/refresh-job.ts",
+    "./src/schema/site-setting.ts",
     "./src/schema/user-award.ts",
   ],
   out: "./src/migrations",

@@ -13,6 +13,7 @@ import {
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { siteSetting } from "@hhuacm-dashboard/db/schema/site-setting";
 import {
   userAward,
   userAwardSync,
@@ -164,6 +165,13 @@ create table user_award_sync (
   primary key (user_id, source)
 )
 `,
+  `
+create table site_setting (
+  key text primary key not null,
+  value text not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+)
+`,
 ] as const;
 
 const testSchema = {
@@ -173,6 +181,7 @@ const testSchema = {
   problemSet,
   problemSetProblem,
   refreshJob,
+  siteSetting,
   user,
   userAward,
   userAwardSync,

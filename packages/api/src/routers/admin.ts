@@ -12,7 +12,9 @@ import {
   updateProblemSet,
 } from "../services/problem-set";
 import { getTargetUser, updateUserProfile } from "../services/profile";
+import { updateHomeNoticeMarkdown } from "../services/site-setting";
 import {
+  adminHomeNoticeInputSchema,
   adminProblemSetInputSchema,
   adminProblemSetUpdateInputSchema,
   adminUserDeleteInputSchema,
@@ -41,6 +43,13 @@ export const adminRouter = router({
       .mutation(
         async ({ ctx, input }) => await updateProblemSet(ctx.db, input)
       ),
+  }),
+  siteSettings: router({
+    updateHomeNotice: adminProcedure
+      .input(adminHomeNoticeInputSchema)
+      .mutation(async ({ ctx, input }) => ({
+        markdown: await updateHomeNoticeMarkdown(ctx.db, input.markdown),
+      })),
   }),
   users: router({
     get: adminProcedure
