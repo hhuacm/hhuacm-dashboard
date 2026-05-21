@@ -13,10 +13,9 @@ import {
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { type ReactNode, use, useMemo } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 import { AppShell } from "@/components/app-shell";
+import { MarkdownContent } from "@/components/markdown-content";
 import { trpc } from "@/utils/trpc";
 
 interface ProblemSetDetailPageProps {
@@ -32,10 +31,6 @@ interface ProblemTableProps {
 interface SummaryPanelProps {
   descriptionMarkdown: string;
   problemSetId: string;
-}
-
-interface MarkdownDescriptionProps {
-  markdown: string;
 }
 
 interface ProblemStatusChipProps {
@@ -305,45 +300,6 @@ function ProblemTable({ problems }: ProblemTableProps) {
   );
 }
 
-function MarkdownDescription({ markdown }: MarkdownDescriptionProps) {
-  const trimmedMarkdown = markdown.trim();
-
-  if (!trimmedMarkdown) {
-    return <p className="text-muted text-sm">暂无题单说明。</p>;
-  }
-
-  return (
-    <div className="grid gap-2 break-words text-sm leading-6">
-      <ReactMarkdown
-        components={{
-          a: ({ children, href }) => (
-            <a
-              className="inline-flex max-w-full items-center gap-1 break-all font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
-              href={href}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <span>{children}</span>
-              <ExternalLink className="size-3.5 shrink-0" />
-            </a>
-          ),
-          li: ({ children }) => <li className="ml-4 list-disc">{children}</li>,
-          ol: ({ children }) => (
-            <ol className="grid gap-1 pl-4 text-foreground">{children}</ol>
-          ),
-          p: ({ children }) => <p className="text-foreground">{children}</p>,
-          ul: ({ children }) => (
-            <ul className="grid gap-1 pl-4 text-foreground">{children}</ul>
-          ),
-        }}
-        remarkPlugins={[remarkGfm]}
-      >
-        {trimmedMarkdown}
-      </ReactMarkdown>
-    </div>
-  );
-}
-
 function CompletionLeaderboardCard({ problemSetId }: { problemSetId: string }) {
   const completionsQuery = useQuery(
     trpc.problemSet.completions.queryOptions({ id: problemSetId })
@@ -433,7 +389,10 @@ function SummaryPanel({
           <Card.Title>题单说明</Card.Title>
         </Card.Header>
         <Card.Content>
-          <MarkdownDescription markdown={descriptionMarkdown} />
+          <MarkdownContent
+            emptyText="暂无题单说明。"
+            markdown={descriptionMarkdown}
+          />
         </Card.Content>
       </Card>
     </aside>

@@ -6,10 +6,9 @@ import { Sparkles, Trophy } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 import { AppShell } from "@/components/app-shell";
+import { MarkdownContent } from "@/components/markdown-content";
 import { trpc } from "@/utils/trpc";
 
 const healthChipColor = {
@@ -109,23 +108,13 @@ const formatUptime = (uptimeMs: number | undefined) => {
 };
 
 function HomeNoticeCard({ markdown }: HomeNoticeCardProps) {
-  const trimmedMarkdown = markdown.trim();
-
   return (
     <Card>
       <Card.Header>
         <Card.Title className="text-xl">队伍公告</Card.Title>
       </Card.Header>
       <Card.Content>
-        {trimmedMarkdown ? (
-          <div className="wrap-break-word grid gap-3 text-sm leading-6">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {trimmedMarkdown}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <p className="text-muted text-sm">暂无公告。</p>
-        )}
+        <MarkdownContent emptyText="暂无公告。" markdown={markdown} />
       </Card.Content>
     </Card>
   );
