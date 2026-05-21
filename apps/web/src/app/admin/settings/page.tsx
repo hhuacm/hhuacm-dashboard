@@ -13,7 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Settings } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
@@ -27,7 +27,31 @@ interface SettingsMessage {
   tone: "danger" | "success";
 }
 
+interface SettingsFieldProps {
+  children: ReactNode;
+  description: string;
+  isChanged: boolean;
+  title: string;
+}
+
 const getSettingsSaveErrorMessage = () => "保存失败，请稍后再试。";
+
+function SettingsField({
+  children,
+  description,
+  isChanged,
+  title,
+}: SettingsFieldProps) {
+  return (
+    <div className="grid gap-3">
+      <div className="grid gap-1">
+        <DirtyFieldLabel isChanged={isChanged} label={title} />
+        <p className="text-muted text-sm leading-6">{description}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -191,10 +215,7 @@ export default function AdminSettingsPage() {
           <Card>
             <Card.Header>
               <div>
-                <Card.Title className="text-xl">首页公告</Card.Title>
-                <Card.Description className="mt-1">
-                  修改首页左侧公告区域展示的 Markdown 内容。
-                </Card.Description>
+                <Card.Title className="text-xl">站点全局配置</Card.Title>
               </div>
             </Card.Header>
             <Card.Content className="grid gap-4">
@@ -237,16 +258,18 @@ export default function AdminSettingsPage() {
                   onChange={handleMarkdownChange}
                   value={formMarkdown}
                 >
-                  <DirtyFieldLabel
+                  <SettingsField
+                    description="展示在首页左侧“队伍公告”区域，支持常见 Markdown 语法。"
                     isChanged={hasChanges}
-                    label="Markdown 内容"
-                  />
-                  <TextArea
-                    placeholder="填写首页公告内容"
-                    rows={8}
-                    style={{ resize: "vertical" }}
-                    variant="secondary"
-                  />
+                    title="首页公告 Markdown"
+                  >
+                    <TextArea
+                      placeholder="填写首页公告内容"
+                      rows={8}
+                      style={{ resize: "vertical" }}
+                      variant="secondary"
+                    />
+                  </SettingsField>
                 </TextField>
 
                 <div className="flex justify-end">
