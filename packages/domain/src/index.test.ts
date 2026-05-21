@@ -4,6 +4,7 @@ import {
   defaultMemberStatus,
   getGradeOptions,
   getGradeOptionsWithCurrentValue,
+  getUserNameLabel,
   isValidGradeOption,
   memberStatuses,
   memberStatusLabels,
@@ -53,5 +54,26 @@ describe("grade options", () => {
   it("validates current grade options", () => {
     expect(isValidGradeOption("其他")).toBe(true);
     expect(isValidGradeOption("not-a-grade")).toBe(false);
+  });
+});
+
+describe("user name labels", () => {
+  it("uses real name before username", () => {
+    expect(getUserNameLabel({ realName: "张三", username: "zhangsan" })).toBe(
+      "张三"
+    );
+  });
+
+  it("falls back to username", () => {
+    expect(getUserNameLabel({ realName: null, username: "zhangsan" })).toBe(
+      "zhangsan"
+    );
+  });
+
+  it("ignores blank names", () => {
+    expect(getUserNameLabel({ realName: " ", username: "zhangsan" })).toBe(
+      "zhangsan"
+    );
+    expect(getUserNameLabel({ realName: "", username: "" })).toBe("未命名用户");
   });
 });

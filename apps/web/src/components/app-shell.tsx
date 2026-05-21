@@ -36,13 +36,13 @@ interface AppShellProps {
 }
 
 interface AccountMenuProps {
-  displayName: string;
   isAdmin: boolean;
+  nameLabel: string;
   onLogout: () => Promise<void>;
   username: null | string | undefined;
 }
 
-const formatDisplayName = (username: string) => {
+const formatNameLabel = (username: string) => {
   if (username.length <= usernameVisibleLength) {
     return username;
   }
@@ -51,8 +51,8 @@ const formatDisplayName = (username: string) => {
 };
 
 function AccountMenu({
-  displayName,
   isAdmin,
+  nameLabel,
   onLogout,
   username,
 }: AccountMenuProps) {
@@ -98,7 +98,7 @@ function AccountMenu({
       >
         <UserRound className="size-4" />
         <span className="max-w-36 overflow-hidden text-ellipsis">
-          {displayName}
+          {nameLabel}
         </span>
       </Button>
       <Dropdown.Popover className="min-w-44" placement="bottom end">
@@ -187,8 +187,8 @@ function HeaderActions({ action }: { action?: ReactNode }) {
       {action}
       {user ? (
         <AccountMenu
-          displayName={formatDisplayName(displayUsername)}
           isAdmin={isAdmin}
+          nameLabel={formatNameLabel(displayUsername)}
           onLogout={handleLogout}
           username={user.username}
         />

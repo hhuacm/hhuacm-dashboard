@@ -324,7 +324,7 @@ describe("problem sets", () => {
       displayUsername: "active-display",
       id: "active-user",
       memberStatus: "active",
-      username: null,
+      username: "active-user",
     });
     await createLuoguUser(db, { id: "missing-profile-user" });
     await createLuoguUser(db, {
@@ -375,19 +375,19 @@ describe("problem sets", () => {
     expect(rows).toHaveLength(3);
     expect(rowsByUserId.get("selection-user")).toEqual({
       completedProblemCount: 2,
-      displayName: "张三",
+      realName: "张三",
       userId: "selection-user",
       username: "selection-user",
     });
     expect(rowsByUserId.get("active-user")).toEqual({
       completedProblemCount: 1,
-      displayName: "active-display",
+      realName: null,
       userId: "active-user",
-      username: null,
+      username: "active-user",
     });
     expect(rowsByUserId.get("missing-profile-user")).toEqual({
       completedProblemCount: 1,
-      displayName: "missing-profile-user",
+      realName: null,
       userId: "missing-profile-user",
       username: "missing-profile-user",
     });

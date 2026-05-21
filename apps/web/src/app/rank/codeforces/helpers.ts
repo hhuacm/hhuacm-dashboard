@@ -1,4 +1,5 @@
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
+import { getUserNameLabel } from "@hhuacm-dashboard/domain";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { Key } from "react";
 
@@ -317,8 +318,7 @@ export const filterRankRows = (
   });
 };
 
-export const getDisplayName = (row: RankRow) =>
-  row.realName ?? row.displayName ?? row.username ?? "未命名用户";
+export const getNameLabel = (row: RankRow) => getUserNameLabel(row);
 
 export const getProfileUrl = (row: RankRow) =>
   row.username ? `/profile/${encodeURIComponent(row.username)}` : null;
@@ -365,7 +365,7 @@ const compareNullableNumbers = (
 };
 
 const compareByName = (left: RankRow, right: RankRow) =>
-  getDisplayName(left).localeCompare(getDisplayName(right), "zh-CN");
+  getNameLabel(left).localeCompare(getNameLabel(right), "zh-CN");
 
 export const sortRankRows = (rows: RankRow[], sort: SortState) =>
   [...rows].sort((left, right) => {

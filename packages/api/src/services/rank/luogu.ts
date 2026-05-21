@@ -27,7 +27,7 @@ export type LuoguRankStatus =
   | "refreshing"
   | "stale";
 
-const usernameSortExpression = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`;
+const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${userProfile.realName}), ''), nullif(trim(${user.username}), ''), '')`;
 const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
@@ -66,7 +66,6 @@ export const listLuoguRankRows = async (db: Database) => {
       acceptedWeightedScore: luoguAccountStats.acceptedWeightedScore,
       accountId: userOjAccount.id,
       averageAcceptedDifficulty: luoguAccountStats.averageAcceptedDifficulty,
-      displayUsername: user.displayUsername,
       fetchedAt: luoguAccountStats.fetchedAt,
       grade: userProfile.grade,
       handle: userOjAccount.handle,
@@ -95,7 +94,7 @@ export const listLuoguRankRows = async (db: Database) => {
       desc(luoguAccountStats.acceptedWeightedScore),
       desc(luoguAccountStats.acceptedProblemCount),
       desc(luoguAccountStats.averageAcceptedDifficulty),
-      asc(usernameSortExpression),
+      asc(userNameLabelSortExpression),
       asc(user.id)
     );
   const accountIds = rows.flatMap((row) =>
@@ -120,8 +119,6 @@ export const listLuoguRankRows = async (db: Database) => {
   const now = new Date();
 
   return rows.map((row) => ({
-    displayName:
-      row.displayUsername ?? row.username ?? row.realName ?? "未命名用户",
     grade: row.grade,
     luogu: {
       acceptedProblemCount: row.acceptedProblemCount,

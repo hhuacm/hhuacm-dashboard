@@ -49,7 +49,7 @@ import {
   formatNumber,
   formatRelativeTime,
   getActiveNumberFilterCount,
-  getDisplayName,
+  getNameLabel,
   getProfileUrl,
   getRankFilterOptions,
   getVisibleTableMinWidth,
@@ -337,18 +337,18 @@ function RankToolbar({
 }
 
 const renderNameCell = (row: RankRow) => {
-  const displayName = getDisplayName(row);
+  const nameLabel = getNameLabel(row);
   const profileUrl = getProfileUrl(row);
 
   if (profileUrl) {
     return (
       <LinkedText href={profileUrl} tone="text-foreground">
-        {displayName}
+        {nameLabel}
       </LinkedText>
     );
   }
 
-  return <span className="truncate">{displayName}</span>;
+  return <span className="truncate">{nameLabel}</span>;
 };
 
 const renderMajorCell = (row: RankRow) =>
@@ -493,14 +493,14 @@ function RankTable({
           </Table.Header>
           <Table.Body>
             {rows.map((row, index) => {
-              const displayName = getDisplayName(row);
+              const nameLabel = getNameLabel(row);
 
               return (
                 <Table.Row
                   className="h-14"
                   id={row.userId}
                   key={row.userId}
-                  textValue={displayName}
+                  textValue={nameLabel}
                 >
                   {visibleColumns.map((column) => (
                     <Table.Cell

@@ -387,8 +387,6 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
   const rows = await db
     .select({
       completedProblemCount: count(luoguAcceptedProblem.pid),
-      displayUsername: user.displayUsername,
-      name: user.name,
       realName: userProfile.realName,
       userId: user.id,
       username: user.username,
@@ -413,24 +411,13 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
         inArray(memberStatusExpression, publicActivityMemberStatuses)
       )
     )
-    .groupBy(
-      user.id,
-      user.name,
-      user.username,
-      user.displayUsername,
-      userProfile.realName
-    );
+    .groupBy(user.id, user.username, userProfile.realName);
 
   return rows
     .filter((row) => row.completedProblemCount > 0)
     .map((row) => ({
       completedProblemCount: row.completedProblemCount,
-      displayName:
-        row.realName ??
-        row.displayUsername ??
-        row.username ??
-        row.name ??
-        "未命名用户",
+      realName: row.realName,
       userId: row.userId,
       username: row.username,
     }));

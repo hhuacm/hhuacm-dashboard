@@ -27,7 +27,7 @@ export type CodeforcesRankStatus =
   | "refreshing"
   | "stale";
 
-const usernameSortExpression = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name}, '')`;
+const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${userProfile.realName}), ''), nullif(trim(${user.username}), ''), '')`;
 const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
@@ -71,7 +71,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
       acceptedProblemCountInMonth:
         codeforcesAccountStats.acceptedProblemCountInMonth,
       accountId: userOjAccount.id,
-      displayUsername: user.displayUsername,
       fetchedAt: codeforcesAccountStats.fetchedAt,
       grade: userProfile.grade,
       handle: userOjAccount.handle,
@@ -99,7 +98,7 @@ export const listCodeforcesRankRows = async (db: Database) => {
         inArray(memberStatusExpression, publicActivityMemberStatuses)
       )
     )
-    .orderBy(asc(usernameSortExpression), asc(user.id));
+    .orderBy(asc(userNameLabelSortExpression), asc(user.id));
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );
@@ -141,8 +140,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
         statsHandle: row.statsHandle,
       }),
     },
-    displayName:
-      row.displayUsername ?? row.username ?? row.realName ?? "未命名用户",
     grade: row.grade,
     major: row.major,
     realName: row.realName,

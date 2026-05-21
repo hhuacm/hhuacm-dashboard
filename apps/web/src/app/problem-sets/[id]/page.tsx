@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert, Button, Card, Chip, Spinner, Table } from "@heroui/react";
+import { getUserNameLabel } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -50,7 +51,7 @@ interface ProblemSetProblem {
 
 interface ProblemSetCompletion {
   completedProblemCount: number;
-  displayName: string;
+  realName: null | string;
   userId: string;
   username: null | string;
 }
@@ -206,10 +207,12 @@ function LinkedProfileName({
   isCurrentUser: boolean;
   row: ProblemSetCompletion;
 }) {
+  const nameLabel = getUserNameLabel(row);
+
   if (!row.username) {
     return (
       <span className="inline-flex min-w-0 max-w-full justify-center">
-        <span className="truncate">{row.displayName}</span>
+        <span className="truncate">{nameLabel}</span>
         <CurrentUserSuffix isCurrentUser={isCurrentUser} />
       </span>
     );
@@ -220,7 +223,7 @@ function LinkedProfileName({
       className="inline-flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
       href={getProfileUrl(row.username)}
     >
-      <span className="truncate">{row.displayName}</span>
+      <span className="truncate">{nameLabel}</span>
       <CurrentUserSuffix isCurrentUser={isCurrentUser} />
     </a>
   );
@@ -232,13 +235,13 @@ const sortCompletionRows = (rows: ProblemSetCompletion[]) =>
       return right.completedProblemCount - left.completedProblemCount;
     }
 
-    const displayNameOrder = left.displayName.localeCompare(
-      right.displayName,
+    const nameLabelOrder = getUserNameLabel(left).localeCompare(
+      getUserNameLabel(right),
       "zh-CN"
     );
 
-    if (displayNameOrder !== 0) {
-      return displayNameOrder;
+    if (nameLabelOrder !== 0) {
+      return nameLabelOrder;
     }
 
     return left.userId.localeCompare(right.userId);
@@ -468,13 +471,14 @@ function CompletionLeaderboardCard({ problemSetId }: { problemSetId: string }) {
                   {rows.map((row, index) => {
                     const isCurrentUser = row.userId === currentUserId;
                     const currentUserLabel = isCurrentUser ? " 我" : "";
+                    const nameLabel = getUserNameLabel(row);
 
                     return (
                       <Table.Row
                         className={isCurrentUser ? "bg-accent-soft/60" : ""}
                         id={row.userId}
                         key={row.userId}
-                        textValue={`${row.displayName}${currentUserLabel} ${row.completedProblemCount}`}
+                        textValue={`${nameLabel}${currentUserLabel} ${row.completedProblemCount}`}
                       >
                         <Table.Cell className="text-center text-muted">
                           {index + 1}

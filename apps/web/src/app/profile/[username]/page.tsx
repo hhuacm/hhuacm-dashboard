@@ -627,7 +627,7 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
     )
   );
   const profile = profileQuery.data;
-  const displayName =
+  const nameLabel =
     profile?.user.displayUsername ??
     profile?.user.username ??
     profile?.user.name ??
@@ -676,7 +676,7 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
                   </div>
                   <div className="min-w-0">
                     <Card.Title className="break-all text-2xl leading-tight">
-                      {displayName}
+                      {nameLabel}
                     </Card.Title>
                   </div>
                 </div>

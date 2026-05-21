@@ -32,7 +32,6 @@ const createRankRow = (
     status: "ready",
     ...input.codeforces,
   },
-  displayName: input.displayName ?? input.userId,
   grade: input.grade ?? null,
   major: input.major ?? null,
   realName: input.realName ?? null,
