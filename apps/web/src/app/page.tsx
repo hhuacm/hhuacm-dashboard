@@ -152,9 +152,9 @@ function SystemOverviewCard({
   return (
     <Card>
       <Card.Header>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <Card.Title className="text-xl">系统概览</Card.Title>
-          <Chip color={healthChipColor[healthTone]} size="sm" variant="soft">
+          <Chip color={healthChipColor[healthTone]} size="md" variant="soft">
             {healthStatus}
           </Chip>
         </div>
@@ -267,7 +267,7 @@ export default function Home() {
       icon={<Sparkles className="size-4" />}
       title="HHUACM Dashboard"
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="grid gap-6">
           <HomeNoticeCard markdown={homeNotice.data?.markdown ?? ""} />
           <QuickLinksCard />
