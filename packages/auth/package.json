@@ -18,9 +18,8 @@
     "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "better-auth": "catalog:",
-    "drizzle-orm": "^0.45.1",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
+    "drizzle-orm": "0.45",
+    "dotenv": "catalog:"
   },
   "devDependencies": {
     "@hhuacm-dashboard/config": "workspace:*",

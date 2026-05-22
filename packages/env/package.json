@@ -1,6 +1,5 @@
 {
   "name": "@hhuacm-dashboard/env",
-  "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -11,8 +10,8 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@t3-oss/env-core": "^0.13.1",
-    "@t3-oss/env-nextjs": "^0.13.1",
+    "@t3-oss/env-core": "0.13",
+    "@t3-oss/env-nextjs": "0.13",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
