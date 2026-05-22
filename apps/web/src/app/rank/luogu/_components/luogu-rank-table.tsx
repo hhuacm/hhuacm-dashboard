@@ -16,20 +16,22 @@ import {
   formatDecimal,
   formatNumber,
   formatRelativeTime,
-  getNameLabel,
-  getProfileUrl,
   getVisibleTableMinWidth,
   isDormant,
+  rankTableCellClassName,
+  rankTableColumnClassName,
+  type SortDirection,
+  statusConfig,
+} from "../../_shared/rank-utils";
+import {
+  getNameLabel,
+  getProfileUrl,
   isRankSortColumn,
   isSortColumn,
   type RankColumnConfig,
   type RankColumnId,
   type RankRow,
-  rankTableCellClassName,
-  rankTableColumnClassName,
-  type SortDirection,
   type SortState,
-  statusConfig,
 } from "../helpers";
 
 interface LuoguRankTableProps {

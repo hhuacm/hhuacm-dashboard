@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from "bun:test";
 
+import { getRankFilterOptions } from "../_shared/rank-utils";
 import {
   emptyRankFilters,
   filterRankRows,
-  getRankFilterOptions,
   type RankRow,
   sortRankRows,
 } from "./helpers";

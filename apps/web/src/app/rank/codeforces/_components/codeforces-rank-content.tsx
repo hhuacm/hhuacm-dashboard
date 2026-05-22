@@ -7,12 +7,12 @@ import { useMemo, useState } from "react";
 import { useColumnVisibility } from "@/components/column-visibility";
 import { trpc } from "@/utils/trpc";
 import { RankToolbar } from "../../_components/rank-shared";
+import { getRankFilterOptions } from "../../_shared/rank-utils";
 import {
   emptyRankFilters,
   filterRankRows,
   filterSearchThreshold,
   getActiveNumberFilterCount,
-  getRankFilterOptions,
   hasActiveRankFilters,
   type NumberFilterKey,
   numberFilterConfigs,
