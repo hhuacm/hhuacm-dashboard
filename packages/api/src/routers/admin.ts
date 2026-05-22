@@ -5,12 +5,15 @@ import {
   getAdminUsersMetadata,
   listAdminUsers,
 } from "../services/admin-users";
-import { deleteOjAccount, upsertOjAccount } from "../services/oj-account";
+import {
+  deleteOjAccount,
+  upsertOjAccount,
+} from "../services/oj-account/commands";
 import {
   createProblemSet,
   deleteProblemSet,
   updateProblemSet,
-} from "../services/problem-set";
+} from "../services/problem-set/write-model";
 import { getTargetUser, updateUserProfile } from "../services/profile";
 import { updateHomeNoticeMarkdown } from "../services/site-setting";
 import {

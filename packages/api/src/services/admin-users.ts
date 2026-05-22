@@ -24,10 +24,10 @@ import {
 
 import type { Context } from "../context";
 import {
-  clearCodeforcesStatsIfNeeded,
   listInternalOjAccountsByUserId,
   ojAccountFields,
-} from "./oj-account";
+} from "./oj-account/queries";
+import { clearCodeforcesStatsIfNeeded } from "./oj-account/stats-effects";
 import { getTargetUser, profileFields } from "./profile";
 
 type Database = Context["db"];

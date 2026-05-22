@@ -3,7 +3,7 @@ import {
   addOjAccount,
   deleteOjAccount,
   updateOjAccount,
-} from "../services/oj-account";
+} from "../services/oj-account/commands";
 import { getSettingsProfile, updateUserProfile } from "../services/profile";
 import {
   ojAccountInputSchema,

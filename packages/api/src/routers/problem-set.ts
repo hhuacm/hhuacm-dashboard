@@ -3,7 +3,7 @@ import {
   getProblemSet,
   listProblemSetCompletions,
   listProblemSets,
-} from "../services/problem-set";
+} from "../services/problem-set/read-model";
 import { problemSetIdInputSchema } from "./schemas";
 
 export const problemSetRouter = router({

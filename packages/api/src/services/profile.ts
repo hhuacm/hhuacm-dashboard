@@ -17,7 +17,7 @@ import { isStatsDisabledMemberStatus } from "./member-status";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
-} from "./oj-account";
+} from "./oj-account/queries";
 import {
   getAwardsForPublicProfile,
   type PublicProfileAwards,

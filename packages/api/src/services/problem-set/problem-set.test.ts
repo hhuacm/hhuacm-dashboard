@@ -14,15 +14,17 @@ import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 
+import { createServiceTestDb } from "../test-db";
 import {
-  createProblemSet,
-  deleteProblemSet,
   getProblemSet,
   listProblemSetCompletions,
   listProblemSets,
+} from "./read-model";
+import {
+  createProblemSet,
+  deleteProblemSet,
   updateProblemSet,
-} from "./problem-set";
-import { createServiceTestDb } from "./test-db";
+} from "./write-model";
 
 const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,

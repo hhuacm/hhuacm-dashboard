@@ -4,8 +4,8 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
-import { addOjAccount } from "./oj-account";
-import { createServiceTestDb } from "./test-db";
+import { createServiceTestDb } from "../test-db";
+import { addOjAccount } from "./commands";
 
 const originalFetch = globalThis.fetch;
 
