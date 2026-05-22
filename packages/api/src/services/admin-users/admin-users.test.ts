@@ -309,7 +309,6 @@ describe("admin users", () => {
       kind: "codeforces.accountStats",
       status: "pending",
       targetId: accountId,
-      targetType: "ojAccount",
     });
 
     const deleted = await deleteAdminUser(db, {

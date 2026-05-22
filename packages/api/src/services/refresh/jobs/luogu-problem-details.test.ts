@@ -18,22 +18,20 @@ const createProblemPage = (
 });
 
 describe("Luogu problem details refresh job", () => {
-  it("finishes without requeue when the PID is no longer referenced", async () => {
+  it("finishes when the PID is no longer referenced", async () => {
     const db = await createServiceTestDb();
 
     await expect(
       luoguProblemDetailsRefreshJobDefinition.handle(db, {
         createdAt: new Date(),
-        id: "job-1",
         kind: "luogu.problemDetails",
         status: "running",
         targetId: "P1563",
-        targetType: "luoguProblem",
       })
     ).resolves.toBeUndefined();
   });
 
-  it("requeues when Luogu lookup fails", async () => {
+  it("throws when Luogu lookup fails", async () => {
     const db = await createServiceTestDb();
     await db.insert(problemSet).values({
       id: "set-a",
@@ -52,18 +50,16 @@ describe("Luogu problem details refresh job", () => {
         db,
         {
           createdAt: new Date(),
-          id: "job-1",
           kind: "luogu.problemDetails",
           status: "running",
           targetId: "P1563",
-          targetType: "luoguProblem",
         },
         () => Promise.reject(new Error("network failed"))
       )
-    ).resolves.toEqual({ requeue: true });
+    ).rejects.toThrow("network failed");
   });
 
-  it("updates referenced problems without requeue", async () => {
+  it("updates referenced problems", async () => {
     const db = await createServiceTestDb();
     await db.insert(problemSet).values({
       id: "set-a",
@@ -82,11 +78,9 @@ describe("Luogu problem details refresh job", () => {
         db,
         {
           createdAt: new Date(),
-          id: "job-1",
           kind: "luogu.problemDetails",
           status: "running",
           targetId: "P1563",
-          targetType: "luoguProblem",
         },
         async () =>
           createProblemPage({

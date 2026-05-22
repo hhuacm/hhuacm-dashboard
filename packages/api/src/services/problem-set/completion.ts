@@ -5,8 +5,7 @@ import {
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { and, eq, inArray } from "drizzle-orm";
 
-import { refreshDefaults } from "../refresh/constants";
-import { enqueueLuoguAccountStatsRefresh } from "../refresh/queue";
+import { ensureLuoguAccountStatsRefresh } from "../refresh/ensure";
 import type { ProblemSetProblemRecord } from "./records";
 import type { Database } from "./types";
 
@@ -38,7 +37,7 @@ const getCurrentLuoguAccount = async (db: Database, userId: null | string) => {
   );
 };
 
-const enqueueLuoguStatsRefreshIfNeeded = async (
+const ensureLuoguStatsRefresh = async (
   db: Database,
   account: Awaited<ReturnType<typeof getCurrentLuoguAccount>>
 ) => {
@@ -46,14 +45,11 @@ const enqueueLuoguStatsRefreshIfNeeded = async (
     return;
   }
 
-  const now = Date.now();
-  const fetchedAt = account.fetchedAt?.getTime() ?? null;
-  const isFresh =
-    fetchedAt !== null && now - fetchedAt < refreshDefaults.luoguStatsTtlMs;
-
-  if (!isFresh) {
-    await enqueueLuoguAccountStatsRefresh(db, account.accountId);
-  }
+  await ensureLuoguAccountStatsRefresh(db, {
+    accountId: account.accountId,
+    fetchedAt: account.fetchedAt,
+    now: new Date(),
+  });
 };
 
 export const getCurrentLuoguCompletionSource = async (
@@ -62,7 +58,7 @@ export const getCurrentLuoguCompletionSource = async (
 ) => {
   const currentLuoguAccount = await getCurrentLuoguAccount(db, currentUserId);
 
-  await enqueueLuoguStatsRefreshIfNeeded(db, currentLuoguAccount);
+  await ensureLuoguStatsRefresh(db, currentLuoguAccount);
 
   if (!currentLuoguAccount?.fetchedAt) {
     return null;

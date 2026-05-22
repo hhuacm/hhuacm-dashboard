@@ -53,7 +53,10 @@ describe("Luogu account stats refresh job", () => {
     await createAccount(db, { id: "missing-profile-user" });
 
     const enqueuedCount =
-      await luoguAccountStatsRefreshJobDefinition.scanStaleTargets(db);
+      await luoguAccountStatsRefreshJobDefinition.scanStaleTargets(
+        db,
+        new Date()
+      );
     const jobs = await db.select().from(refreshJob);
     const targetIds = jobs.map((job) => job.targetId);
 

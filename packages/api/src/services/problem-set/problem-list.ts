@@ -2,8 +2,7 @@ import { problemSetProblem } from "@hhuacm-dashboard/db/schema/problem-set";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 
-import { enqueueLuoguProblemDetailsRefresh } from "../refresh/queue";
-import type { Database, Transaction } from "./types";
+import type { Transaction } from "./types";
 
 const pidPattern = /^[A-Z0-9][A-Z0-9_-]*$/i;
 
@@ -93,13 +92,4 @@ export const replaceProblemSetProblems = async (
       };
     })
   );
-};
-
-export const enqueueProblemDetailsRefreshes = async (
-  db: Database,
-  pids: string[]
-) => {
-  for (const pid of new Set(pids)) {
-    await enqueueLuoguProblemDetailsRefresh(db, pid);
-  }
 };

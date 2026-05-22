@@ -2,7 +2,6 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 import {
   defaultMemberStatus,
   type MemberStatus,
@@ -11,11 +10,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { publicActivityMemberStatuses } from "../member-status";
-import {
-  codeforcesAccountStatsJobKind,
-  ojAccountTargetType,
-  refreshDefaults,
-} from "../refresh/constants";
+import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
 
@@ -35,8 +30,8 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 export const getCodeforcesRankStatus = (input: {
   fetchedAt: Date | null;
   hasActiveRefreshJob: boolean;
+  isFresh: boolean;
   lastError: null | string;
-  now: Date;
   statsHandle: null | string;
 }): CodeforcesRankStatus => {
   if (input.hasActiveRefreshJob) {
@@ -55,9 +50,7 @@ export const getCodeforcesRankStatus = (input: {
     return "empty";
   }
 
-  const ageMs = input.now.getTime() - input.fetchedAt.getTime();
-
-  if (ageMs >= refreshDefaults.codeforcesStatsTtlMs) {
+  if (!input.isFresh) {
     return "stale";
   }
 
@@ -102,23 +95,12 @@ export const listCodeforcesRankRows = async (db: Database) => {
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );
-  const activeRefreshJobs =
-    accountIds.length > 0
-      ? await db
-          .select({ targetId: refreshJob.targetId })
-          .from(refreshJob)
-          .where(
-            and(
-              eq(refreshJob.kind, codeforcesAccountStatsJobKind),
-              eq(refreshJob.targetType, ojAccountTargetType),
-              inArray(refreshJob.targetId, accountIds)
-            )
-          )
-      : [];
-  const refreshingAccountIds = new Set(
-    activeRefreshJobs.map((job) => job.targetId)
-  );
   const now = new Date();
+  const refreshActivity = await getCodeforcesRankRefreshActivity(
+    db,
+    accountIds,
+    now
+  );
 
   return rows.map((row) => ({
     codeforces: {
@@ -132,13 +114,14 @@ export const listCodeforcesRankRows = async (db: Database) => {
       maxRating: row.maxRating,
       profileUrl: row.profileUrl,
       rating: row.rating,
-      status: getCodeforcesRankStatus({
-        fetchedAt: row.fetchedAt,
-        hasActiveRefreshJob: refreshingAccountIds.has(row.accountId),
-        lastError: row.lastError,
-        now,
-        statsHandle: row.statsHandle,
-      }),
+      status: getCodeforcesRankStatus(
+        refreshActivity.toStatusInput({
+          accountId: row.accountId,
+          fetchedAt: row.fetchedAt,
+          lastError: row.lastError,
+          statsHandle: row.statsHandle,
+        })
+      ),
     },
     grade: row.grade,
     major: row.major,

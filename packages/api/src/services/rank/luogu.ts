@@ -2,7 +2,6 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
 import {
   defaultMemberStatus,
   type MemberStatus,
@@ -11,11 +10,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { publicActivityMemberStatuses } from "../member-status";
-import {
-  luoguAccountStatsJobKind,
-  ojAccountTargetType,
-  refreshDefaults,
-} from "../refresh/constants";
+import { getLuoguRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
 
@@ -35,8 +30,8 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 export const getLuoguRankStatus = (input: {
   fetchedAt: Date | null;
   hasActiveRefreshJob: boolean;
+  isFresh: boolean;
   lastError: null | string;
-  now: Date;
 }): LuoguRankStatus => {
   if (input.hasActiveRefreshJob) {
     return "refreshing";
@@ -50,9 +45,7 @@ export const getLuoguRankStatus = (input: {
     return "empty";
   }
 
-  const ageMs = input.now.getTime() - input.fetchedAt.getTime();
-
-  if (ageMs >= refreshDefaults.luoguStatsTtlMs) {
+  if (!input.isFresh) {
     return "stale";
   }
 
@@ -100,23 +93,12 @@ export const listLuoguRankRows = async (db: Database) => {
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );
-  const activeRefreshJobs =
-    accountIds.length > 0
-      ? await db
-          .select({ targetId: refreshJob.targetId })
-          .from(refreshJob)
-          .where(
-            and(
-              eq(refreshJob.kind, luoguAccountStatsJobKind),
-              eq(refreshJob.targetType, ojAccountTargetType),
-              inArray(refreshJob.targetId, accountIds)
-            )
-          )
-      : [];
-  const refreshingAccountIds = new Set(
-    activeRefreshJobs.map((job) => job.targetId)
-  );
   const now = new Date();
+  const refreshActivity = await getLuoguRankRefreshActivity(
+    db,
+    accountIds,
+    now
+  );
 
   return rows.map((row) => ({
     grade: row.grade,
@@ -129,12 +111,13 @@ export const listLuoguRankRows = async (db: Database) => {
       handle: row.handle,
       lastError: row.lastError,
       profileUrl: row.profileUrl,
-      status: getLuoguRankStatus({
-        fetchedAt: row.fetchedAt,
-        hasActiveRefreshJob: refreshingAccountIds.has(row.accountId),
-        lastError: row.lastError,
-        now,
-      }),
+      status: getLuoguRankStatus(
+        refreshActivity.toStatusInput({
+          accountId: row.accountId,
+          fetchedAt: row.fetchedAt,
+          lastError: row.lastError,
+        })
+      ),
       uid: row.uid,
     },
     major: row.major,

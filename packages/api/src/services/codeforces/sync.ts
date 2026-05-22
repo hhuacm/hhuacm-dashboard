@@ -3,7 +3,7 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import type { Context } from "../../context";
 import type { CodeforcesUserInfoResult } from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
-import { refreshDefaults } from "../refresh/constants";
+import { truncateRefreshError } from "../refresh/policy";
 import { summarizeAcceptedProblems } from "./summary";
 import type { CodeforcesAccount } from "./types";
 
@@ -27,9 +27,6 @@ const codeforcesStatsFields = {
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown Codeforces sync error";
-
-const truncateError = (message: string) =>
-  message.slice(0, refreshDefaults.maxErrorLength);
 
 const selectCodeforcesUserInfo = (
   userInfoList: CodeforcesUserInfoResult,
@@ -113,7 +110,7 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
   error: unknown,
   now = new Date()
 ) => {
-  const lastError = truncateError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getErrorMessage(error));
 
   const [stats] = await db
     .insert(codeforcesAccountStats)

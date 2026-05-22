@@ -2,11 +2,7 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { refreshDefaults } from "../refresh/constants";
-import {
-  enqueueCodeforcesAccountStatsRefresh,
-  getRefreshJobForCodeforcesAccount,
-} from "../refresh/queue";
+import { ensureCodeforcesAccountStatsRefresh } from "../refresh/ensure";
 import type { CodeforcesAccount, PublicCodeforcesStats } from "./types";
 
 type Database = Context["db"];
@@ -36,36 +32,10 @@ const getCodeforcesStats = async (db: Database, accountId: string) =>
       .limit(1)
   )[0] ?? null;
 
-const isFreshCodeforcesStats = (
-  stats: Awaited<ReturnType<typeof getCodeforcesStats>>,
-  account: CodeforcesAccount,
-  now: Date
-) => {
-  if (!stats?.fetchedAt) {
-    return false;
-  }
-
-  if (stats.handle.toLowerCase() !== account.handle.toLowerCase()) {
-    return false;
-  }
-
-  return (
-    now.getTime() - stats.fetchedAt.getTime() <
-    refreshDefaults.codeforcesStatsTtlMs
-  );
-};
-
 const isStatsForCurrentHandle = (
   stats: Awaited<ReturnType<typeof getCodeforcesStats>>,
   account: CodeforcesAccount
 ) => stats?.handle.toLowerCase() === account.handle.toLowerCase();
-
-const hasActiveRefreshJob = (
-  refreshJobs: Awaited<ReturnType<typeof getRefreshJobForCodeforcesAccount>>
-) =>
-  refreshJobs.some(
-    (job) => job.status === "pending" || job.status === "running"
-  );
 
 const serializeCodeforcesStats = (
   stats: NonNullable<Awaited<ReturnType<typeof getCodeforcesStats>>>,
@@ -94,21 +64,19 @@ export const getCodeforcesStatsForProfile = async (
 ): Promise<PublicCodeforcesStats | null> => {
   const now = new Date();
   const currentStats = await getCodeforcesStats(db, account.id);
-  const isFresh = isFreshCodeforcesStats(currentStats, account, now);
   const canDisplayCurrentStats = isStatsForCurrentHandle(currentStats, account);
-  const shouldRefresh = !isFresh;
-
-  if (shouldRefresh) {
-    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
-  }
-
-  const refreshJobs = await getRefreshJobForCodeforcesAccount(db, account.id);
+  const refreshQueueState = await ensureCodeforcesAccountStatsRefresh(db, {
+    accountHandle: account.handle,
+    accountId: account.id,
+    fetchedAt: currentStats?.fetchedAt ?? null,
+    now,
+    statsHandle: currentStats?.handle ?? null,
+  });
   const lastError = canDisplayCurrentStats
     ? (currentStats?.lastError ?? null)
     : null;
-  const isRefreshing = hasActiveRefreshJob(refreshJobs);
   const syncStatus = (() => {
-    if (isRefreshing) {
+    if (refreshQueueState.isQueued) {
       return "refreshing";
     }
 
@@ -127,7 +95,7 @@ export const getCodeforcesStatsForProfile = async (
       handle: account.handle,
       isStale: true,
       lastAttemptedAt:
-        refreshJobs[0]?.createdAt.toISOString() ?? now.toISOString(),
+        refreshQueueState.requestedAt?.toISOString() ?? now.toISOString(),
       lastError,
       lastOnlineAt: null,
       maxRating: null,
@@ -137,7 +105,7 @@ export const getCodeforcesStatsForProfile = async (
   }
 
   return serializeCodeforcesStats(currentStats, {
-    isStale: !isFresh,
+    isStale: !refreshQueueState.isFresh,
     lastError,
     syncStatus,
   });

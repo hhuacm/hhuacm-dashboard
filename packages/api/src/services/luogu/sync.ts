@@ -7,7 +7,7 @@ import { and, eq, lt, sql } from "drizzle-orm";
 import type { Context } from "../../context";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
-import { refreshDefaults } from "../refresh/constants";
+import { truncateRefreshError } from "../refresh/policy";
 import { parseLuoguUidFromProfileUrl } from "./profile-stats";
 import { summarizeLuoguPracticeStats } from "./summary";
 import type { LuoguAccount } from "./types";
@@ -45,9 +45,6 @@ const chunks = <T>(items: T[], size: number) => {
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown Luogu sync error";
-
-const truncateError = (message: string) =>
-  message.slice(0, refreshDefaults.maxErrorLength);
 
 const selectLuoguPracticeStatsFields = (
   practice: LuoguPracticePageData
@@ -162,7 +159,7 @@ export const markLuoguAccountStatsRefreshFailed = async (
   now = new Date()
 ) => {
   const uid = parseLuoguUidFromProfileUrl(account.profileUrl);
-  const lastError = truncateError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getErrorMessage(error));
 
   const [stats] = await db
     .insert(luoguAccountStats)

@@ -128,12 +128,11 @@ create table problem_set_problem (
 `,
   `
 create table refresh_job (
-  id text primary key not null,
   kind text not null,
-  target_type text not null,
   target_id text not null,
   status text default 'pending' not null,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  primary key (kind, target_id)
 )
 `,
   `

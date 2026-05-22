@@ -2,8 +2,8 @@ import { problemSet } from "@hhuacm-dashboard/db/schema/problem-set";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
+import { requestLuoguProblemDetailsRefreshes } from "../refresh/requests";
 import {
-  enqueueProblemDetailsRefreshes,
   normalizeProblemPids,
   replaceProblemSetProblems,
 } from "./problem-list";
@@ -37,7 +37,7 @@ export const createProblemSet = async (
     return createdProblemSet;
   });
 
-  await enqueueProblemDetailsRefreshes(db, pids);
+  await requestLuoguProblemDetailsRefreshes(db, pids);
 
   return await getProblemSet(db, {
     currentUserId: null,
@@ -82,7 +82,7 @@ export const updateProblemSet = async (
   });
 
   if (pids !== null) {
-    await enqueueProblemDetailsRefreshes(db, pids);
+    await requestLuoguProblemDetailsRefreshes(db, pids);
   }
 
   return await getProblemSet(db, {

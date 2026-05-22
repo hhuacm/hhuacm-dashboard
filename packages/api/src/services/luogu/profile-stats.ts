@@ -5,11 +5,7 @@ import {
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { refreshDefaults } from "../refresh/constants";
-import {
-  enqueueLuoguAccountStatsRefresh,
-  getRefreshJobForLuoguAccount,
-} from "../refresh/queue";
+import { ensureLuoguAccountStatsRefresh } from "../refresh/ensure";
 import type { LuoguAccount } from "./types";
 
 type Database = Context["db"];
@@ -111,23 +107,6 @@ export const summarizeLuoguPractice = (
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
-const hasActiveRefreshJob = (
-  refreshJobs: Awaited<ReturnType<typeof getRefreshJobForLuoguAccount>>
-) =>
-  refreshJobs.some(
-    (job) => job.status === "pending" || job.status === "running"
-  );
-
-const isFreshLuoguStats = (
-  stats: null | { fetchedAt: Date | null },
-  now: Date
-) =>
-  Boolean(
-    stats?.fetchedAt &&
-      now.getTime() - stats.fetchedAt.getTime() <
-        refreshDefaults.luoguStatsTtlMs
-  );
-
 const getLuoguStats = async (db: Database, accountId: string) =>
   (
     await db
@@ -175,16 +154,13 @@ export const getLuoguStatsForProfile = async (
 
   const now = new Date();
   const currentStats = await getLuoguStats(db, account.id);
-  const isFresh = isFreshLuoguStats(currentStats, now);
-
-  if (!isFresh) {
-    await enqueueLuoguAccountStatsRefresh(db, account.id);
-  }
-
-  const refreshJobs = await getRefreshJobForLuoguAccount(db, account.id);
-  const isRefreshing = hasActiveRefreshJob(refreshJobs);
+  const refreshQueueState = await ensureLuoguAccountStatsRefresh(db, {
+    accountId: account.id,
+    fetchedAt: currentStats?.fetchedAt ?? null,
+    now,
+  });
   const syncStatus = (() => {
-    if (isRefreshing) {
+    if (refreshQueueState.isQueued) {
       return "refreshing";
     }
 

@@ -17,9 +17,10 @@ import {
   isPublicActivityMemberStatus,
   publicActivityMemberStatuses,
 } from "../../member-status";
-import { luoguAccountStatsJobKind, refreshDefaults } from "../constants";
-import { enqueueLuoguAccountStatsRefresh } from "../queue";
-import type { RefreshJobDefinition } from "../runtime";
+import { luoguAccountStatsJobKind } from "../job-types";
+import { refreshDefaults } from "../policy";
+import type { RefreshJobDefinition } from "../registry";
+import { requestLuoguAccountStatsRefresh } from "../requests";
 
 type Database = Context["db"];
 
@@ -66,8 +67,8 @@ const handleLuoguAccountStatsJob = async (
   }
 };
 
-const scanStaleLuoguAccountStatsTargets = async (db: Database) => {
-  const staleBefore = new Date(Date.now() - refreshDefaults.luoguStatsTtlMs);
+const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
+  const staleBefore = new Date(now.getTime() - refreshDefaults.luoguStatsTtlMs);
   const staleAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
@@ -90,14 +91,13 @@ const scanStaleLuoguAccountStatsTargets = async (db: Database) => {
     );
 
   for (const account of staleAccounts) {
-    await enqueueLuoguAccountStatsRefresh(db, account.id);
+    await requestLuoguAccountStatsRefresh(db, account.id);
   }
 
   return staleAccounts.length;
 };
 
 export const luoguAccountStatsRefreshJobDefinition = {
-  cooldownMs: refreshDefaults.jobCooldownMs,
   handle: handleLuoguAccountStatsJob,
   kind: luoguAccountStatsJobKind,
   scanStaleTargets: scanStaleLuoguAccountStatsTargets,

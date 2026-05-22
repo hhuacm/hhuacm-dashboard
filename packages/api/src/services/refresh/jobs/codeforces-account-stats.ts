@@ -17,9 +17,10 @@ import {
   isPublicActivityMemberStatus,
   publicActivityMemberStatuses,
 } from "../../member-status";
-import { codeforcesAccountStatsJobKind, refreshDefaults } from "../constants";
-import { enqueueCodeforcesAccountStatsRefresh } from "../queue";
-import type { RefreshJobDefinition } from "../runtime";
+import { codeforcesAccountStatsJobKind } from "../job-types";
+import { refreshDefaults } from "../policy";
+import type { RefreshJobDefinition } from "../registry";
+import { requestCodeforcesAccountStatsRefresh } from "../requests";
 
 type Database = Context["db"];
 
@@ -65,9 +66,12 @@ const handleCodeforcesAccountStatsJob = async (
   }
 };
 
-const scanStaleCodeforcesAccountStatsTargets = async (db: Database) => {
+const scanStaleCodeforcesAccountStatsTargets = async (
+  db: Database,
+  now: Date
+) => {
   const staleBefore = new Date(
-    Date.now() - refreshDefaults.codeforcesStatsTtlMs
+    now.getTime() - refreshDefaults.codeforcesStatsTtlMs
   );
   const staleAccounts = await db
     .select(codeforcesAccountFields)
@@ -92,14 +96,13 @@ const scanStaleCodeforcesAccountStatsTargets = async (db: Database) => {
     );
 
   for (const account of staleAccounts) {
-    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
+    await requestCodeforcesAccountStatsRefresh(db, account.id);
   }
 
   return staleAccounts.length;
 };
 
 export const codeforcesAccountStatsRefreshJobDefinition = {
-  cooldownMs: refreshDefaults.jobCooldownMs,
   handle: handleCodeforcesAccountStatsJob,
   kind: codeforcesAccountStatsJobKind,
   scanStaleTargets: scanStaleCodeforcesAccountStatsTargets,

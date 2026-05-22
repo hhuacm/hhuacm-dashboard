@@ -3,8 +3,8 @@ import {
   enrichProblemSetProblemsByPid,
   type LuoguProblemLoader,
 } from "../../luogu/problem-details";
-import { luoguProblemDetailsJobKind, refreshDefaults } from "../constants";
-import type { RefreshJobDefinition } from "../runtime";
+import { luoguProblemDetailsJobKind } from "../job-types";
+import type { RefreshJobDefinition } from "../registry";
 
 type Database = Context["db"];
 
@@ -13,18 +13,10 @@ export const handleLuoguProblemDetailsJob = async (
   job: Parameters<RefreshJobDefinition["handle"]>[1],
   loadProblem?: LuoguProblemLoader
 ) => {
-  try {
-    await enrichProblemSetProblemsByPid(db, job.targetId, loadProblem);
-
-    return;
-  } catch {
-    return { requeue: true };
-  }
+  await enrichProblemSetProblemsByPid(db, job.targetId, loadProblem);
 };
 
 export const luoguProblemDetailsRefreshJobDefinition = {
-  cooldownMs: refreshDefaults.jobCooldownMs,
   handle: handleLuoguProblemDetailsJob,
   kind: luoguProblemDetailsJobKind,
-  scanStaleTargets: async () => 0,
 } as const satisfies RefreshJobDefinition;

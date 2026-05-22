@@ -6,13 +6,10 @@ import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
 import { isPublicActivityMemberStatus } from "../member-status";
 import {
-  deleteCodeforcesAccountStatsRefreshJob,
-  deleteLuoguAccountStatsRefreshJob,
-  deleteUserAwardsFromLuoguRefreshJob,
-  enqueueCodeforcesAccountStatsRefresh,
-  enqueueLuoguAccountStatsRefresh,
-  enqueueUserAwardsFromLuoguRefresh,
-} from "../refresh/queue";
+  clearOjAccountRefresh,
+  requestOjAccountRefresh,
+} from "../refresh/requests";
+import { listInternalOjAccountsByUserId } from "./queries";
 import type { Database } from "./types";
 
 export interface AccountStatsEffectTarget {
@@ -26,7 +23,7 @@ export const clearCodeforcesStatsIfNeeded = async (
 ) => {
   if (account.platform === "codeforces") {
     await deleteCodeforcesStats(db, account.id);
-    await deleteCodeforcesAccountStatsRefreshJob(db, account.id);
+    await clearOjAccountRefresh(db, account);
   }
 };
 export const clearLuoguStatsIfNeeded = async (
@@ -35,16 +32,7 @@ export const clearLuoguStatsIfNeeded = async (
 ) => {
   if (account.platform === "luogu") {
     await deleteLuoguStats(db, account.id);
-    await deleteLuoguAccountStatsRefreshJob(db, account.id);
-  }
-};
-
-export const clearLuoguAwardRefreshIfNeeded = async (
-  db: Database,
-  account: AccountStatsEffectTarget
-) => {
-  if (account.platform === "luogu") {
-    await deleteUserAwardsFromLuoguRefreshJob(db, account.id);
+    await clearOjAccountRefresh(db, account);
   }
 };
 
@@ -54,7 +42,17 @@ export const resetOjAccountStatsEffects = async (
 ) => {
   await clearCodeforcesStatsIfNeeded(db, account);
   await clearLuoguStatsIfNeeded(db, account);
-  await clearLuoguAwardRefreshIfNeeded(db, account);
+};
+
+export const clearCodeforcesStatsForUserAccounts = async (
+  db: Database,
+  userId: string
+) => {
+  const accounts = await listInternalOjAccountsByUserId(db, userId);
+
+  for (const account of accounts) {
+    await clearCodeforcesStatsIfNeeded(db, account);
+  }
 };
 
 const isPublicActivityUser = async (db: Database, userId: string) => {
@@ -68,7 +66,7 @@ const isPublicActivityUser = async (db: Database, userId: string) => {
   return isPublicActivityMemberStatus(memberStatus);
 };
 
-export const enqueueOjAccountRefreshEffectsIfNeeded = async (
+export const requestOjAccountRefreshEffectsIfNeeded = async (
   db: Database,
   account: AccountStatsEffectTarget,
   userId: string
@@ -81,12 +79,14 @@ export const enqueueOjAccountRefreshEffectsIfNeeded = async (
     return;
   }
 
-  if (account.platform === "codeforces") {
-    await enqueueCodeforcesAccountStatsRefresh(db, account.id);
-  }
+  await requestOjAccountRefresh(db, account);
+};
 
-  if (account.platform === "luogu") {
-    await enqueueLuoguAccountStatsRefresh(db, account.id);
-    await enqueueUserAwardsFromLuoguRefresh(db, account.id);
-  }
+export const replaceOjAccountStatsEffectsIfNeeded = async (
+  db: Database,
+  account: AccountStatsEffectTarget,
+  userId: string
+) => {
+  await resetOjAccountStatsEffects(db, account);
+  await requestOjAccountRefreshEffectsIfNeeded(db, account, userId);
 };

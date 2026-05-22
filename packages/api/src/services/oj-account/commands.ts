@@ -15,7 +15,8 @@ import {
   toPublicOjAccount,
 } from "./queries";
 import {
-  enqueueOjAccountRefreshEffectsIfNeeded,
+  replaceOjAccountStatsEffectsIfNeeded,
+  requestOjAccountRefreshEffectsIfNeeded,
   resetOjAccountStatsEffects,
 } from "./stats-effects";
 import type { Database, OjAccountDeleteInput, OjAccountInput } from "./types";
@@ -38,7 +39,7 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  await enqueueOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
+  await requestOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
@@ -65,8 +66,7 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
 
-  await resetOjAccountStatsEffects(db, account);
-  await enqueueOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
+  await replaceOjAccountStatsEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };

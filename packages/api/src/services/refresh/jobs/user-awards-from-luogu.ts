@@ -17,9 +17,10 @@ import {
   markUserAwardsFromLuoguRefreshFailed,
   syncUserAwardsFromLuogu,
 } from "../../profile-awards";
-import { refreshDefaults, userAwardsFromLuoguJobKind } from "../constants";
-import { enqueueUserAwardsFromLuoguRefresh } from "../queue";
-import type { RefreshJobDefinition } from "../runtime";
+import { userAwardsFromLuoguJobKind } from "../job-types";
+import { refreshDefaults } from "../policy";
+import type { RefreshJobDefinition } from "../registry";
+import { requestUserAwardsFromLuoguRefresh } from "../requests";
 
 type Database = Context["db"];
 
@@ -69,8 +70,8 @@ const handleUserAwardsFromLuoguJob = async (
   }
 };
 
-const scanStaleUserAwardsFromLuoguTargets = async (db: Database) => {
-  const staleBefore = new Date(Date.now() - refreshDefaults.userAwardsTtlMs);
+const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
+  const staleBefore = new Date(now.getTime() - refreshDefaults.userAwardsTtlMs);
   const staleAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
@@ -96,14 +97,13 @@ const scanStaleUserAwardsFromLuoguTargets = async (db: Database) => {
     );
 
   for (const account of staleAccounts) {
-    await enqueueUserAwardsFromLuoguRefresh(db, account.id);
+    await requestUserAwardsFromLuoguRefresh(db, account.id);
   }
 
   return staleAccounts.length;
 };
 
 export const userAwardsFromLuoguRefreshJobDefinition = {
-  cooldownMs: refreshDefaults.jobCooldownMs,
   handle: handleUserAwardsFromLuoguJob,
   kind: userAwardsFromLuoguJobKind,
   scanStaleTargets: scanStaleUserAwardsFromLuoguTargets,

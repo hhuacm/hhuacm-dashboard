@@ -75,7 +75,10 @@ describe("user awards from Luogu refresh job", () => {
     ]);
 
     const enqueuedCount =
-      await userAwardsFromLuoguRefreshJobDefinition.scanStaleTargets(db);
+      await userAwardsFromLuoguRefreshJobDefinition.scanStaleTargets(
+        db,
+        new Date()
+      );
     const jobs = await db.select().from(refreshJob);
     const targetIds = jobs.map((job) => job.targetId);
 
@@ -106,11 +109,9 @@ describe("user awards from Luogu refresh job", () => {
 
     await userAwardsFromLuoguRefreshJobDefinition.handle(db, {
       createdAt: new Date(),
-      id: "job-1",
       kind: "user.awardsFromLuogu",
       status: "running",
       targetId: "account-retired-user",
-      targetType: "ojAccount",
     });
 
     const awards = await db.select().from(userAward);
@@ -141,11 +142,9 @@ describe("user awards from Luogu refresh job", () => {
 
     await userAwardsFromLuoguRefreshJobDefinition.handle(db, {
       createdAt: new Date(),
-      id: "job-1",
       kind: "user.awardsFromLuogu",
       status: "running",
       targetId: "account-active-user",
-      targetType: "ojAccount",
     });
 
     const awards = await db.select().from(userAward);

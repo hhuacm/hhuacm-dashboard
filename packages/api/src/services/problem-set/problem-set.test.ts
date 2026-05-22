@@ -116,12 +116,10 @@ describe("problem sets", () => {
       "P1563",
       "P1328",
     ]);
-    expect(jobs.map((job) => [job.kind, job.targetType, job.targetId])).toEqual(
-      [
-        ["luogu.problemDetails", "luoguProblem", "P1328"],
-        ["luogu.problemDetails", "luoguProblem", "P1563"],
-      ]
-    );
+    expect(jobs.map((job) => [job.kind, job.targetId])).toEqual([
+      ["luogu.problemDetails", "P1328"],
+      ["luogu.problemDetails", "P1563"],
+    ]);
   });
 
   it("rejects duplicate PIDs", async () => {

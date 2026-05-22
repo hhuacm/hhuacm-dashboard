@@ -4,8 +4,7 @@ import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
-import { listInternalOjAccountsByUserId } from "../oj-account/queries";
-import { clearCodeforcesStatsIfNeeded } from "../oj-account/stats-effects";
+import { clearCodeforcesStatsForUserAccounts } from "../oj-account/stats-effects";
 import { getTargetUser } from "../profile";
 import type { Database } from "./types";
 
@@ -55,11 +54,7 @@ const clearStatsBeforeDeletingAdminUser = async (
   db: Database,
   userId: string
 ) => {
-  const targetOjAccounts = await listInternalOjAccountsByUserId(db, userId);
-
-  for (const account of targetOjAccounts) {
-    await clearCodeforcesStatsIfNeeded(db, account);
-  }
+  await clearCodeforcesStatsForUserAccounts(db, userId);
 };
 
 export const deleteAdminUser = async (

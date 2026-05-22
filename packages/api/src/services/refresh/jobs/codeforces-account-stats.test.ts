@@ -53,7 +53,10 @@ describe("Codeforces account stats refresh job", () => {
     await createAccount(db, { id: "missing-profile-user" });
 
     const enqueuedCount =
-      await codeforcesAccountStatsRefreshJobDefinition.scanStaleTargets(db);
+      await codeforcesAccountStatsRefreshJobDefinition.scanStaleTargets(
+        db,
+        new Date()
+      );
     const jobs = await db.select().from(refreshJob);
     const targetIds = jobs.map((job) => job.targetId);
 

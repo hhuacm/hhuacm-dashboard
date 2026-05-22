@@ -4,20 +4,17 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
-import { refreshDefaults } from "../refresh/constants";
 import { createServiceTestDb } from "../test-db";
 import { getCodeforcesRankStatus, listCodeforcesRankRows } from "./codeforces";
 
 describe("getCodeforcesRankStatus", () => {
-  const now = new Date("2026-05-17T00:00:00.000Z");
-
   it("prioritizes active refresh jobs", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: now,
+        fetchedAt: new Date(),
         hasActiveRefreshJob: true,
+        isFresh: false,
         lastError: "failed",
-        now,
         statsHandle: "tourist",
       })
     ).toBe("refreshing");
@@ -26,10 +23,10 @@ describe("getCodeforcesRankStatus", () => {
   it("marks missing stats as empty", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: now,
+        fetchedAt: new Date(),
         hasActiveRefreshJob: false,
+        isFresh: true,
         lastError: null,
-        now,
         statsHandle: null,
       })
     ).toBe("empty");
@@ -38,38 +35,34 @@ describe("getCodeforcesRankStatus", () => {
   it("marks failed stats before freshness", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: now,
+        fetchedAt: new Date(),
         hasActiveRefreshJob: false,
+        isFresh: true,
         lastError: "Codeforces unavailable",
-        now,
         statsHandle: "tourist",
       })
     ).toBe("failed");
   });
 
-  it("marks stale stats after the ttl", () => {
+  it("marks stale stats when refresh policy reports stale", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: new Date(
-          now.getTime() - refreshDefaults.codeforcesStatsTtlMs
-        ),
+        fetchedAt: new Date(),
         hasActiveRefreshJob: false,
+        isFresh: false,
         lastError: null,
-        now,
         statsHandle: "tourist",
       })
     ).toBe("stale");
   });
 
-  it("marks fresh stats as ready", () => {
+  it("marks fresh stats as ready when refresh policy reports fresh", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: new Date(
-          now.getTime() - refreshDefaults.codeforcesStatsTtlMs + 1
-        ),
+        fetchedAt: new Date(),
         hasActiveRefreshJob: false,
+        isFresh: true,
         lastError: null,
-        now,
         statsHandle: "tourist",
       })
     ).toBe("ready");

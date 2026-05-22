@@ -9,11 +9,8 @@ import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/a
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
 import { parseLuoguUidFromProfileUrl } from "./luogu/profile-stats";
 import type { LuoguAccount } from "./luogu/types";
-import { refreshDefaults } from "./refresh/constants";
-import {
-  enqueueUserAwardsFromLuoguRefresh,
-  getRefreshJobForUserAwardsFromLuogu,
-} from "./refresh/queue";
+import { ensureUserAwardsFromLuoguRefresh } from "./refresh/ensure";
+import { truncateRefreshError } from "./refresh/policy";
 
 type Database = Context["db"];
 type LuoguUserLoader = typeof luoguSource.user;
@@ -75,25 +72,6 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown user award sync error";
-
-const truncateError = (message: string) =>
-  message.slice(0, refreshDefaults.maxErrorLength);
-
-const hasActiveRefreshJob = (
-  refreshJobs: Awaited<ReturnType<typeof getRefreshJobForUserAwardsFromLuogu>>
-) =>
-  refreshJobs.some(
-    (job) => job.status === "pending" || job.status === "running"
-  );
-
-const isFreshUserAwards = (
-  sync: null | { fetchedAt: Date | null },
-  now: Date
-) =>
-  Boolean(
-    sync?.fetchedAt &&
-      now.getTime() - sync.fetchedAt.getTime() < refreshDefaults.userAwardsTtlMs
-  );
 
 export const selectLuoguUserAwards = (
   userPage: LuoguUserPageData
@@ -193,7 +171,7 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
   error: unknown,
   now = new Date()
 ) => {
-  const lastError = truncateError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getErrorMessage(error));
 
   const [sync] = await db
     .insert(userAwardSync)
@@ -244,21 +222,14 @@ export const getAwardsForPublicProfile = async (
         .limit(1)
     )[0] ?? null;
 
-  const shouldRefresh =
-    input.canRefresh &&
-    input.luoguAccountId !== null &&
-    !isFreshUserAwards(sync, now);
-
-  if (shouldRefresh && input.luoguAccountId !== null) {
-    await enqueueUserAwardsFromLuoguRefresh(db, input.luoguAccountId);
-  }
-
-  const refreshJobs =
-    !input.canRefresh || input.luoguAccountId === null
-      ? []
-      : await getRefreshJobForUserAwardsFromLuogu(db, input.luoguAccountId);
+  const refreshQueueState = await ensureUserAwardsFromLuoguRefresh(db, {
+    accountId: input.luoguAccountId,
+    canRefresh: input.canRefresh,
+    fetchedAt: sync?.fetchedAt ?? null,
+    now,
+  });
   const syncStatus = (() => {
-    if (hasActiveRefreshJob(refreshJobs)) {
+    if (refreshQueueState.isQueued) {
       return "refreshing";
     }
 
