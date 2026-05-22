@@ -45,10 +45,10 @@
       "version": "0.1.0",
       "dependencies": {
         "@heroui/react": "catalog:",
+        "@heroui/styles": "catalog:",
         "@hhuacm-dashboard/api": "workspace:*",
         "@hhuacm-dashboard/domain": "workspace:*",
         "@hhuacm-dashboard/env": "workspace:*",
-        "@hhuacm-dashboard/ui": "workspace:*",
         "@tanstack/react-form": "^1.28.0",
         "@tanstack/react-query": "^5.90.12",
         "@trpc/client": "catalog:",
@@ -153,22 +153,6 @@
       "devDependencies": {
         "@hhuacm-dashboard/config": "workspace:*",
         "@types/bun": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/ui": {
-      "name": "@hhuacm-dashboard/ui",
-      "version": "0.0.0",
-      "dependencies": {
-        "@heroui/styles": "catalog:",
-        "react": "catalog:",
-        "react-dom": "catalog:",
-      },
-      "devDependencies": {
-        "@hhuacm-dashboard/config": "workspace:*",
-        "@types/react": "catalog:",
-        "@types/react-dom": "catalog:",
-        "tailwindcss": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -341,8 +325,6 @@
     "@hhuacm-dashboard/domain": ["@hhuacm-dashboard/domain@workspace:packages/domain"],
 
     "@hhuacm-dashboard/env": ["@hhuacm-dashboard/env@workspace:packages/env"],
-
-    "@hhuacm-dashboard/ui": ["@hhuacm-dashboard/ui@workspace:packages/ui"],
 
     "@hono/trpc-server": ["@hono/trpc-server@0.4.2", "", { "peerDependencies": { "@trpc/server": "^10.10.0 || >11.0.0-rc", "hono": ">=4.0.0" } }, "sha512-3TDrc42CZLgcTFkXQba+y7JlRWRiyw1AqhLqztWyNS2IFT+3bHld0lxKdGBttCtGKHYx0505dM67RMazjhdZqw=="],
 

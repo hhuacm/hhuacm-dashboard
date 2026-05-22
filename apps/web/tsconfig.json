@@ -20,8 +20,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@hhuacm-dashboard/ui/*": ["../../packages/ui/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

@@ -33,7 +33,7 @@ Apply Ultracite/Biome fixes when needed:
 bun run fix
 ```
 
-Login and registration live on independent `/login` and `/register` pages using HeroUI `Card` and `Form` components. Shared theme CSS lives in `packages/ui`, while application screens import HeroUI V3 components directly from `@heroui/react`.
+Login and registration live on independent `/login` and `/register` pages using HeroUI `Card` and `Form` components. Theme CSS lives in the web app, while application screens import HeroUI V3 components directly from `@heroui/react`.
 
 ## Database
 

@@ -11,7 +11,7 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **Database:** SQLite-compatible libSQL/Turso
 - **ORM:** Drizzle ORM and Drizzle Kit
 - **Authentication:** Better Auth with email or username sign-in for local accounts
-- **Styling:** Tailwind CSS v4 with shared theme CSS in `packages/ui`
+- **Styling:** Tailwind CSS v4 with app-level theme CSS in `apps/web`
 - **UI primitives:** HeroUI V3 components imported from `@heroui/react`
 - **Client data fetching:** TanStack Query with tRPC
 - **Forms and validation:** TanStack Form and Zod
@@ -33,7 +33,6 @@ hhuacm-dashboard/
     |-- config/      # Shared TypeScript configuration
     |-- db/          # Drizzle database client and schema
     |-- env/         # Runtime environment validation
-    |-- ui/          # Shared HeroUI/Tailwind theme styles
 ```
 
 The main request flow is:
@@ -138,9 +137,9 @@ bun run db:studio
 
 ## UI and Theme
 
-The web app uses HeroUI V3 React components directly from `@heroui/react`. The shared `packages/ui` workspace owns global Tailwind and HeroUI theme CSS only.
+The web app uses HeroUI V3 React components directly from `@heroui/react`. Global Tailwind and HeroUI theme CSS live in the web app because there is currently only one frontend.
 
-- Design tokens and global styles: `packages/ui/src/styles/globals.css`
+- Design tokens and global styles: `apps/web/src/index.css`
 - HeroUI styles import: `@import "@heroui/styles";`
 - Application CSS entry: `apps/web/src/index.css`
 

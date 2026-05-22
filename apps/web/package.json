@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@heroui/react": "catalog:",
+    "@heroui/styles": "catalog:",
     "@hhuacm-dashboard/api": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
-    "@hhuacm-dashboard/ui": "workspace:*",
     "@tanstack/react-form": "^1.28.0",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "catalog:",

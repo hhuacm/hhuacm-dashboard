@@ -1,1 +1,98 @@
-@import "@hhuacm-dashboard/ui/globals.css";
+@import "tailwindcss";
+@import "@heroui/styles";
+@source "./**/*.{ts,tsx}";
+
+:root {
+  --background: #f8fbff;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #f8fafc;
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: #f1f5f9;
+  --surface-tertiary-foreground: var(--foreground);
+  --overlay: #ffffff;
+  --overlay-foreground: var(--foreground);
+  --muted: #64748b;
+  --default: #f1f5f9;
+  --default-foreground: var(--foreground);
+  --accent: #0ea5e9;
+  --accent-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --border: #e2e8f0;
+  --separator: #e5e7eb;
+  --focus: #38bdf8;
+  --link: var(--accent);
+  --field-background: #ffffff;
+  --field-foreground: var(--foreground);
+  --field-placeholder: #94a3b8;
+  --field-border: #cbd5e1;
+  --radius: 0.625rem;
+  --field-radius: 0.625rem;
+  --chart-1: #0ea5e9;
+  --chart-2: #14b8a6;
+  --chart-3: #6366f1;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+}
+
+.dark {
+  --background: #07111f;
+  --foreground: #f8fafc;
+  --surface: #0f1b2d;
+  --surface-foreground: var(--foreground);
+  --surface-secondary: #14243a;
+  --surface-secondary-foreground: var(--foreground);
+  --surface-tertiary: #1d314d;
+  --surface-tertiary-foreground: var(--foreground);
+  --overlay: #0f1b2d;
+  --overlay-foreground: var(--foreground);
+  --muted: #9fb0c5;
+  --default: #1d314d;
+  --default-foreground: var(--foreground);
+  --accent: #38bdf8;
+  --accent-foreground: #082f49;
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+  --danger: #f87171;
+  --danger-foreground: #450a0a;
+  --border: #2b405f;
+  --separator: #223651;
+  --focus: #7dd3fc;
+  --link: var(--accent);
+  --field-background: #14243a;
+  --field-foreground: var(--foreground);
+  --field-placeholder: #94a3b8;
+  --field-border: #2b405f;
+  --chart-1: #38bdf8;
+  --chart-2: #2dd4bf;
+  --chart-3: #818cf8;
+  --chart-4: #fbbf24;
+  --chart-5: #f87171;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), "Inter Variable", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+}
+
+@layer base {
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
