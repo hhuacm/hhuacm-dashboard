@@ -1,4 +1,5 @@
 import { Card, Chip } from "@heroui/react";
+import clsx from "clsx";
 import { ExternalLink, Medal } from "lucide-react";
 
 import {
@@ -12,7 +13,10 @@ import {
 function AwardLevelChip({ level }: { level: string }) {
   return (
     <Chip
-      className={`${getAwardLevelClassName(level)} min-h-9 border px-4 font-semibold text-base`}
+      className={clsx(
+        getAwardLevelClassName(level),
+        "min-h-9 border px-4 font-semibold text-base"
+      )}
       size="md"
       variant="soft"
     >
@@ -83,9 +87,9 @@ export function ProfileAwardsSection({
             ) : null}
             {statusText ? (
               <span
-                className={
+                className={clsx(
                   awards.syncStatus === "failed" ? "text-danger" : "text-accent"
-                }
+                )}
               >
                 {statusText}
                 {awards.lastError ? `：${awards.lastError}` : ""}

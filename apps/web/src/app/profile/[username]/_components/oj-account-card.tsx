@@ -1,4 +1,5 @@
 import { Chip } from "@heroui/react";
+import clsx from "clsx";
 import { CircleAlert, ExternalLink, UserRound } from "lucide-react";
 import Image from "next/image";
 
@@ -28,7 +29,10 @@ function Metric({
     <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
       <dt className="text-muted text-xs">{label}</dt>
       <dd
-        className={`mt-1 font-semibold text-lg leading-snug ${valueClassName}`}
+        className={clsx(
+          "mt-1 font-semibold text-lg leading-snug",
+          valueClassName
+        )}
       >
         {value}
       </dd>
@@ -90,9 +94,10 @@ function CodeforcesStatsContent({
       <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2 lg:col-span-4">
         <dt className="text-muted text-xs">刷新状态</dt>
         <dd
-          className={`wrap-break-word mt-1 font-medium ${getCodeforcesStatusClassName(
-            codeforces
-          )}`}
+          className={clsx(
+            "wrap-break-word mt-1 font-medium",
+            getCodeforcesStatusClassName(codeforces)
+          )}
         >
           {getCodeforcesStatusText(codeforces)}
           {codeforces?.lastError ? `：${codeforces.lastError}` : ""}
@@ -117,7 +122,7 @@ function LuoguDifficultyRow({
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-secondary px-3 py-2">
       <Chip
-        className={`${className} px-3 py-1 font-semibold text-base`}
+        className={clsx(className, "px-3 py-1 font-semibold text-base")}
         size="md"
       >
         {label}
@@ -220,9 +225,10 @@ export function OjAccountCard({
             </p>
             {isCodeforces && !isStatsDisabled ? (
               <p
-                className={`mt-1 inline-flex items-center gap-1 text-sm ${getCodeforcesStatusClassName(
-                  codeforces
-                )}`}
+                className={clsx(
+                  "mt-1 inline-flex items-center gap-1 text-sm",
+                  getCodeforcesStatusClassName(codeforces)
+                )}
               >
                 {codeforces?.syncStatus === "failed" ? (
                   <CircleAlert className="size-3.5" />
@@ -232,9 +238,10 @@ export function OjAccountCard({
             ) : null}
             {isLuogu && !isStatsDisabled ? (
               <p
-                className={`mt-1 inline-flex items-center gap-1 text-sm ${getLuoguStatusClassName(
-                  luogu
-                )}`}
+                className={clsx(
+                  "mt-1 inline-flex items-center gap-1 text-sm",
+                  getLuoguStatusClassName(luogu)
+                )}
               >
                 {luogu?.syncStatus === "failed" ? (
                   <CircleAlert className="size-3.5" />
@@ -247,11 +254,12 @@ export function OjAccountCard({
 
         {account.profileUrl ? (
           <a
-            className={`inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline ${
+            className={clsx(
+              "inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline",
               isCodeforces && !isStatsDisabled
                 ? getCodeforcesRatingClassName(codeforces?.rating)
                 : "text-accent"
-            }`}
+            )}
             href={account.profileUrl}
             rel="noopener noreferrer"
             target="_blank"

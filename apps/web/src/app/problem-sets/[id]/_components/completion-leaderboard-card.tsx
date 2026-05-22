@@ -3,6 +3,7 @@
 import { Alert, Card, Spinner, Table } from "@heroui/react";
 import { getUserNameLabel } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
 import { useMemo } from "react";
 
 import { authClient } from "@/utils/auth-client";
@@ -113,7 +114,7 @@ export function CompletionLeaderboardCard({
 
                     return (
                       <Table.Row
-                        className={isCurrentUser ? "bg-accent-soft/60" : ""}
+                        className={clsx(isCurrentUser && "bg-accent-soft/60")}
                         id={row.userId}
                         key={row.userId}
                         textValue={`${nameLabel}${currentUserLabel} ${row.completedProblemCount}`}

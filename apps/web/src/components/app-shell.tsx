@@ -2,6 +2,7 @@
 
 import { Button, Dropdown, Label, Separator } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
 import {
   Home,
   LayoutDashboard,
@@ -221,7 +222,10 @@ export function AppShell({
   return (
     <main className="min-h-svh bg-background text-foreground">
       <div
-        className={`mx-auto flex min-h-svh w-full flex-col px-4 py-4 sm:px-6 lg:px-8 ${maxWidthClassNames[maxWidth]}`}
+        className={clsx(
+          "mx-auto flex min-h-svh w-full flex-col px-4 py-4 sm:px-6 lg:px-8",
+          maxWidthClassNames[maxWidth]
+        )}
       >
         <header className="flex min-h-16 flex-wrap items-center justify-between gap-4 border-b py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4">

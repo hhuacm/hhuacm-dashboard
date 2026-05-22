@@ -2,6 +2,7 @@
 
 import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
 import { Sparkles, Trophy } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -195,9 +196,10 @@ function SystemOverviewCard({
               >
                 <dt className="text-muted text-sm">{detail.label}</dt>
                 <dd
-                  className={`break-all font-medium text-foreground ${
+                  className={clsx(
+                    "break-all font-medium text-foreground",
                     detail.mono ? "font-mono text-sm" : "text-sm"
-                  }`}
+                  )}
                 >
                   {detail.value}
                 </dd>

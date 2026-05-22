@@ -1,6 +1,7 @@
 "use client";
 
 import { Table } from "@heroui/react";
+import clsx from "clsx";
 import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
@@ -43,7 +44,9 @@ interface CodeforcesRankTableProps {
 
 function RatingText({ value }: { value: null | number }) {
   return (
-    <span className={`font-semibold ${getCodeforcesRatingClassName(value)}`}>
+    <span
+      className={clsx("font-semibold", getCodeforcesRatingClassName(value))}
+    >
       {formatNumber(value)}
     </span>
   );
@@ -209,7 +212,10 @@ export function CodeforcesRankTable({
                 >
                   {visibleColumns.map((column) => (
                     <Table.Cell
-                      className={`${rankTableCellClassName} ${column.cellClassName}`}
+                      className={clsx(
+                        rankTableCellClassName,
+                        column.cellClassName
+                      )}
                       key={column.id}
                     >
                       {renderRankCell(column.id, row, index)}

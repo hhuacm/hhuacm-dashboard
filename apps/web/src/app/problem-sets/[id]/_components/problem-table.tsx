@@ -1,4 +1,5 @@
 import { Card, Table } from "@heroui/react";
+import clsx from "clsx";
 import type { ReactNode } from "react";
 
 import {
@@ -32,15 +33,16 @@ function LinkedProblemText({
 }) {
   return (
     <a
-      className={`inline-flex min-w-0 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline ${
+      className={clsx(
+        "inline-flex min-w-0 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline",
         isTruncated ? "max-w-full" : "whitespace-nowrap"
-      }`}
+      )}
       href={href}
       rel="noopener noreferrer"
       target="_blank"
       title={title}
     >
-      <span className={isTruncated ? "block min-w-0 truncate" : undefined}>
+      <span className={clsx(isTruncated && "block min-w-0 truncate")}>
         {children}
       </span>
     </a>
@@ -113,7 +115,10 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                       textValue={`${problem.pid} ${problem.title}`}
                     >
                       <Table.Cell
-                        className={`${problemTableColumnClassNames.index} text-muted`}
+                        className={clsx(
+                          problemTableColumnClassNames.index,
+                          "text-muted"
+                        )}
                       >
                         {index + 1}
                       </Table.Cell>
@@ -125,7 +130,10 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                         </CenteredTableChip>
                       </Table.Cell>
                       <Table.Cell
-                        className={`${pidColumnClassName} font-mono text-sm`}
+                        className={clsx(
+                          pidColumnClassName,
+                          "font-mono text-sm"
+                        )}
                       >
                         <LinkedProblemText href={href}>
                           {problem.pid}

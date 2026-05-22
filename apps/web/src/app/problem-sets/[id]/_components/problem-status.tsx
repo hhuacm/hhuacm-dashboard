@@ -1,4 +1,5 @@
 import { Chip } from "@heroui/react";
+import clsx from "clsx";
 import { CheckCircle2, CircleMinus, CircleX } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -65,7 +66,7 @@ export function DifficultyChip({ difficulty }: { difficulty: null | number }) {
   const label = getDifficultyLabel(difficulty);
 
   return (
-    <Chip className={`${className} font-semibold`} size="md" variant="soft">
+    <Chip className={clsx(className, "font-semibold")} size="md" variant="soft">
       {label}
     </Chip>
   );

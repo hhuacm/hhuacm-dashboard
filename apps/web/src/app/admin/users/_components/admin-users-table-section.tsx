@@ -19,6 +19,7 @@ import {
   ojPlatformLabels,
   ojPlatforms,
 } from "@hhuacm-dashboard/domain";
+import clsx from "clsx";
 import {
   ArrowUpDown,
   ChevronDown,
@@ -131,9 +132,7 @@ function ProfileValue({
   }
 
   return (
-    <span className={mono ? "font-mono text-sm" : undefined}>
-      {displayValue}
-    </span>
+    <span className={clsx(mono && "font-mono text-sm")}>{displayValue}</span>
   );
 }
 
@@ -449,9 +448,11 @@ function SortableColumnHeader({
     <span className="flex items-center justify-between gap-2">
       <span>{children}</span>
       <ArrowUpDown
-        className={`size-3 transition-transform ${
-          sortDirection === "descending" ? "rotate-180" : ""
-        } ${sortDirection ? "text-accent" : "text-muted"}`}
+        className={clsx(
+          "size-3 transition-transform",
+          sortDirection === "descending" && "rotate-180",
+          sortDirection ? "text-accent" : "text-muted"
+        )}
       />
     </span>
   );

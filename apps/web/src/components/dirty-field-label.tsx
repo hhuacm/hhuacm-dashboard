@@ -1,6 +1,7 @@
 "use client";
 
 import { Chip, Label } from "@heroui/react";
+import clsx from "clsx";
 
 interface DirtyFieldLabelProps {
   isChanged?: boolean;
@@ -13,11 +14,11 @@ export function DirtyFieldLabel({
 }: DirtyFieldLabelProps) {
   return (
     <Label
-      className={
+      className={clsx(
         isChanged
           ? "inline-flex items-center gap-2 font-semibold text-accent"
           : "font-medium text-foreground"
-      }
+      )}
     >
       {label}
       {isChanged ? (

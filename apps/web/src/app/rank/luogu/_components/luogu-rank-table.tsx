@@ -1,6 +1,7 @@
 "use client";
 
 import { Table } from "@heroui/react";
+import clsx from "clsx";
 import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
 
 import {
@@ -188,7 +189,10 @@ export function LuoguRankTable({
                 >
                   {visibleColumns.map((column) => (
                     <Table.Cell
-                      className={`${rankTableCellClassName} ${column.cellClassName}`}
+                      className={clsx(
+                        rankTableCellClassName,
+                        column.cellClassName
+                      )}
                       key={column.id}
                     >
                       {renderRankCell(column.id, row, index)}

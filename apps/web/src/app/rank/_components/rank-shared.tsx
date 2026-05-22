@@ -10,6 +10,7 @@ import {
   Popover,
   TextField,
 } from "@heroui/react";
+import clsx from "clsx";
 import {
   ArrowUpDown,
   ChevronDown,
@@ -116,7 +117,10 @@ export function LinkedText({
 
   return (
     <a
-      className={`inline-flex min-w-0 items-center gap-1 font-medium underline-offset-4 hover:underline focus-visible:underline ${tone}`}
+      className={clsx(
+        "inline-flex min-w-0 items-center gap-1 font-medium underline-offset-4 hover:underline focus-visible:underline",
+        tone
+      )}
       href={href}
       rel={isExternal ? "noopener noreferrer" : undefined}
       target={isExternal ? "_blank" : undefined}
@@ -140,7 +144,7 @@ export function RelativeTimeCell({
 
   return (
     <span
-      className={isDormant(value) ? "font-medium text-danger" : undefined}
+      className={clsx(isDormant(value) && "font-medium text-danger")}
       title={formatDateTime(value)}
     >
       {formatRelativeTime(value)}
@@ -362,9 +366,11 @@ export function SortableColumnHeader({
     <span className="flex items-center justify-center gap-2">
       <span>{children}</span>
       <ArrowUpDown
-        className={`size-3 transition-transform ${
-          sortDirection === "descending" ? "rotate-180" : ""
-        } ${sortDirection ? "text-accent" : "text-muted"}`}
+        className={clsx(
+          "size-3 transition-transform",
+          sortDirection === "descending" && "rotate-180",
+          sortDirection ? "text-accent" : "text-muted"
+        )}
       />
     </span>
   );

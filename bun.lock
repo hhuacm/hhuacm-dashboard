@@ -45,6 +45,7 @@
         "@trpc/tanstack-react-query": "11",
         "babel-plugin-react-compiler": "1",
         "better-auth": "catalog:",
+        "clsx": "^2.1.1",
         "lucide-react": "catalog:",
         "next": "16",
         "react": "catalog:",
