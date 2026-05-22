@@ -1,9 +1,17 @@
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { ojAccountFields } from "./queries";
-import type { Database, OjAccountInput } from "./types";
+
+type Database = Context["db"];
+
+interface OjHandleInput {
+  handle: string;
+  platform: OjPlatform;
+}
 
 export const normalizeOjHandle = (handle: string) => handle.toLowerCase();
 
@@ -19,7 +27,7 @@ const getOjHandleConflictMessage = (account: {
 
 export const assertNoHandleOwner = async (
   db: Database,
-  input: OjAccountInput,
+  input: OjHandleInput,
   options: { excludeUserId?: string }
 ) => {
   const conditions = [

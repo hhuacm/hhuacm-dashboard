@@ -1,7 +1,9 @@
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { buildOjProfileUrl } from "../oj-profile-url";
 import {
   assertNoHandleOwner,
@@ -19,7 +21,19 @@ import {
   requestOjAccountRefreshEffectsIfNeeded,
   resetOjAccountStatsEffects,
 } from "./stats-effects";
-import type { Database, OjAccountDeleteInput, OjAccountInput } from "./types";
+
+type Database = Context["db"];
+
+export interface OjAccountInput {
+  handle: string;
+  platform: OjPlatform;
+  userId: string;
+}
+
+interface OjAccountDeleteInput {
+  platform: OjPlatform;
+  userId: string;
+}
 
 const createOjAccount = async (db: Database, input: OjAccountInput) => {
   const normalizedHandle = normalizeOjHandle(input.handle);

@@ -2,14 +2,36 @@ import { problemSet } from "@hhuacm-dashboard/db/schema/problem-set";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { requestLuoguProblemDetailsRefreshes } from "../refresh/requests";
 import {
   normalizeProblemPids,
   replaceProblemSetProblems,
 } from "./problem-list";
-import { getProblemSet } from "./read-model";
-import { getProblemSetOrThrow, problemSetFields } from "./records";
-import type { Database, ProblemSetInput, ProblemSetUpdateInput } from "./types";
+import { getProblemSet, getProblemSetOrThrow } from "./query";
+
+type Database = Context["db"];
+
+interface ProblemSetInput {
+  descriptionMarkdown: string;
+  pids: string[];
+  title: string;
+}
+
+interface ProblemSetUpdateInput {
+  descriptionMarkdown?: string;
+  id: string;
+  pids?: string[];
+  title?: string;
+}
+
+const problemSetFields = {
+  createdAt: problemSet.createdAt,
+  descriptionMarkdown: problemSet.descriptionMarkdown,
+  id: problemSet.id,
+  title: problemSet.title,
+  updatedAt: problemSet.updatedAt,
+} as const;
 
 export const createProblemSet = async (
   db: Database,

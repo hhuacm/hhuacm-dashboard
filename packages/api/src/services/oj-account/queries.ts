@@ -1,7 +1,15 @@
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { and, asc, eq } from "drizzle-orm";
 
-import type { Database, OjAccountInput } from "./types";
+import type { Context } from "../../context";
+
+type Database = Context["db"];
+
+interface OjAccountLookup {
+  platform: OjPlatform;
+  userId: string;
+}
 
 export const ojAccountFields = {
   handle: userOjAccount.handle,
@@ -16,7 +24,7 @@ export const internalOjAccountFields = {
 
 export const toPublicOjAccount = (account: {
   handle: string;
-  platform: OjAccountInput["platform"];
+  platform: OjPlatform;
   profileUrl: string;
 }) => ({
   handle: account.handle,
@@ -40,7 +48,7 @@ export const listInternalOjAccountsByUserId = (db: Database, userId: string) =>
 
 export const getPublicOjAccountForUserPlatform = async (
   db: Database,
-  input: OjAccountInput
+  input: OjAccountLookup
 ) =>
   (
     await db
@@ -56,7 +64,7 @@ export const getPublicOjAccountForUserPlatform = async (
   )[0] ?? null;
 export const getInternalOjAccountForUserPlatform = async (
   db: Database,
-  input: Pick<OjAccountInput, "platform" | "userId">
+  input: OjAccountLookup
 ) =>
   (
     await db

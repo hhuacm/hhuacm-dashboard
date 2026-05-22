@@ -2,6 +2,7 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
 import { isPublicActivityMemberStatus } from "../member-status";
@@ -10,7 +11,8 @@ import {
   requestOjAccountRefresh,
 } from "../refresh/requests";
 import { listInternalOjAccountsByUserId } from "./queries";
-import type { Database } from "./types";
+
+type Database = Context["db"];
 
 export interface AccountStatsEffectTarget {
   id: string;

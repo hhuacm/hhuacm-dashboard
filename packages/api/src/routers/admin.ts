@@ -11,7 +11,7 @@ import {
   createProblemSet,
   deleteProblemSet,
   updateProblemSet,
-} from "../services/problem-set/write-model";
+} from "../services/problem-set/mutation";
 import { getTargetUser, updateUserProfile } from "../services/profile";
 import { updateHomeNoticeMarkdown } from "../services/site-setting";
 import {

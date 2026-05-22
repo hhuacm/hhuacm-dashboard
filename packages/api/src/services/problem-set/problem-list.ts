@@ -2,7 +2,10 @@ import { problemSetProblem } from "@hhuacm-dashboard/db/schema/problem-set";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 
-import type { Transaction } from "./types";
+import type { Context } from "../../context";
+
+type Database = Context["db"];
+type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 const pidPattern = /^[A-Z0-9][A-Z0-9_-]*$/i;
 

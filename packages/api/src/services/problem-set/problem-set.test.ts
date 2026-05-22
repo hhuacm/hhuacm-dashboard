@@ -16,15 +16,15 @@ import { eq } from "drizzle-orm";
 
 import { createServiceTestDb } from "../test-db";
 import {
-  getProblemSet,
-  listProblemSetCompletions,
-  listProblemSets,
-} from "./read-model";
-import {
   createProblemSet,
   deleteProblemSet,
   updateProblemSet,
-} from "./write-model";
+} from "./mutation";
+import {
+  getProblemSet,
+  listProblemSetCompletions,
+  listProblemSets,
+} from "./query";
 
 const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,

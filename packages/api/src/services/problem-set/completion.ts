@@ -5,9 +5,16 @@ import {
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { and, eq, inArray } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { ensureLuoguAccountStatsRefresh } from "../refresh/ensure";
-import type { ProblemSetProblemRecord } from "./records";
-import type { Database } from "./types";
+
+type Database = Context["db"];
+
+interface ProblemSetProblemForCompletion {
+  difficulty: null | number;
+  pid: string;
+  title: string;
+}
 
 const getCurrentLuoguAccount = async (db: Database, userId: null | string) => {
   if (!userId) {
@@ -97,7 +104,7 @@ export const attachAcceptedStatus = async (
   db: Database,
   input: {
     currentUserId: null | string;
-    problems: ProblemSetProblemRecord[];
+    problems: ProblemSetProblemForCompletion[];
   }
 ) => {
   const completionSource = await getCurrentLuoguCompletionSource(

@@ -6,20 +6,65 @@ import {
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import {
+  defaultMemberStatus,
+  type MemberStatus,
+} from "@hhuacm-dashboard/domain";
+import { TRPCError } from "@trpc/server";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 
+import type { Context } from "../../context";
 import { publicActivityMemberStatuses } from "../member-status";
 import {
   attachAcceptedStatus,
   getCurrentLuoguCompletionSource,
 } from "./completion";
-import {
-  getProblemSetOrThrow,
-  getProblemSetProblems,
-  memberStatusExpression,
-  toIsoString,
-} from "./records";
-import type { Database } from "./types";
+
+type Database = Context["db"];
+
+const problemSetFields = {
+  createdAt: problemSet.createdAt,
+  descriptionMarkdown: problemSet.descriptionMarkdown,
+  id: problemSet.id,
+  title: problemSet.title,
+  updatedAt: problemSet.updatedAt,
+} as const;
+
+const problemSetProblemFields = {
+  difficulty: problemSetProblem.difficulty,
+  id: problemSetProblem.id,
+  pid: problemSetProblem.pid,
+  sortOrder: problemSetProblem.sortOrder,
+  title: problemSetProblem.title,
+} as const;
+
+const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
+
+const toIsoString = (date: Date) => date.toISOString();
+
+export const getProblemSetOrThrow = async (db: Database, id: string) => {
+  const [item] = await db
+    .select(problemSetFields)
+    .from(problemSet)
+    .where(eq(problemSet.id, id))
+    .limit(1);
+
+  if (!item) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Problem set does not exist: ${id}`,
+    });
+  }
+
+  return item;
+};
+
+const getProblemSetProblems = (db: Database, problemSetId: string) =>
+  db
+    .select(problemSetProblemFields)
+    .from(problemSetProblem)
+    .where(eq(problemSetProblem.problemSetId, problemSetId))
+    .orderBy(asc(problemSetProblem.sortOrder));
 
 export const listProblemSets = async (
   db: Database,
