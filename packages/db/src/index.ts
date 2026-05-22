@@ -29,7 +29,10 @@ import {
   problemSetRelations,
 } from "./schema/problem-set";
 import { userProfile, userProfileRelations } from "./schema/profile";
-import { refreshJob, refreshJobRelations } from "./schema/refresh-job";
+import {
+  refreshRequest,
+  refreshRequestRelations,
+} from "./schema/refresh-request";
 import { siteSetting } from "./schema/site-setting";
 import {
   userAward,
@@ -51,8 +54,8 @@ const schema = {
   problemSetProblem,
   problemSetProblemRelations,
   problemSetRelations,
-  refreshJob,
-  refreshJobRelations,
+  refreshRequest,
+  refreshRequestRelations,
   session,
   sessionRelations,
   siteSetting,

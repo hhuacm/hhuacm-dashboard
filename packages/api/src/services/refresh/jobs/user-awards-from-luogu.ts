@@ -17,9 +17,9 @@ import {
   markUserAwardsFromLuoguRefreshFailed,
   syncUserAwardsFromLuogu,
 } from "../../profile-awards";
-import { userAwardsFromLuoguJobKind } from "../job-types";
 import { refreshDefaults } from "../policy";
-import type { RefreshJobDefinition } from "../registry";
+import type { RefreshRequestDefinition } from "../registry";
+import { userAwardsFromLuoguRequestKind } from "../request-types";
 import { requestUserAwardsFromLuoguRefresh } from "../requests";
 
 type Database = Context["db"];
@@ -35,9 +35,9 @@ const luoguAccountFields = {
 
 const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
-const handleUserAwardsFromLuoguJob = async (
+const handleUserAwardsFromLuoguRequest = async (
   db: Database,
-  job: Parameters<RefreshJobDefinition["handle"]>[1]
+  request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select({
@@ -49,14 +49,14 @@ const handleUserAwardsFromLuoguJob = async (
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
-        eq(userOjAccount.id, job.targetId),
+        eq(userOjAccount.id, request.targetId),
         eq(userOjAccount.platform, "luogu")
       )
     )
     .limit(1);
 
   if (!account) {
-    throw new Error(`Luogu account does not exist: ${job.targetId}`);
+    throw new Error(`Luogu account does not exist: ${request.targetId}`);
   }
 
   if (!isPublicActivityMemberStatus(account.memberStatus)) {
@@ -103,8 +103,8 @@ const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
   return staleAccounts.length;
 };
 
-export const userAwardsFromLuoguRefreshJobDefinition = {
-  handle: handleUserAwardsFromLuoguJob,
-  kind: userAwardsFromLuoguJobKind,
+export const userAwardsFromLuoguRefreshRequestDefinition = {
+  handle: handleUserAwardsFromLuoguRequest,
+  kind: userAwardsFromLuoguRequestKind,
   scanStaleTargets: scanStaleUserAwardsFromLuoguTargets,
-} as const satisfies RefreshJobDefinition;
+} as const satisfies RefreshRequestDefinition;

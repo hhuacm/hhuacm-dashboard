@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import type { Context } from "../../context";
-import { codeforcesAccountStatsJobKind } from "./job-types";
-import type { RefreshJobDefinition } from "./registry";
+import type { RefreshRequestDefinition } from "./registry";
+import { codeforcesAccountStatsRequestKind } from "./request-types";
 import { scanStaleRefreshTargets } from "./runtime";
 
 const fakeDb = null as unknown as Context["db"];
@@ -12,11 +12,11 @@ describe("refresh runtime", () => {
     const definitions = [
       {
         handle: () => Promise.resolve(undefined),
-        kind: codeforcesAccountStatsJobKind,
+        kind: codeforcesAccountStatsRequestKind,
         scanStaleTargets: async (_db, now) =>
           now.toISOString() === "2026-01-01T00:00:00.000Z" ? 2 : 0,
       },
-    ] satisfies RefreshJobDefinition[];
+    ] satisfies RefreshRequestDefinition[];
 
     await expect(
       scanStaleRefreshTargets(
@@ -31,9 +31,9 @@ describe("refresh runtime", () => {
     const definitions = [
       {
         handle: () => Promise.resolve(undefined),
-        kind: codeforcesAccountStatsJobKind,
+        kind: codeforcesAccountStatsRequestKind,
       },
-    ] satisfies RefreshJobDefinition[];
+    ] satisfies RefreshRequestDefinition[];
 
     await expect(scanStaleRefreshTargets(fakeDb, definitions)).resolves.toBe(0);
   });

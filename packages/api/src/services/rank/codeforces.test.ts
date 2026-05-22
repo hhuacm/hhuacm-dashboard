@@ -8,11 +8,11 @@ import { createServiceTestDb } from "../test-db";
 import { getCodeforcesRankStatus, listCodeforcesRankRows } from "./codeforces";
 
 describe("getCodeforcesRankStatus", () => {
-  it("prioritizes active refresh jobs", () => {
+  it("prioritizes active refresh requests", () => {
     expect(
       getCodeforcesRankStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshJob: true,
+        hasActiveRefreshRequest: true,
         isFresh: false,
         lastError: "failed",
         statsHandle: "tourist",
@@ -24,7 +24,7 @@ describe("getCodeforcesRankStatus", () => {
     expect(
       getCodeforcesRankStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshJob: false,
+        hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: null,
         statsHandle: null,
@@ -36,7 +36,7 @@ describe("getCodeforcesRankStatus", () => {
     expect(
       getCodeforcesRankStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshJob: false,
+        hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: "Codeforces unavailable",
         statsHandle: "tourist",
@@ -48,7 +48,7 @@ describe("getCodeforcesRankStatus", () => {
     expect(
       getCodeforcesRankStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshJob: false,
+        hasActiveRefreshRequest: false,
         isFresh: false,
         lastError: null,
         statsHandle: "tourist",
@@ -60,7 +60,7 @@ describe("getCodeforcesRankStatus", () => {
     expect(
       getCodeforcesRankStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshJob: false,
+        hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: null,
         statsHandle: "tourist",

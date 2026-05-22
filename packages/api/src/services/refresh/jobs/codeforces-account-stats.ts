@@ -17,9 +17,9 @@ import {
   isPublicActivityMemberStatus,
   publicActivityMemberStatuses,
 } from "../../member-status";
-import { codeforcesAccountStatsJobKind } from "../job-types";
 import { refreshDefaults } from "../policy";
-import type { RefreshJobDefinition } from "../registry";
+import type { RefreshRequestDefinition } from "../registry";
+import { codeforcesAccountStatsRequestKind } from "../request-types";
 import { requestCodeforcesAccountStatsRefresh } from "../requests";
 
 type Database = Context["db"];
@@ -31,9 +31,9 @@ const codeforcesAccountFields = {
 
 const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
-const handleCodeforcesAccountStatsJob = async (
+const handleCodeforcesAccountStatsRequest = async (
   db: Database,
-  job: Parameters<RefreshJobDefinition["handle"]>[1]
+  request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select({
@@ -45,14 +45,14 @@ const handleCodeforcesAccountStatsJob = async (
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
-        eq(userOjAccount.id, job.targetId),
+        eq(userOjAccount.id, request.targetId),
         eq(userOjAccount.platform, "codeforces")
       )
     )
     .limit(1);
 
   if (!account) {
-    throw new Error(`Codeforces account does not exist: ${job.targetId}`);
+    throw new Error(`Codeforces account does not exist: ${request.targetId}`);
   }
 
   if (!isPublicActivityMemberStatus(account.memberStatus)) {
@@ -102,8 +102,8 @@ const scanStaleCodeforcesAccountStatsTargets = async (
   return staleAccounts.length;
 };
 
-export const codeforcesAccountStatsRefreshJobDefinition = {
-  handle: handleCodeforcesAccountStatsJob,
-  kind: codeforcesAccountStatsJobKind,
+export const codeforcesAccountStatsRefreshRequestDefinition = {
+  handle: handleCodeforcesAccountStatsRequest,
+  kind: codeforcesAccountStatsRequestKind,
   scanStaleTargets: scanStaleCodeforcesAccountStatsTargets,
-} as const satisfies RefreshJobDefinition;
+} as const satisfies RefreshRequestDefinition;

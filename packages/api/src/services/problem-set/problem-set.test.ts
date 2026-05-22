@@ -10,7 +10,7 @@ import {
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 
@@ -93,7 +93,7 @@ const createAcceptedProblem = async (
 };
 
 describe("problem sets", () => {
-  it("creates problems in order and enqueues distinct Luogu problem jobs", async () => {
+  it("creates problems in order and enqueues distinct Luogu problem requests", async () => {
     const db = await createServiceTestDb();
 
     const created = await createProblemSet(db, {
@@ -105,10 +105,10 @@ describe("problem sets", () => {
       .select()
       .from(problemSetProblem)
       .orderBy(problemSetProblem.sortOrder);
-    const jobs = await db
+    const requests = await db
       .select()
-      .from(refreshJob)
-      .orderBy(refreshJob.targetId);
+      .from(refreshRequest)
+      .orderBy(refreshRequest.targetId);
 
     expect(created.title).toBe("基础题单");
     expect(problems.map((problem) => problem.pid)).toEqual(["P1563", "P1328"]);
@@ -116,10 +116,12 @@ describe("problem sets", () => {
       "P1563",
       "P1328",
     ]);
-    expect(jobs.map((job) => [job.kind, job.targetId])).toEqual([
-      ["luogu.problemDetails", "P1328"],
-      ["luogu.problemDetails", "P1563"],
-    ]);
+    expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
+      [
+        ["luogu.problemDetails", "P1328"],
+        ["luogu.problemDetails", "P1563"],
+      ]
+    );
   });
 
   it("rejects duplicate PIDs", async () => {
@@ -242,13 +244,15 @@ describe("problem sets", () => {
       currentUserId: "viewer",
       id: created.id,
     });
-    const jobs = await db
+    const requests = await db
       .select()
-      .from(refreshJob)
-      .where(eq(refreshJob.kind, "luogu.accountStats"));
+      .from(refreshRequest)
+      .where(eq(refreshRequest.kind, "luogu.accountStats"));
 
     expect(result.problems[0]?.accepted).toBeNull();
-    expect(jobs.map((job) => job.targetId)).toEqual(["account-viewer"]);
+    expect(requests.map((request) => request.targetId)).toEqual([
+      "account-viewer",
+    ]);
   });
 
   it("updates metadata without replacing problems", async () => {
@@ -258,7 +262,7 @@ describe("problem sets", () => {
       pids: ["P1563"],
       title: "旧标题",
     });
-    await db.delete(refreshJob);
+    await db.delete(refreshRequest);
 
     const updated = await updateProblemSet(db, {
       descriptionMarkdown: "新说明",
@@ -266,12 +270,12 @@ describe("problem sets", () => {
       title: "新标题",
     });
     const problems = await db.select().from(problemSetProblem);
-    const jobs = await db.select().from(refreshJob);
+    const requests = await db.select().from(refreshRequest);
 
     expect(updated.title).toBe("新标题");
     expect(updated.descriptionMarkdown).toBe("新说明");
     expect(problems.map((problem) => problem.pid)).toEqual(["P1563"]);
-    expect(jobs).toHaveLength(0);
+    expect(requests).toHaveLength(0);
   });
 
   it("replaces problems and preserves existing details for reused PIDs", async () => {
@@ -285,7 +289,7 @@ describe("problem sets", () => {
       .update(problemSetProblem)
       .set({ difficulty: 2, title: "玩具谜题" })
       .where(eq(problemSetProblem.pid, "P1563"));
-    await db.delete(refreshJob);
+    await db.delete(refreshRequest);
 
     await updateProblemSet(db, {
       id: created.id,

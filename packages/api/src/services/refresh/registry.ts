@@ -1,33 +1,33 @@
 import type { Context } from "../../context";
-import type { RefreshJob } from "./job-store";
-import { codeforcesAccountStatsRefreshJobDefinition } from "./jobs/codeforces-account-stats";
-import { luoguAccountStatsRefreshJobDefinition } from "./jobs/luogu-account-stats";
-import { luoguProblemDetailsRefreshJobDefinition } from "./jobs/luogu-problem-details";
-import { userAwardsFromLuoguRefreshJobDefinition } from "./jobs/user-awards-from-luogu";
+import { codeforcesAccountStatsRefreshRequestDefinition } from "./jobs/codeforces-account-stats";
+import { luoguAccountStatsRefreshRequestDefinition } from "./jobs/luogu-account-stats";
+import { luoguProblemDetailsRefreshRequestDefinition } from "./jobs/luogu-problem-details";
+import { userAwardsFromLuoguRefreshRequestDefinition } from "./jobs/user-awards-from-luogu";
+import type { RefreshRequest } from "./request-store";
 
 type Database = Context["db"];
 
-export interface RefreshJobDefinition {
-  handle: (db: Database, job: RefreshJob) => Promise<void>;
-  kind: RefreshJob["kind"];
+export interface RefreshRequestDefinition {
+  handle: (db: Database, request: RefreshRequest) => Promise<void>;
+  kind: RefreshRequest["kind"];
   scanStaleTargets?: (db: Database, now: Date) => Promise<number>;
 }
 
-export const refreshJobDefinitions = [
-  codeforcesAccountStatsRefreshJobDefinition,
-  luoguAccountStatsRefreshJobDefinition,
-  luoguProblemDetailsRefreshJobDefinition,
-  userAwardsFromLuoguRefreshJobDefinition,
-] as const satisfies RefreshJobDefinition[];
+export const refreshRequestDefinitions = [
+  codeforcesAccountStatsRefreshRequestDefinition,
+  luoguAccountStatsRefreshRequestDefinition,
+  luoguProblemDetailsRefreshRequestDefinition,
+  userAwardsFromLuoguRefreshRequestDefinition,
+] as const satisfies RefreshRequestDefinition[];
 
-export const findRefreshJobDefinition = (
-  definitions: RefreshJobDefinition[],
-  kind: RefreshJob["kind"]
+export const findRefreshRequestDefinition = (
+  definitions: RefreshRequestDefinition[],
+  kind: RefreshRequest["kind"]
 ) => {
   const definition = definitions.find((item) => item.kind === kind);
 
   if (!definition) {
-    throw new Error(`Unsupported refresh job kind: ${kind}`);
+    throw new Error(`Unsupported refresh request kind: ${kind}`);
   }
 
   return definition;

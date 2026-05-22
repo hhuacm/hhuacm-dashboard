@@ -1,24 +1,24 @@
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import {
-  codeforcesAccountStatsJobKind,
-  luoguAccountStatsJobKind,
-  type RefreshJobKind,
-  userAwardsFromLuoguJobKind,
-} from "./job-types";
 import { isCodeforcesStatsCacheFresh, isLuoguStatsCacheFresh } from "./policy";
+import {
+  codeforcesAccountStatsRequestKind,
+  luoguAccountStatsRequestKind,
+  type RefreshRequestKind,
+  userAwardsFromLuoguRequestKind,
+} from "./request-types";
 
 type Database = Context["db"];
 
 interface RefreshActivityTarget {
-  kind: RefreshJobKind;
+  kind: RefreshRequestKind;
   targetId: string;
 }
 
 interface RefreshActivityTargetGroup {
-  kind: RefreshJobKind;
+  kind: RefreshRequestKind;
   targetIds: string[];
 }
 
@@ -27,28 +27,25 @@ export interface RefreshActivity {
   requestedAt: Date | null;
 }
 
-const activeRefreshJobStatuses = ["pending", "running"] as const;
-
 const getRefreshActivityForTarget = async (
   db: Database,
   target: RefreshActivityTarget
 ): Promise<RefreshActivity> => {
-  const [job] = await db
-    .select({ createdAt: refreshJob.createdAt })
-    .from(refreshJob)
+  const [request] = await db
+    .select({ createdAt: refreshRequest.createdAt })
+    .from(refreshRequest)
     .where(
       and(
-        eq(refreshJob.kind, target.kind),
-        eq(refreshJob.targetId, target.targetId),
-        inArray(refreshJob.status, activeRefreshJobStatuses)
+        eq(refreshRequest.kind, target.kind),
+        eq(refreshRequest.targetId, target.targetId)
       )
     )
-    .orderBy(asc(refreshJob.createdAt))
+    .orderBy(asc(refreshRequest.createdAt))
     .limit(1);
 
   return {
-    isRefreshing: Boolean(job),
-    requestedAt: job?.createdAt ?? null,
+    isRefreshing: Boolean(request),
+    requestedAt: request?.createdAt ?? null,
   };
 };
 
@@ -60,18 +57,17 @@ const getRefreshingTargetIds = async (
     return new Set<string>();
   }
 
-  const jobs = await db
-    .select({ targetId: refreshJob.targetId })
-    .from(refreshJob)
+  const requests = await db
+    .select({ targetId: refreshRequest.targetId })
+    .from(refreshRequest)
     .where(
       and(
-        eq(refreshJob.kind, target.kind),
-        inArray(refreshJob.status, activeRefreshJobStatuses),
-        inArray(refreshJob.targetId, target.targetIds)
+        eq(refreshRequest.kind, target.kind),
+        inArray(refreshRequest.targetId, target.targetIds)
       )
     );
 
-  return new Set(jobs.map((job) => job.targetId));
+  return new Set(requests.map((request) => request.targetId));
 };
 
 export const getCodeforcesAccountStatsRefreshActivity = (
@@ -79,7 +75,7 @@ export const getCodeforcesAccountStatsRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: codeforcesAccountStatsJobKind,
+    kind: codeforcesAccountStatsRequestKind,
     targetId: accountId,
   });
 
@@ -88,7 +84,7 @@ export const getLuoguAccountStatsRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: luoguAccountStatsJobKind,
+    kind: luoguAccountStatsRequestKind,
     targetId: accountId,
   });
 
@@ -97,7 +93,7 @@ export const getUserAwardsFromLuoguRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: userAwardsFromLuoguJobKind,
+    kind: userAwardsFromLuoguRequestKind,
     targetId: accountId,
   });
 
@@ -106,13 +102,13 @@ const getRefreshingCodeforcesAccountIds = (
   accountIds: string[]
 ) =>
   getRefreshingTargetIds(db, {
-    kind: codeforcesAccountStatsJobKind,
+    kind: codeforcesAccountStatsRequestKind,
     targetIds: accountIds,
   });
 
 const getRefreshingLuoguAccountIds = (db: Database, accountIds: string[]) =>
   getRefreshingTargetIds(db, {
-    kind: luoguAccountStatsJobKind,
+    kind: luoguAccountStatsRequestKind,
     targetIds: accountIds,
   });
 
@@ -134,7 +130,7 @@ export const getCodeforcesRankRefreshActivity = async (
       statsHandle: null | string;
     }) => ({
       fetchedAt: input.fetchedAt,
-      hasActiveRefreshJob: refreshingAccountIds.has(input.accountId),
+      hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
       isFresh: isCodeforcesStatsCacheFresh(input.fetchedAt, now),
       lastError: input.lastError,
       statsHandle: input.statsHandle,
@@ -159,7 +155,7 @@ export const getLuoguRankRefreshActivity = async (
       lastError: null | string;
     }) => ({
       fetchedAt: input.fetchedAt,
-      hasActiveRefreshJob: refreshingAccountIds.has(input.accountId),
+      hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
       isFresh: isLuoguStatsCacheFresh(input.fetchedAt, now),
       lastError: input.lastError,
     }),

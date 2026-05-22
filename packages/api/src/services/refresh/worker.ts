@@ -1,39 +1,31 @@
 import type { Context } from "../../context";
 import {
-  claimNextPendingRefreshJob,
-  deleteRefreshJob,
-  recoverRunningRefreshJobs,
-} from "./job-store";
-import {
-  findRefreshJobDefinition,
-  type RefreshJobDefinition,
-  refreshJobDefinitions,
+  findRefreshRequestDefinition,
+  type RefreshRequestDefinition,
+  refreshRequestDefinitions,
 } from "./registry";
+import { deleteRefreshRequest, getNextRefreshRequest } from "./request-store";
 
 type Database = Context["db"];
 
 export const runRefreshWorkerOnce = async (
   db: Database,
-  definitions: RefreshJobDefinition[] = refreshJobDefinitions
+  definitions: RefreshRequestDefinition[] = refreshRequestDefinitions
 ) => {
-  const job = await claimNextPendingRefreshJob(db);
+  const request = await getNextRefreshRequest(db);
 
-  if (!job) {
+  if (!request) {
     return null;
   }
 
-  const definition = findRefreshJobDefinition(definitions, job.kind);
-
   try {
-    await definition.handle(db, job);
+    const definition = findRefreshRequestDefinition(definitions, request.kind);
+    await definition.handle(db, request);
   } finally {
-    await deleteRefreshJob(db, job);
+    await deleteRefreshRequest(db, request);
   }
 
   return {
-    job,
+    request,
   };
 };
-
-export const recoverInterruptedRefreshJobs = (db: Database) =>
-  recoverRunningRefreshJobs(db);

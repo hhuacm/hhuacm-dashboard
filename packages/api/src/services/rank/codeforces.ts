@@ -29,12 +29,12 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
 export const getCodeforcesRankStatus = (input: {
   fetchedAt: Date | null;
-  hasActiveRefreshJob: boolean;
+  hasActiveRefreshRequest: boolean;
   isFresh: boolean;
   lastError: null | string;
   statsHandle: null | string;
 }): CodeforcesRankStatus => {
-  if (input.hasActiveRefreshJob) {
+  if (input.hasActiveRefreshRequest) {
     return "refreshing";
   }
 

@@ -2,13 +2,13 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../test-db";
-import { luoguAccountStatsRefreshJobDefinition } from "./luogu-account-stats";
+import { luoguAccountStatsRefreshRequestDefinition } from "./luogu-account-stats";
 
-describe("Luogu account stats refresh job", () => {
+describe("Luogu account stats refresh request", () => {
   const createAccount = async (
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
@@ -53,12 +53,12 @@ describe("Luogu account stats refresh job", () => {
     await createAccount(db, { id: "missing-profile-user" });
 
     const enqueuedCount =
-      await luoguAccountStatsRefreshJobDefinition.scanStaleTargets(
+      await luoguAccountStatsRefreshRequestDefinition.scanStaleTargets(
         db,
         new Date()
       );
-    const jobs = await db.select().from(refreshJob);
-    const targetIds = jobs.map((job) => job.targetId);
+    const requests = await db.select().from(refreshRequest);
+    const targetIds = requests.map((request) => request.targetId);
 
     expect(enqueuedCount).toBe(3);
     expect(targetIds).toContain("account-selection-user");

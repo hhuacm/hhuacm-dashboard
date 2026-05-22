@@ -1,7 +1,10 @@
 import type { Context } from "../../context";
 import { refreshDefaults } from "./policy";
-import { type RefreshJobDefinition, refreshJobDefinitions } from "./registry";
-import { recoverInterruptedRefreshJobs, runRefreshWorkerOnce } from "./worker";
+import {
+  type RefreshRequestDefinition,
+  refreshRequestDefinitions,
+} from "./registry";
+import { runRefreshWorkerOnce } from "./worker";
 
 type Database = Context["db"];
 
@@ -16,7 +19,7 @@ const sleep = (ms: number) =>
 
 export const scanStaleRefreshTargets = async (
   db: Database,
-  definitions: RefreshJobDefinition[] = refreshJobDefinitions,
+  definitions: RefreshRequestDefinition[] = refreshRequestDefinitions,
   now = new Date()
 ) => {
   let enqueuedCount = 0;
@@ -67,10 +70,6 @@ export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
       await sleep(refreshDefaults.staleScanIntervalMs);
     }
   };
-
-  recoverInterruptedRefreshJobs(db).catch((error) => {
-    console.error("Refresh job recovery failed", error);
-  });
 
   startWorkerLoop().catch((error) => {
     console.error("Refresh worker stopped unexpectedly", error);

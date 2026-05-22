@@ -17,17 +17,17 @@ import {
 
 type Database = Context["db"];
 
-export interface RefreshQueueState {
+export interface RefreshRequestState {
   isFresh: boolean;
   isQueued: boolean;
   requestedAt: Date | null;
 }
 
-const toQueueState = (input: {
+const toRequestState = (input: {
   isFresh: boolean;
   isRefreshing: boolean;
   requestedAt: Date | null;
-}): RefreshQueueState => ({
+}): RefreshRequestState => ({
   isFresh: input.isFresh,
   isQueued: input.isRefreshing,
   requestedAt: input.requestedAt,
@@ -54,7 +54,7 @@ export const ensureCodeforcesAccountStatsRefresh = async (
     input.accountId
   );
 
-  return toQueueState({
+  return toRequestState({
     isFresh,
     isRefreshing: activity.isRefreshing,
     requestedAt: activity.requestedAt,
@@ -80,7 +80,7 @@ export const ensureLuoguAccountStatsRefresh = async (
     input.accountId
   );
 
-  return toQueueState({
+  return toRequestState({
     isFresh,
     isRefreshing: activity.isRefreshing,
     requestedAt: activity.requestedAt,
@@ -110,7 +110,7 @@ export const ensureUserAwardsFromLuoguRefresh = async (
       ? await getUserAwardsFromLuoguRefreshActivity(db, accountId)
       : null;
 
-  return toQueueState({
+  return toRequestState({
     isFresh,
     isRefreshing: activity?.isRefreshing ?? false,
     requestedAt: activity?.requestedAt ?? null,

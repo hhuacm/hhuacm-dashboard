@@ -3,7 +3,7 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -305,9 +305,8 @@ describe("admin users", () => {
       handle: "frozen-user-codeforces",
       lastAttemptedAt: new Date("2026-01-01T00:00:00.000Z"),
     });
-    await db.insert(refreshJob).values({
+    await db.insert(refreshRequest).values({
       kind: "codeforces.accountStats",
-      status: "pending",
       targetId: accountId,
     });
 
@@ -317,11 +316,11 @@ describe("admin users", () => {
     });
     const users = await listUserIds(db);
     const stats = await db.select().from(codeforcesAccountStats);
-    const refreshJobs = await db.select().from(refreshJob);
+    const refreshRequests = await db.select().from(refreshRequest);
 
     expect(deleted.id).toBe("frozen-user");
     expect(users).toEqual([]);
     expect(stats).toEqual([]);
-    expect(refreshJobs).toEqual([]);
+    expect(refreshRequests).toEqual([]);
   });
 });

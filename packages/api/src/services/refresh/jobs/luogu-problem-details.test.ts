@@ -7,8 +7,8 @@ import {
 import type { LuoguProblemPageData } from "../../../external/online-judge-sources/luogu/api";
 import { createServiceTestDb } from "../../test-db";
 import {
-  handleLuoguProblemDetailsJob,
-  luoguProblemDetailsRefreshJobDefinition,
+  handleLuoguProblemDetailsRequest,
+  luoguProblemDetailsRefreshRequestDefinition,
 } from "./luogu-problem-details";
 
 const createProblemPage = (
@@ -17,15 +17,14 @@ const createProblemPage = (
   problem,
 });
 
-describe("Luogu problem details refresh job", () => {
+describe("Luogu problem details refresh request", () => {
   it("finishes when the PID is no longer referenced", async () => {
     const db = await createServiceTestDb();
 
     await expect(
-      luoguProblemDetailsRefreshJobDefinition.handle(db, {
+      luoguProblemDetailsRefreshRequestDefinition.handle(db, {
         createdAt: new Date(),
         kind: "luogu.problemDetails",
-        status: "running",
         targetId: "P1563",
       })
     ).resolves.toBeUndefined();
@@ -46,12 +45,11 @@ describe("Luogu problem details refresh job", () => {
     });
 
     await expect(
-      handleLuoguProblemDetailsJob(
+      handleLuoguProblemDetailsRequest(
         db,
         {
           createdAt: new Date(),
           kind: "luogu.problemDetails",
-          status: "running",
           targetId: "P1563",
         },
         () => Promise.reject(new Error("network failed"))
@@ -74,12 +72,11 @@ describe("Luogu problem details refresh job", () => {
     });
 
     await expect(
-      handleLuoguProblemDetailsJob(
+      handleLuoguProblemDetailsRequest(
         db,
         {
           createdAt: new Date(),
           kind: "luogu.problemDetails",
-          status: "running",
           targetId: "P1563",
         },
         async () =>

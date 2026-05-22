@@ -12,7 +12,7 @@ import {
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { siteSetting } from "@hhuacm-dashboard/db/schema/site-setting";
 import {
   userAward,
@@ -127,10 +127,9 @@ create table problem_set_problem (
 )
 `,
   `
-create table refresh_job (
+create table refresh_request (
   kind text not null,
   target_id text not null,
-  status text default 'pending' not null,
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   primary key (kind, target_id)
 )
@@ -179,7 +178,7 @@ const testSchema = {
   luoguAccountStats,
   problemSet,
   problemSetProblem,
-  refreshJob,
+  refreshRequest,
   siteSetting,
   user,
   userAward,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import {
   userAward,
   userAwardSync,
@@ -12,7 +12,7 @@ import { getPublicProfile } from "./profile";
 import { createServiceTestDb } from "./test-db";
 
 describe("getPublicProfile", () => {
-  it("returns inactive users' bound OJ accounts without stats or refresh jobs", async () => {
+  it("returns inactive users' bound OJ accounts without stats or refresh requests", async () => {
     const db = await createServiceTestDb();
 
     await db.insert(user).values({
@@ -48,7 +48,7 @@ describe("getPublicProfile", () => {
       currentUserId: null,
       username: "retired",
     });
-    const refreshJobs = await db.select().from(refreshJob);
+    const refreshRequests = await db.select().from(refreshRequest);
 
     expect(profile.awards).toEqual({
       fetchedAt: null,
@@ -69,10 +69,10 @@ describe("getPublicProfile", () => {
         profileUrl: "https://www.luogu.com.cn/user/12345",
       },
     ]);
-    expect(refreshJobs).toHaveLength(0);
+    expect(refreshRequests).toHaveLength(0);
   });
 
-  it("returns retired users' cached awards without refresh jobs", async () => {
+  it("returns retired users' cached awards without refresh requests", async () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
 
@@ -117,7 +117,7 @@ describe("getPublicProfile", () => {
       currentUserId: null,
       username: "retired-award",
     });
-    const refreshJobs = await db.select().from(refreshJob);
+    const refreshRequests = await db.select().from(refreshRequest);
 
     expect(profile.awards).toEqual({
       fetchedAt: fetchedAt.toISOString(),
@@ -135,7 +135,7 @@ describe("getPublicProfile", () => {
       lastError: null,
       syncStatus: "ready",
     });
-    expect(refreshJobs).toHaveLength(0);
+    expect(refreshRequests).toHaveLength(0);
   });
 
   it("enqueues missing awards refresh for public activity users", async () => {
@@ -164,10 +164,10 @@ describe("getPublicProfile", () => {
       currentUserId: null,
       username: "active-award",
     });
-    const refreshJobs = await db.select().from(refreshJob);
+    const refreshRequests = await db.select().from(refreshRequest);
 
     expect(profile.awards.syncStatus).toBe("refreshing");
-    expect(refreshJobs.map((job) => job.kind)).toEqual([
+    expect(refreshRequests.map((request) => request.kind)).toEqual([
       "luogu.accountStats",
       "user.awardsFromLuogu",
     ]);

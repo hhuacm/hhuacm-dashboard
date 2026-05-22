@@ -1,13 +1,13 @@
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 
 import type { Context } from "../../context";
-import { deleteRefreshJob, enqueueRefreshJob } from "./job-store";
+import { createRefreshRequest, deleteRefreshRequest } from "./request-store";
 import {
-  codeforcesAccountStatsJobKind,
-  luoguAccountStatsJobKind,
-  luoguProblemDetailsJobKind,
-  userAwardsFromLuoguJobKind,
-} from "./job-types";
+  codeforcesAccountStatsRequestKind,
+  luoguAccountStatsRequestKind,
+  luoguProblemDetailsRequestKind,
+  userAwardsFromLuoguRequestKind,
+} from "./request-types";
 
 type Database = Context["db"];
 
@@ -20,8 +20,8 @@ export const requestCodeforcesAccountStatsRefresh = async (
   db: Database,
   accountId: string
 ) => {
-  await enqueueRefreshJob(db, {
-    kind: codeforcesAccountStatsJobKind,
+  await createRefreshRequest(db, {
+    kind: codeforcesAccountStatsRequestKind,
     targetId: accountId,
   });
 };
@@ -30,15 +30,15 @@ export const requestLuoguAccountStatsRefresh = async (
   db: Database,
   accountId: string
 ) => {
-  await enqueueRefreshJob(db, {
-    kind: luoguAccountStatsJobKind,
+  await createRefreshRequest(db, {
+    kind: luoguAccountStatsRequestKind,
     targetId: accountId,
   });
 };
 
 const requestLuoguProblemDetailsRefresh = async (db: Database, pid: string) => {
-  await enqueueRefreshJob(db, {
-    kind: luoguProblemDetailsJobKind,
+  await createRefreshRequest(db, {
+    kind: luoguProblemDetailsRequestKind,
     targetId: pid,
   });
 };
@@ -56,8 +56,8 @@ export const requestUserAwardsFromLuoguRefresh = async (
   db: Database,
   accountId: string
 ) => {
-  await enqueueRefreshJob(db, {
-    kind: userAwardsFromLuoguJobKind,
+  await createRefreshRequest(db, {
+    kind: userAwardsFromLuoguRequestKind,
     targetId: accountId,
   });
 };
@@ -66,8 +66,8 @@ const clearCodeforcesAccountStatsRefreshRequest = (
   db: Database,
   accountId: string
 ) =>
-  deleteRefreshJob(db, {
-    kind: codeforcesAccountStatsJobKind,
+  deleteRefreshRequest(db, {
+    kind: codeforcesAccountStatsRequestKind,
     targetId: accountId,
   });
 
@@ -75,8 +75,8 @@ const clearLuoguAccountStatsRefreshRequest = (
   db: Database,
   accountId: string
 ) =>
-  deleteRefreshJob(db, {
-    kind: luoguAccountStatsJobKind,
+  deleteRefreshRequest(db, {
+    kind: luoguAccountStatsRequestKind,
     targetId: accountId,
   });
 
@@ -84,8 +84,8 @@ const clearUserAwardsFromLuoguRefreshRequest = (
   db: Database,
   accountId: string
 ) =>
-  deleteRefreshJob(db, {
-    kind: userAwardsFromLuoguJobKind,
+  deleteRefreshRequest(db, {
+    kind: userAwardsFromLuoguRequestKind,
     targetId: accountId,
   });
 

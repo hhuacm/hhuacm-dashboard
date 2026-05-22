@@ -17,9 +17,9 @@ import {
   isPublicActivityMemberStatus,
   publicActivityMemberStatuses,
 } from "../../member-status";
-import { luoguAccountStatsJobKind } from "../job-types";
 import { refreshDefaults } from "../policy";
-import type { RefreshJobDefinition } from "../registry";
+import type { RefreshRequestDefinition } from "../registry";
+import { luoguAccountStatsRequestKind } from "../request-types";
 import { requestLuoguAccountStatsRefresh } from "../requests";
 
 type Database = Context["db"];
@@ -32,9 +32,9 @@ const luoguAccountFields = {
 
 const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
-const handleLuoguAccountStatsJob = async (
+const handleLuoguAccountStatsRequest = async (
   db: Database,
-  job: Parameters<RefreshJobDefinition["handle"]>[1]
+  request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select({
@@ -46,14 +46,14 @@ const handleLuoguAccountStatsJob = async (
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
-        eq(userOjAccount.id, job.targetId),
+        eq(userOjAccount.id, request.targetId),
         eq(userOjAccount.platform, "luogu")
       )
     )
     .limit(1);
 
   if (!account) {
-    throw new Error(`Luogu account does not exist: ${job.targetId}`);
+    throw new Error(`Luogu account does not exist: ${request.targetId}`);
   }
 
   if (!isPublicActivityMemberStatus(account.memberStatus)) {
@@ -97,8 +97,8 @@ const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
   return staleAccounts.length;
 };
 
-export const luoguAccountStatsRefreshJobDefinition = {
-  handle: handleLuoguAccountStatsJob,
-  kind: luoguAccountStatsJobKind,
+export const luoguAccountStatsRefreshRequestDefinition = {
+  handle: handleLuoguAccountStatsRequest,
+  kind: luoguAccountStatsRequestKind,
   scanStaleTargets: scanStaleLuoguAccountStatsTargets,
-} as const satisfies RefreshJobDefinition;
+} as const satisfies RefreshRequestDefinition;

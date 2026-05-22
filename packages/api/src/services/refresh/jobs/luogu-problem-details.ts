@@ -3,20 +3,20 @@ import {
   enrichProblemSetProblemsByPid,
   type LuoguProblemLoader,
 } from "../../luogu/problem-details";
-import { luoguProblemDetailsJobKind } from "../job-types";
-import type { RefreshJobDefinition } from "../registry";
+import type { RefreshRequestDefinition } from "../registry";
+import { luoguProblemDetailsRequestKind } from "../request-types";
 
 type Database = Context["db"];
 
-export const handleLuoguProblemDetailsJob = async (
+export const handleLuoguProblemDetailsRequest = async (
   db: Database,
-  job: Parameters<RefreshJobDefinition["handle"]>[1],
+  request: Parameters<RefreshRequestDefinition["handle"]>[1],
   loadProblem?: LuoguProblemLoader
 ) => {
-  await enrichProblemSetProblemsByPid(db, job.targetId, loadProblem);
+  await enrichProblemSetProblemsByPid(db, request.targetId, loadProblem);
 };
 
-export const luoguProblemDetailsRefreshJobDefinition = {
-  handle: handleLuoguProblemDetailsJob,
-  kind: luoguProblemDetailsJobKind,
-} as const satisfies RefreshJobDefinition;
+export const luoguProblemDetailsRefreshRequestDefinition = {
+  handle: handleLuoguProblemDetailsRequest,
+  kind: luoguProblemDetailsRequestKind,
+} as const satisfies RefreshRequestDefinition;

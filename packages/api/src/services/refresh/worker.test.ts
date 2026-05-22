@@ -3,21 +3,20 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
 import type { Context } from "../../context";
-import { claimNextPendingRefreshJob, enqueueRefreshJob } from "./job-store";
-import { codeforcesAccountStatsJobKind } from "./job-types";
-import type { RefreshJobDefinition } from "./registry";
-import { recoverInterruptedRefreshJobs, runRefreshWorkerOnce } from "./worker";
+import type { RefreshRequestDefinition } from "./registry";
+import { createRefreshRequest } from "./request-store";
+import { codeforcesAccountStatsRequestKind } from "./request-types";
+import { runRefreshWorkerOnce } from "./worker";
 
-const createRefreshJobTableSql = `
-create table refresh_job (
+const createRefreshRequestTableSql = `
+create table refresh_request (
 	  kind text not null,
 	  target_id text not null,
-	  status text default 'pending' not null,
 	  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
     primary key (kind, target_id)
 	)
@@ -29,13 +28,16 @@ const createTestDb = async () => {
     url: `file:${path.join(directory, "test.db")}`,
   });
 
-  await client.execute(createRefreshJobTableSql);
+  await client.execute(createRefreshRequestTableSql);
   await client.execute(
-    "create index refresh_job_status_created_at_idx on refresh_job (status, created_at)"
+    "create index refresh_request_created_at_idx on refresh_request (created_at)"
   );
 
   return {
-    db: drizzle({ client, schema: { refreshJob } }) as unknown as Context["db"],
+    db: drizzle({
+      client,
+      schema: { refreshRequest },
+    }) as unknown as Context["db"],
     directory,
   };
 };
@@ -49,80 +51,80 @@ afterEach(async () => {
   }
 });
 
-const enqueueTestJob = (db: Context["db"]) =>
-  enqueueRefreshJob(db, {
-    kind: codeforcesAccountStatsJobKind,
+const createTestRequest = (db: Context["db"]) =>
+  createRefreshRequest(db, {
+    kind: codeforcesAccountStatsRequestKind,
     targetId: "account-1",
   });
 
 describe("refresh worker", () => {
-  it("deletes jobs after successful handlers", async () => {
+  it("deletes requests after successful handlers", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
-    await enqueueTestJob(db);
+    await createTestRequest(db);
     const handledTargetIds: string[] = [];
     const definitions = [
       {
-        handle: (_db, job) => {
-          handledTargetIds.push(job.targetId);
+        handle: (_db, request) => {
+          handledTargetIds.push(request.targetId);
           return Promise.resolve(undefined);
         },
-        kind: codeforcesAccountStatsJobKind,
+        kind: codeforcesAccountStatsRequestKind,
       },
-    ] satisfies RefreshJobDefinition[];
+    ] satisfies RefreshRequestDefinition[];
 
     const result = await runRefreshWorkerOnce(db, definitions);
-    const remainingJobs = await db.select().from(refreshJob);
+    const remainingRequests = await db.select().from(refreshRequest);
 
-    expect(handledTargetIds).toEqual(result ? [result.job.targetId] : []);
-    expect(remainingJobs).toHaveLength(0);
+    expect(handledTargetIds).toEqual(result ? [result.request.targetId] : []);
+    expect(remainingRequests).toHaveLength(0);
   });
 
-  it("deletes jobs after failed handlers", async () => {
+  it("deletes requests after failed handlers", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
-    await enqueueTestJob(db);
+    await createTestRequest(db);
     const definitions = [
       {
         handle: () => Promise.reject(new Error("network failed")),
-        kind: codeforcesAccountStatsJobKind,
+        kind: codeforcesAccountStatsRequestKind,
       },
-    ] satisfies RefreshJobDefinition[];
+    ] satisfies RefreshRequestDefinition[];
 
     await expect(runRefreshWorkerOnce(db, definitions)).rejects.toThrow(
       "network failed"
     );
-    const remainingJobs = await db.select().from(refreshJob);
+    const remainingRequests = await db.select().from(refreshRequest);
 
-    expect(remainingJobs).toHaveLength(0);
+    expect(remainingRequests).toHaveLength(0);
   });
 
-  it("recovers jobs left running by interrupted workers", async () => {
+  it("returns null when there is no request", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
-    await enqueueTestJob(db);
-    await claimNextPendingRefreshJob(db);
 
-    await recoverInterruptedRefreshJobs(db);
-    const [job] = await db.select().from(refreshJob);
+    const result = await runRefreshWorkerOnce(db, []);
 
-    expect(job?.status).toBe("pending");
+    expect(result).toBeNull();
   });
 
-  it("rejects unsupported job kinds", async () => {
+  it("rejects unsupported request kinds", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
-    const job = await enqueueRefreshJob(db, {
-      kind: codeforcesAccountStatsJobKind,
+    const request = await createRefreshRequest(db, {
+      kind: codeforcesAccountStatsRequestKind,
       targetId: "account-1",
     });
 
-    if (!job) {
-      throw new Error("Expected created job");
+    if (!request) {
+      throw new Error("Expected created request");
     }
 
     await expect(runRefreshWorkerOnce(db, [])).rejects.toThrow(
-      "Unsupported refresh job kind: codeforces.accountStats"
+      "Unsupported refresh request kind: codeforces.accountStats"
     );
+    const remainingRequests = await db.select().from(refreshRequest);
+
+    expect(remainingRequests).toHaveLength(0);
   });
 });

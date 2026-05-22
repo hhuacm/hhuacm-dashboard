@@ -3,7 +3,7 @@ import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 
 import { createServiceTestDb } from "../test-db";
 import {
@@ -128,7 +128,7 @@ describe("Luogu profile stats", () => {
     });
   });
 
-  it("enqueues refresh jobs for missing local stats", async () => {
+  it("enqueues refresh requests for missing local stats", async () => {
     const db = await createServiceTestDb();
 
     const stats = await getLuoguStatsForProfile(db, {
@@ -136,10 +136,10 @@ describe("Luogu profile stats", () => {
       id: "account-luogu",
       profileUrl: "https://www.luogu.com.cn/user/97238",
     });
-    const jobs = await db.select().from(refreshJob);
+    const requests = await db.select().from(refreshRequest);
 
     expect(stats?.syncStatus).toBe("refreshing");
-    expect(jobs).toHaveLength(1);
-    expect(jobs[0]?.targetId).toBe("account-luogu");
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.targetId).toBe("account-luogu");
   });
 });

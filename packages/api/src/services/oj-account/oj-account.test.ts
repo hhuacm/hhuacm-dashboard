@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshJob } from "@hhuacm-dashboard/db/schema/refresh-job";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -95,10 +95,10 @@ describe("addOjAccount", () => {
       userId: "retired-luogu-user",
     });
 
-    const refreshJobs = await db.select().from(refreshJob);
+    const refreshRequests = await db.select().from(refreshRequest);
 
-    expect(refreshJobs).toHaveLength(3);
-    expect(refreshJobs.map((job) => job.kind).sort()).toEqual([
+    expect(refreshRequests).toHaveLength(3);
+    expect(refreshRequests.map((request) => request.kind).sort()).toEqual([
       "codeforces.accountStats",
       "luogu.accountStats",
       "user.awardsFromLuogu",
