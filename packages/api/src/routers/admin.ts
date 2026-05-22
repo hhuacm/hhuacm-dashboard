@@ -1,10 +1,8 @@
 import { adminProcedure, router } from "../index";
-import {
-  deleteAdminUser,
-  getAdminUser,
-  getAdminUsersMetadata,
-  listAdminUsers,
-} from "../services/admin-users";
+import { deleteAdminUser } from "../services/admin-users/delete-user";
+import { getAdminUser } from "../services/admin-users/detail";
+import { listAdminUsers } from "../services/admin-users/list-query";
+import { getAdminUsersMetadata } from "../services/admin-users/metadata";
 import {
   deleteOjAccount,
   upsertOjAccount,
