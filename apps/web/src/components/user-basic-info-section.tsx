@@ -18,14 +18,11 @@ import {
   type MemberStatus,
   memberStatusLabels,
 } from "@hhuacm-dashboard/domain";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save } from "lucide-react";
-import {
-  type FormEvent,
-  type Key,
-  type ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import { type Key, type ReactNode, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   buildProfileFormValues,
   emptyProfileFormValues,
@@ -33,7 +30,6 @@ import {
   getProfileDisplayValue,
   hasProfileUpdateValues,
   type ProfileData,
-  type ProfileFieldKey,
   type ProfileFormValues,
   type ProfileUpdateValues,
   profileFieldConfigs,
@@ -84,9 +80,16 @@ interface BasicInfoFieldInputProps {
   gradeOptions: string[];
   isChanged?: boolean;
   isDisabled?: boolean;
-  onChange: (field: ProfileFieldKey, value: string) => void;
+  onChange: (value: string) => void;
   value: string;
 }
+
+const profileFormSchema = z.object({
+  grade: z.string(),
+  major: z.string(),
+  realName: z.string(),
+  studentId: z.string(),
+}) satisfies z.ZodType<ProfileFormValues>;
 
 const isMemberStatus = (
   status: null | string | undefined
@@ -132,7 +135,7 @@ function BasicInfoFieldInput({
 }: BasicInfoFieldInputProps) {
   if (field.key === "grade") {
     const handleGradeChange = (key: Key | null) => {
-      onChange(field.key, typeof key === "string" ? key : "");
+      onChange(typeof key === "string" ? key : "");
     };
 
     return (
@@ -172,7 +175,7 @@ function BasicInfoFieldInput({
       fullWidth
       isDisabled={isDisabled}
       name={field.key}
-      onChange={(nextValue) => onChange(field.key, nextValue)}
+      onChange={onChange}
       value={value}
     >
       <DirtyFieldLabel isChanged={isChanged} label={field.label} />
@@ -195,13 +198,16 @@ export function UserBasicInfoSection({
   profile,
 }: UserBasicInfoSectionProps) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [formValues, setFormValues] = useState<ProfileFormValues>(
-    emptyProfileFormValues
-  );
   const [originalFormValues, setOriginalFormValues] =
     useState<ProfileFormValues>(emptyProfileFormValues);
   const [dialogMessage, setDialogMessage] =
     useState<null | UserBasicInfoMessage>(null);
+  const form = useForm<ProfileFormValues>({
+    defaultValues: emptyProfileFormValues,
+    resolver: zodResolver(profileFormSchema),
+  });
+  const { control, handleSubmit: handleFormSubmit, reset, watch } = form;
+  const formValues = watch();
 
   useEffect(() => {
     if (isEditorOpen) {
@@ -209,9 +215,9 @@ export function UserBasicInfoSection({
     }
 
     const nextFormValues = buildProfileFormValues(profile);
-    setFormValues(nextFormValues);
+    reset(nextFormValues);
     setOriginalFormValues(nextFormValues);
-  }, [isEditorOpen, profile]);
+  }, [isEditorOpen, profile, reset]);
 
   const changedProfileValues = getChangedProfileValues(
     formValues,
@@ -224,7 +230,7 @@ export function UserBasicInfoSection({
 
   const openEditor = () => {
     const nextFormValues = buildProfileFormValues(profile);
-    setFormValues(nextFormValues);
+    reset(nextFormValues);
     setOriginalFormValues(nextFormValues);
     setDialogMessage(null);
     onClearMessage?.();
@@ -239,20 +245,24 @@ export function UserBasicInfoSection({
     setIsEditorOpen(false);
   };
 
-  const handleInputChange = (field: ProfileFieldKey, value: string) => {
+  const handleInputChange = (
+    value: string,
+    onChange: (value: string) => void
+  ) => {
     setDialogMessage(null);
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
-    }));
+    onChange(value);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = handleFormSubmit(async (values) => {
     setDialogMessage(null);
     onClearMessage?.();
 
-    if (!hasProfileUpdateValues(changedProfileValues)) {
+    const nextChangedProfileValues = getChangedProfileValues(
+      values,
+      originalFormValues
+    );
+
+    if (!hasProfileUpdateValues(nextChangedProfileValues)) {
       setDialogMessage({
         text: "没有需要保存的修改。",
         tone: "success",
@@ -261,7 +271,7 @@ export function UserBasicInfoSection({
     }
 
     try {
-      await onSubmit(changedProfileValues);
+      await onSubmit(nextChangedProfileValues);
       setIsEditorOpen(false);
     } catch (error) {
       setDialogMessage({
@@ -269,7 +279,7 @@ export function UserBasicInfoSection({
         tone: "danger",
       });
     }
-  };
+  });
 
   return (
     <>
@@ -357,14 +367,22 @@ export function UserBasicInfoSection({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profileFieldConfigs.map((field) => (
-                    <BasicInfoFieldInput
-                      field={field}
-                      gradeOptions={gradeOptions}
-                      isChanged={field.key in changedProfileValues}
-                      isDisabled={isLoading || isSaving}
+                    <Controller
+                      control={control}
                       key={field.key}
-                      onChange={handleInputChange}
-                      value={formValues[field.key]}
+                      name={field.key}
+                      render={({ field: formField }) => (
+                        <BasicInfoFieldInput
+                          field={field}
+                          gradeOptions={gradeOptions}
+                          isChanged={field.key in changedProfileValues}
+                          isDisabled={isLoading || isSaving}
+                          onChange={(value) =>
+                            handleInputChange(value, formField.onChange)
+                          }
+                          value={formField.value}
+                        />
+                      )}
                     />
                   ))}
                 </div>

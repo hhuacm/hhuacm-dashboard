@@ -15,10 +15,13 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Code2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { type FormEvent, type Key, useMemo, useState } from "react";
+import { type Key, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import {
   getOjPlatformConfig,
@@ -53,6 +56,24 @@ type AccountDialog =
       mode: "edit";
       platform: OjPlatform;
     };
+
+interface OjAccountFormValues {
+  handle: string;
+  platform: OjPlatform;
+}
+
+const emptyOjAccountFormValues: OjAccountFormValues = {
+  handle: "",
+  platform: "luogu",
+};
+
+const ojAccountFormSchema = z.object({
+  handle: z.string().trim().min(1, "请填写 OJ 账号昵称。"),
+  platform: z.custom<OjPlatform>(
+    (value) => typeof value === "string" && isOjPlatform(value),
+    { message: "请选择 OJ 平台。" }
+  ),
+}) satisfies z.ZodType<OjAccountFormValues>;
 
 const getOriginalDialogHandle = (
   accountsByPlatform: Map<OjPlatform, OjAccount>,
@@ -136,8 +157,6 @@ export function OjAccountSection({
   const queryClient = useQueryClient();
   const settingsProfileQueryKey = trpc.settings.profile.get.queryKey();
   const [dialog, setDialog] = useState<AccountDialog | null>(null);
-  const [formPlatform, setFormPlatform] = useState<OjPlatform>("luogu");
-  const [formHandle, setFormHandle] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<OjAccount | null>(null);
   const [message, setMessage] = useState<OjAccountMessage | null>(null);
   const [dialogMessage, setDialogMessage] = useState<OjAccountMessage | null>(
@@ -146,6 +165,12 @@ export function OjAccountSection({
   const [deleteMessage, setDeleteMessage] = useState<OjAccountMessage | null>(
     null
   );
+  const form = useForm<OjAccountFormValues>({
+    defaultValues: emptyOjAccountFormValues,
+    resolver: zodResolver(ojAccountFormSchema),
+  });
+  const { control, handleSubmit: handleFormSubmit, reset, watch } = form;
+  const formValues = watch();
 
   const accountsByPlatform = useMemo(() => {
     const nextAccounts = new Map<OjPlatform, OjAccount>();
@@ -226,19 +251,19 @@ export function OjAccountSection({
 
   const isSaving = addAccount.isPending || updateAccount.isPending;
   const isBusy = isSaving || deleteAccount.isPending;
-  const dialogPlatformConfig = getOjPlatformConfig(formPlatform);
+  const dialogPlatformConfig = getOjPlatformConfig(formValues.platform);
   const originalDialogHandle = getOriginalDialogHandle(
     accountsByPlatform,
     dialog
   );
   const isHandleChanged = isOjHandleChanged(
     dialog,
-    formHandle,
+    formValues.handle,
     originalDialogHandle
   );
   const dialogTitle =
     dialog?.mode === "edit"
-      ? `编辑 ${dialogPlatformConfig?.label ?? formPlatform} 账号`
+      ? `编辑 ${dialogPlatformConfig?.label ?? formValues.platform} 账号`
       : "添加 OJ 账号";
 
   const openAddDialog = (platform?: OjPlatform) => {
@@ -249,16 +274,20 @@ export function OjAccountSection({
     }
 
     setDialog({ mode: "add" });
-    setFormPlatform(nextPlatform);
-    setFormHandle("");
+    reset({
+      handle: "",
+      platform: nextPlatform,
+    });
     setMessage(null);
     setDialogMessage(null);
   };
 
   const openEditDialog = (account: OjAccount) => {
     setDialog({ mode: "edit", platform: account.platform });
-    setFormPlatform(account.platform);
-    setFormHandle(account.handle);
+    reset({
+      handle: account.handle,
+      platform: account.platform,
+    });
     setMessage(null);
     setDialogMessage(null);
   };
@@ -271,41 +300,47 @@ export function OjAccountSection({
     setDialog(null);
   };
 
-  const handlePlatformSelectionChange = (key: Key | null) => {
+  const handlePlatformSelectionChange = (
+    key: Key | null,
+    onChange: (value: OjPlatform) => void
+  ) => {
     if (typeof key !== "string" || !isOjPlatform(key)) {
       return;
     }
 
-    setFormPlatform(key);
+    setDialogMessage(null);
+    onChange(key);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = handleFormSubmit(
+    (values) => {
+      if (!dialog) {
+        return;
+      }
 
-    const handle = formHandle.trim();
+      setMessage(null);
+      setDialogMessage(null);
 
-    if (!handle) {
+      if (dialog.mode === "add") {
+        addAccount.mutate({ handle: values.handle, platform: values.platform });
+        return;
+      }
+
+      updateAccount.mutate({
+        handle: values.handle,
+        platform: dialog.platform,
+      });
+    },
+    (errors) => {
       setDialogMessage({
-        text: "请填写 OJ 账号昵称。",
+        text:
+          errors.handle?.message ??
+          errors.platform?.message ??
+          "请检查 OJ 账号信息。",
         tone: "danger",
       });
-      return;
     }
-
-    if (!dialog) {
-      return;
-    }
-
-    setMessage(null);
-    setDialogMessage(null);
-
-    if (dialog.mode === "add") {
-      addAccount.mutate({ handle, platform: formPlatform });
-      return;
-    }
-
-    updateAccount.mutate({ handle, platform: dialog.platform });
-  };
+  );
 
   const handleDeleteConfirm = () => {
     if (!deleteTarget) {
@@ -473,34 +508,42 @@ export function OjAccountSection({
               </Modal.Header>
               <Modal.Body className="grid gap-4 px-0.5 pt-3 pb-0.5">
                 {dialog?.mode === "add" ? (
-                  <Select
-                    fullWidth
-                    isDisabled={isSaving}
-                    onSelectionChange={handlePlatformSelectionChange}
-                    placeholder="选择平台"
-                    selectedKey={formPlatform}
-                    variant="secondary"
-                  >
-                    <Label>平台</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {availablePlatforms.map((platform) => (
-                          <ListBox.Item
-                            id={platform.key}
-                            key={platform.key}
-                            textValue={platform.label}
-                          >
-                            {platform.label}
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                  <Controller
+                    control={control}
+                    name="platform"
+                    render={({ field }) => (
+                      <Select
+                        fullWidth
+                        isDisabled={isSaving}
+                        onSelectionChange={(key) =>
+                          handlePlatformSelectionChange(key, field.onChange)
+                        }
+                        placeholder="选择平台"
+                        selectedKey={field.value}
+                        variant="secondary"
+                      >
+                        <Label>平台</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {availablePlatforms.map((platform) => (
+                              <ListBox.Item
+                                id={platform.key}
+                                key={platform.key}
+                                textValue={platform.label}
+                              >
+                                {platform.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    )}
+                  />
                 ) : null}
 
                 {dialogMessage ? (
@@ -514,23 +557,32 @@ export function OjAccountSection({
                   </Alert>
                 ) : null}
 
-                <TextField
-                  fullWidth
-                  isDisabled={isSaving}
+                <Controller
+                  control={control}
                   name="handle"
-                  onChange={setFormHandle}
-                  value={formHandle}
-                >
-                  <DirtyFieldLabel
-                    isChanged={isHandleChanged}
-                    label="账号昵称"
-                  />
-                  <Input
-                    autoComplete="off"
-                    placeholder="填写该平台的账号昵称"
-                    variant="secondary"
-                  />
-                </TextField>
+                  render={({ field }) => (
+                    <TextField
+                      fullWidth
+                      isDisabled={isSaving}
+                      name={field.name}
+                      onChange={(value) => {
+                        setDialogMessage(null);
+                        field.onChange(value);
+                      }}
+                      value={field.value}
+                    >
+                      <DirtyFieldLabel
+                        isChanged={isHandleChanged}
+                        label="账号昵称"
+                      />
+                      <Input
+                        autoComplete="off"
+                        placeholder="填写该平台的账号昵称"
+                        variant="secondary"
+                      />
+                    </TextField>
+                  )}
+                />
               </Modal.Body>
               <Modal.Footer>
                 <Button

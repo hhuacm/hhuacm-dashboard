@@ -16,11 +16,14 @@ import {
   TextField,
 } from "@heroui/react";
 import { getGradeOptions } from "@hhuacm-dashboard/domain";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type Key, useState } from "react";
+import { type Key, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { AppShell } from "@/components/app-shell";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
@@ -28,11 +31,33 @@ import {
   emptyProfileFormValues,
   getChangedProfileValues,
   hasProfileUpdateValues,
-  type ProfileFieldKey,
   type ProfileFormValues,
   profileFieldConfigs,
 } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
+
+type RegisterFormValues = ProfileFormValues & {
+  email: string;
+  password: string;
+  username: string;
+};
+
+const emptyRegisterFormValues: RegisterFormValues = {
+  ...emptyProfileFormValues,
+  email: "",
+  password: "",
+  username: "",
+};
+
+const registerFormSchema = z.object({
+  email: z.string().trim().min(1, "请输入邮箱。"),
+  grade: z.string(),
+  major: z.string(),
+  password: z.string().min(1, "请输入密码。"),
+  realName: z.string(),
+  studentId: z.string(),
+  username: z.string().trim().min(1, "请输入用户名。"),
+}) satisfies z.ZodType<RegisterFormValues>;
 
 const getRegisterErrorMessage = (message: string | undefined) => {
   if (!message) {
@@ -66,7 +91,7 @@ interface RegisterProfileFieldInputProps {
   field: (typeof profileFieldConfigs)[number];
   gradeOptions: string[];
   isDisabled?: boolean;
-  onChange: (field: ProfileFieldKey, value: string) => void;
+  onChange: (value: string) => void;
   value: string;
 }
 
@@ -79,7 +104,7 @@ function RegisterProfileFieldInput({
 }: RegisterProfileFieldInputProps) {
   if (field.key === "grade") {
     const handleGradeChange = (key: Key | null) => {
-      onChange(field.key, typeof key === "string" ? key : "");
+      onChange(typeof key === "string" ? key : "");
     };
 
     return (
@@ -120,7 +145,7 @@ function RegisterProfileFieldInput({
       isDisabled={isDisabled}
       key={field.key}
       name={field.key}
-      onChange={(value) => onChange(field.key, value)}
+      onChange={onChange}
       value={value}
     >
       <Label>{field.label}</Label>
@@ -137,86 +162,72 @@ export default function RegisterPage() {
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [profileFormValues, setProfileFormValues] = useState<ProfileFormValues>(
-    emptyProfileFormValues
-  );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const gradeOptions = getGradeOptions();
+  const form = useForm<RegisterFormValues>({
+    defaultValues: emptyRegisterFormValues,
+    resolver: zodResolver(registerFormSchema),
+  });
+  const { control, handleSubmit: handleFormSubmit } = form;
   const updateProfile = useMutation(
     trpc.settings.profile.update.mutationOptions()
   );
 
-  const handleProfileInputChange = (field: ProfileFieldKey, value: string) => {
-    setProfileFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
-    }));
-  };
+  const handleSubmit = handleFormSubmit(
+    async (values) => {
+      const normalizedUsername = values.username;
+      const normalizedEmail = values.email.toLowerCase();
+      setError("");
+      setSubmitting(true);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+      try {
+        const response = await authClient.signUp.email({
+          email: normalizedEmail,
+          name: normalizedUsername,
+          password: values.password,
+          username: normalizedUsername,
+        });
 
-    const normalizedUsername = username.trim();
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!normalizedUsername) {
-      setError("请输入用户名。");
-      return;
-    }
-
-    if (!normalizedEmail) {
-      setError("请输入邮箱。");
-      return;
-    }
-
-    if (!password) {
-      setError("请输入密码。");
-      return;
-    }
-
-    setError("");
-    setSubmitting(true);
-
-    try {
-      const response = await authClient.signUp.email({
-        email: normalizedEmail,
-        name: normalizedUsername,
-        password,
-        username: normalizedUsername,
-      });
-
-      if (response.error) {
-        setError(getRegisterErrorMessage(response.error.message));
-        return;
-      }
-
-      const changedProfileValues = getChangedProfileValues(
-        profileFormValues,
-        emptyProfileFormValues
-      );
-
-      if (hasProfileUpdateValues(changedProfileValues)) {
-        try {
-          await updateProfile.mutateAsync(changedProfileValues);
-        } catch {
-          setError("账号已创建，但个人信息保存失败，可稍后在资料设置页补填。");
-          await session.refetch();
+        if (response.error) {
+          setError(getRegisterErrorMessage(response.error.message));
           return;
         }
-      }
 
-      await session.refetch();
-      router.push(`/profile/${normalizedUsername}` as Route);
-    } catch {
-      setError("认证服务暂时不可用，请确认后端和数据库已启动。");
-    } finally {
-      setSubmitting(false);
+        const changedProfileValues = getChangedProfileValues(
+          values,
+          emptyProfileFormValues
+        );
+
+        if (hasProfileUpdateValues(changedProfileValues)) {
+          try {
+            await updateProfile.mutateAsync(changedProfileValues);
+          } catch {
+            setError(
+              "账号已创建，但个人信息保存失败，可稍后在资料设置页补填。"
+            );
+            await session.refetch();
+            return;
+          }
+        }
+
+        await session.refetch();
+        router.push(`/profile/${normalizedUsername}` as Route);
+      } catch {
+        setError("认证服务暂时不可用，请确认后端和数据库已启动。");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    (errors) => {
+      setError(
+        errors.username?.message ??
+          errors.email?.message ??
+          errors.password?.message ??
+          "请检查注册信息。"
+      );
     }
-  };
+  );
 
   return (
     <AppShell
@@ -264,52 +275,70 @@ export default function RegisterPage() {
             <Form className="contents" onSubmit={handleSubmit}>
               <Card.Content>
                 <div className="flex flex-col gap-4">
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
+                  <Controller
+                    control={control}
                     name="username"
-                    onChange={setUsername}
-                    value={username}
-                  >
-                    <Label>用户名</Label>
-                    <Input
-                      autoComplete="username"
-                      placeholder="例如 hhuacmer"
-                      variant="secondary"
-                    />
-                  </TextField>
+                    render={({ field }) => (
+                      <TextField
+                        fullWidth
+                        isDisabled={submitting}
+                        name={field.name}
+                        onChange={field.onChange}
+                        value={field.value}
+                      >
+                        <Label>用户名</Label>
+                        <Input
+                          autoComplete="username"
+                          placeholder="例如 hhuacmer"
+                          variant="secondary"
+                        />
+                      </TextField>
+                    )}
+                  />
 
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
+                  <Controller
+                    control={control}
                     name="email"
-                    onChange={setEmail}
-                    type="email"
-                    value={email}
-                  >
-                    <Label>邮箱</Label>
-                    <Input
-                      autoComplete="email"
-                      placeholder="name@example.com"
-                      variant="secondary"
-                    />
-                  </TextField>
+                    render={({ field }) => (
+                      <TextField
+                        fullWidth
+                        isDisabled={submitting}
+                        name={field.name}
+                        onChange={field.onChange}
+                        type="email"
+                        value={field.value}
+                      >
+                        <Label>邮箱</Label>
+                        <Input
+                          autoComplete="email"
+                          placeholder="name@example.com"
+                          variant="secondary"
+                        />
+                      </TextField>
+                    )}
+                  />
 
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
+                  <Controller
+                    control={control}
                     name="password"
-                    onChange={setPassword}
-                    type="password"
-                    value={password}
-                  >
-                    <Label>密码</Label>
-                    <Input
-                      autoComplete="new-password"
-                      placeholder="输入密码"
-                      variant="secondary"
-                    />
-                  </TextField>
+                    render={({ field }) => (
+                      <TextField
+                        fullWidth
+                        isDisabled={submitting}
+                        name={field.name}
+                        onChange={field.onChange}
+                        type="password"
+                        value={field.value}
+                      >
+                        <Label>密码</Label>
+                        <Input
+                          autoComplete="new-password"
+                          placeholder="输入密码"
+                          variant="secondary"
+                        />
+                      </TextField>
+                    )}
+                  />
 
                   <Separator />
 
@@ -319,13 +348,19 @@ export default function RegisterPage() {
                     </Fieldset.Legend>
                     <Fieldset.Group className="grid gap-4 sm:grid-cols-2">
                       {profileFieldConfigs.map((field) => (
-                        <RegisterProfileFieldInput
-                          field={field}
-                          gradeOptions={gradeOptions}
-                          isDisabled={submitting}
+                        <Controller
+                          control={control}
                           key={field.key}
-                          onChange={handleProfileInputChange}
-                          value={profileFormValues[field.key]}
+                          name={field.key}
+                          render={({ field: profileField }) => (
+                            <RegisterProfileFieldInput
+                              field={field}
+                              gradeOptions={gradeOptions}
+                              isDisabled={submitting}
+                              onChange={profileField.onChange}
+                              value={profileField.value}
+                            />
+                          )}
                         />
                       ))}
                     </Fieldset.Group>

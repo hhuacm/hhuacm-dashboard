@@ -11,13 +11,31 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { AppShell } from "@/components/app-shell";
 import { authClient, getPreferredUsername } from "@/utils/auth-client";
+
+interface LoginFormValues {
+  identifier: string;
+  password: string;
+}
+
+const loginFormSchema = z.object({
+  identifier: z.string().trim().min(1, "请输入邮箱或用户名。"),
+  password: z.string().min(1, "请输入密码。"),
+}) satisfies z.ZodType<LoginFormValues>;
+
+const emptyLoginFormValues: LoginFormValues = {
+  identifier: "",
+  password: "",
+};
 
 const getLoginErrorMessage = (message: string | undefined) => {
   if (!message) {
@@ -54,61 +72,60 @@ export default function LoginPage() {
   const redirectPath = getSafeRedirectPath(searchParams.get("redirect"));
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const form = useForm<LoginFormValues>({
+    defaultValues: emptyLoginFormValues,
+    resolver: zodResolver(loginFormSchema),
+  });
+  const { control, handleSubmit: handleFormSubmit } = form;
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = handleFormSubmit(
+    async (values) => {
+      const normalizedIdentifier = values.identifier;
+      setError("");
+      setSubmitting(true);
 
-    const normalizedIdentifier = identifier.trim();
+      try {
+        const response = isEmailIdentifier(normalizedIdentifier)
+          ? await authClient.signIn.email({
+              email: normalizedIdentifier.toLowerCase(),
+              password: values.password,
+            })
+          : await authClient.signIn.username({
+              password: values.password,
+              username: normalizedIdentifier,
+            });
 
-    if (!normalizedIdentifier) {
-      setError("请输入邮箱或用户名。");
-      return;
-    }
+        if (response.error) {
+          setError(getLoginErrorMessage(response.error.message));
+          return;
+        }
 
-    if (!password) {
-      setError("请输入密码。");
-      return;
-    }
-
-    setError("");
-    setSubmitting(true);
-
-    try {
-      const response = isEmailIdentifier(normalizedIdentifier)
-        ? await authClient.signIn.email({
-            email: normalizedIdentifier.toLowerCase(),
-            password,
-          })
-        : await authClient.signIn.username({
-            password,
-            username: normalizedIdentifier,
-          });
-
-      if (response.error) {
-        setError(getLoginErrorMessage(response.error.message));
-        return;
+        router.push(
+          redirectPath === "/profile"
+            ? getUserProfilePath(
+                isEmailIdentifier(normalizedIdentifier)
+                  ? user?.username
+                  : normalizedIdentifier
+              )
+            : redirectPath
+        );
+        await session.refetch();
+      } catch {
+        setError("认证服务暂时不可用，请确认后端和数据库已启动。");
+      } finally {
+        setSubmitting(false);
       }
-
-      router.push(
-        redirectPath === "/profile"
-          ? getUserProfilePath(
-              isEmailIdentifier(normalizedIdentifier)
-                ? user?.username
-                : normalizedIdentifier
-            )
-          : redirectPath
+    },
+    (errors) => {
+      setError(
+        errors.identifier?.message ??
+          errors.password?.message ??
+          "请检查登录信息。"
       );
-      await session.refetch();
-    } catch {
-      setError("认证服务暂时不可用，请确认后端和数据库已启动。");
-    } finally {
-      setSubmitting(false);
     }
-  };
+  );
 
   return (
     <AppShell
@@ -160,36 +177,48 @@ export default function LoginPage() {
             <Form className="contents" onSubmit={handleSubmit}>
               <Card.Content>
                 <div className="flex flex-col gap-4">
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
+                  <Controller
+                    control={control}
                     name="identifier"
-                    onChange={setIdentifier}
-                    value={identifier}
-                  >
-                    <Label>邮箱或用户名</Label>
-                    <Input
-                      autoComplete="username"
-                      placeholder="邮箱或 hhuacmer"
-                      variant="secondary"
-                    />
-                  </TextField>
+                    render={({ field }) => (
+                      <TextField
+                        fullWidth
+                        isDisabled={submitting}
+                        name={field.name}
+                        onChange={field.onChange}
+                        value={field.value}
+                      >
+                        <Label>邮箱或用户名</Label>
+                        <Input
+                          autoComplete="username"
+                          placeholder="邮箱或 hhuacmer"
+                          variant="secondary"
+                        />
+                      </TextField>
+                    )}
+                  />
 
-                  <TextField
-                    fullWidth
-                    isDisabled={submitting}
+                  <Controller
+                    control={control}
                     name="password"
-                    onChange={setPassword}
-                    type="password"
-                    value={password}
-                  >
-                    <Label>密码</Label>
-                    <Input
-                      autoComplete="current-password"
-                      placeholder="输入密码"
-                      variant="secondary"
-                    />
-                  </TextField>
+                    render={({ field }) => (
+                      <TextField
+                        fullWidth
+                        isDisabled={submitting}
+                        name={field.name}
+                        onChange={field.onChange}
+                        type="password"
+                        value={field.value}
+                      >
+                        <Label>密码</Label>
+                        <Input
+                          autoComplete="current-password"
+                          placeholder="输入密码"
+                          variant="secondary"
+                        />
+                      </TextField>
+                    )}
+                  />
 
                   {error ? (
                     <Alert status="danger">

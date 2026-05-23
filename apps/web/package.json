@@ -10,6 +10,7 @@
   "dependencies": {
     "@heroui/react": "catalog:",
     "@heroui/styles": "catalog:",
+    "@hookform/resolvers": "5",
     "@hhuacm-dashboard/api": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
@@ -24,8 +25,10 @@
     "next": "16",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "7",
     "react-markdown": "10",
-    "remark-gfm": "4"
+    "remark-gfm": "4",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@hhuacm-dashboard/config": "workspace:*",
