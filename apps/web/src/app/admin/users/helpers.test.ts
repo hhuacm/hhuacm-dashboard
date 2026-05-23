@@ -26,7 +26,7 @@ const createUser = (
   name: input.name ?? "",
   ojAccounts: input.ojAccounts ?? [],
   realName: input.realName ?? null,
-  role: input.role ?? "member",
+  role: input.role ?? "user",
   studentId: input.studentId ?? null,
   username: input.username ?? null,
 });

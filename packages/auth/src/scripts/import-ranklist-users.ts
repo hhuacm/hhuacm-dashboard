@@ -593,7 +593,7 @@ const importPlannedUsers = async (
           emailVerified: true,
           id: plan.userId,
           name: candidate.username,
-          role: "member",
+          role: "user",
           updatedAt: now,
           username: candidate.username,
         });

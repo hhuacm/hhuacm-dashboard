@@ -34,7 +34,7 @@ create table user (
   image text,
   username text unique,
   display_username text,
-  role text default 'member' not null,
+  role text default 'user' not null,
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
 )

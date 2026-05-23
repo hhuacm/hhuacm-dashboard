@@ -59,7 +59,7 @@ export const memberStatusConfig = {
 export type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
 export type SortColumn = (typeof sortableColumns)[number];
 export type SortDirection = "ascending" | "descending";
-export type UserRole = "admin" | "member";
+export type UserRole = "admin" | "user";
 export type AdminUsersColumnId =
   | "email"
   | "grade"

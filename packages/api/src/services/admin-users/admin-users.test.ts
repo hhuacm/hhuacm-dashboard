@@ -23,7 +23,7 @@ const createUser = async (
     memberStatus?: MemberStatus;
     name?: string;
     realName?: string;
-    role?: "admin" | "member";
+    role?: "admin" | "user";
     studentId?: string;
     username?: null | string;
   }
@@ -32,7 +32,7 @@ const createUser = async (
     email: input.email ?? `${input.id}@example.com`,
     id: input.id,
     name: input.name ?? input.id,
-    role: input.role ?? "member",
+    role: input.role ?? "user",
     username: input.username === undefined ? input.id : input.username,
   });
 
