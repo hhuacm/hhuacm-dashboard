@@ -8,14 +8,6 @@ HHUACM Dashboard 是面向竞赛与团队运营的后台产品。
 
 参考成熟后台或工具类产品时（如 Vercel），只提取克制感、层级感、组件完成度和单主色策略，不复制它们的专有图形、行业元素或页面结构。
 
-## 优先级
-
-1. 产品任务优先于视觉装饰。
-2. 信息清晰优先于视觉识别。
-3. 可访问性优先于特殊样式。
-4. 统一组件优先于局部手写样式。
-5. 设计准则优先于外部参考细节。
-
 ## 页面类型
 
 ### 公开入口
@@ -25,7 +17,7 @@ HHUACM Dashboard 是面向竞赛与团队运营的后台产品。
 - 可以使用较大的标题。
 - 可以使用更明显的蓝白视觉。
 - 主操作必须清楚。
-- 表单、面板、按钮仍使用统一基础组件。
+- 表单、面板、按钮使用统一基础组件。
 
 ### 后台页面
 
@@ -39,53 +31,17 @@ HHUACM Dashboard 是面向竞赛与团队运营的后台产品。
 
 ## 组件策略
 
-基础控件优先使用 HeroUI V3 React 组件，再按本项目的 HeroUI/Tailwind design tokens 收敛颜色、圆角、尺寸和状态。
+基础控件优先使用 HeroUI V3 React 组件，再按本项目的 HeroUI/Tailwind Design tokens 收敛颜色、圆角、尺寸和状态。
 
-这里的目标不是堆叠一次性样式，而是复用 HeroUI V3 compound components、BEM classes、语义 token、键盘交互和状态处理。
-
-只保留当前界面实际使用的基础控件。
-
-当前需要的基础控件：
-
-- Button
-- Input
-- Label
-- Dropdown
-- Card
-- Chip
-- Alert
-- Separator
-- Form
-- TextField
-- Fieldset
-
-Textarea、Checkbox、Radio、Select、Tooltip、Tabs、Table、Skeleton、Toast 等组件在真实功能需要时再添加。
+不堆叠一次性样式，而是复用 HeroUI V3 compound components、BEM classes、语义 token、键盘交互和状态处理。
 
 扩展基础控件时，优先覆盖 HeroUI token 或 BEM class，不在页面中堆一次性 Tailwind class。
 
-业务组件可以自定义，但必须组合基础控件。
-
-推荐业务组件：
-
-- 应用壳（DashboardShell）
-- 顶部栏（AppHeader）
-- 侧边栏（Sidebar）
-- 页面标题区（PageHeader）
-- 状态卡片（StatusCard）
-- 指标卡片（MetricCard）
-- 空状态（EmptyState）
-- 数据表格（DataTable）
-- 表单分组（FormSection）
-- 个人信息面板（ProfilePanel）
-- 服务状态面板（ServiceHealthPanel）
-- 比赛卡片（ContestCard）
-- 成员列表（MemberList）
-
-业务组件负责信息结构，基础组件负责交互一致性。
+业务组件可以自定义，但必须组合基础控件。业务组件负责信息结构，基础组件负责交互一致性。
 
 ## 颜色
 
-蓝白是方向，不是把所有元素染蓝。
+以蓝白作为主色调（是方向，不是把所有元素染蓝）。
 
 ### 色彩角色
 
@@ -124,7 +80,7 @@ Textarea、Checkbox、Radio、Select、Tooltip、Tabs、Table、Skeleton、Toast
 
 蓝色不用于所有卡片背景、所有边框、所有图标、所有 badge、所有阴影和整页装饰。
 
-一个页面第一眼“全是蓝”时，降低蓝色面积。
+一个页面第一眼「全是蓝」时，降低蓝色面积。
 
 ## 背景与装饰
 
@@ -237,30 +193,6 @@ Textarea、Checkbox、Radio、Select、Tooltip、Tabs、Table、Skeleton、Toast
 
 需要查找数据时，提供搜索、筛选或排序。
 
-### 空状态
-
-空状态说明没有内容的原因，并给出下一步操作。
-
-空状态不使用假的预览内容代替真实内容。
-
-空状态不使用夸张插画抢注意力。
-
-## 文案
-
-文案短、准、直接。
-
-后台页面不解释产品有多好，只帮助用户完成任务。
-
-少用“优雅”“强大”“极致”等空泛形容词。
-
-推荐：“服务状态”
-
-推荐：“后端暂时不可用，请确认 API 服务已启动。”
-
-不推荐：“Elegant control room for team operations.”
-
-不推荐：“一个优雅强大的竞赛工作台入口。”
-
 ## 反模式
 
 避免：
@@ -298,7 +230,7 @@ Textarea、Checkbox、Radio、Select、Tooltip、Tabs、Table、Skeleton、Toast
 
 设计服务任务。
 
-蓝色保持稀缺。
+蓝色保持适当。
 
 基础控件保持统一。
 

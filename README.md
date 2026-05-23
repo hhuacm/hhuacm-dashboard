@@ -1,63 +1,129 @@
-# hhuacm-dashboard
+# HHUACM Dashboard
 
-HHUACM Dashboard 项目主要用于河海大学 ACM 队校内成员信息统计管理、OJ 信息查询统计、奖项整理等队内事务。
+HHUACM Dashboard 是面向河海大学 ACM 队内部使用的成员与数据管理系统，用于整理队员基础信息、维护 OJ 账号、统计公开榜单、沉淀获奖记录，并承载后续队内事务管理能力。
 
-## Development
+项目当前仍以测试与快速演进为主，代码组织优先追求清晰、可读和容易继续调整。
 
-This monorepo uses Bun, Turborepo, Next.js, Hono, tRPC, Tailwind CSS v4, and HeroUI V3.
+## 技术栈
 
-Install dependencies:
+本项目是 Bun workspace monorepo，主要使用：
+
+- Bun
+- Turborepo
+- Next.js
+- Hono
+- tRPC
+- Drizzle ORM
+- libSQL / Turso
+- React
+- Tailwind CSS v4
+- HeroUI V3
+- Better Auth
+- React Hook Form
+- Zod
+
+## 目录结构
+
+```text
+apps/
+  web/      前端应用，负责页面、交互和 UI 组件
+  server/   后端服务，负责 Hono 入口和 tRPC 接入
+
+packages/
+  api/      tRPC router 与应用接口
+  auth/     认证配置与认证相关逻辑
+  db/       数据库 schema、迁移和本地数据库命令
+  domain/   领域常量、枚举和纯业务规则
+  env/      环境变量读取与校验
+  config/   共享 TypeScript 配置
+```
+
+## 本地开发
+
+安装依赖：
 
 ```bash
 bun install
 ```
 
-Start the full development stack:
+启动完整开发环境：
 
 ```bash
 bun run dev
 ```
 
-By default, the web app runs at [http://localhost:3001](http://localhost:3001) and the API server runs at [http://localhost:3000](http://localhost:3000).
+默认端口：
 
-Run project checks:
+- Web 应用：[http://localhost:3001](http://localhost:3001)
+- API 服务：[http://localhost:3000](http://localhost:3000)
 
-```bash
-bun run check-types
-bun run check
-```
-
-Apply Ultracite/Biome fixes when needed:
+也可以单独启动某一侧：
 
 ```bash
-bun run fix
+bun run dev:web
+bun run dev:server
 ```
 
-Login and registration live on independent `/login` and `/register` pages using HeroUI `Card` and `Form` components. Theme CSS lives in the web app, while application screens import HeroUI V3 components directly from `@heroui/react`.
+## 数据库
 
-## Database
-
-Install the Turso CLI when needed:
+本地开发使用 libSQL / Turso。需要本地数据库时，先安装 Turso CLI：
 
 ```bash
 brew install tursodatabase/tap/turso
 ```
 
-Start a local Turso/libSQL database:
+启动本地数据库：
 
 ```bash
 bun run db:local
 ```
 
-Use this local server URL in `apps/server/.env`:
+在 `apps/server/.env` 中使用本地数据库地址：
 
 ```bash
 DATABASE_URL=http://127.0.0.1:8080
 DATABASE_AUTH_TOKEN=
 ```
 
-Apply the current Drizzle schema:
+将当前 Drizzle schema 推送到数据库：
 
 ```bash
 bun run db:push
 ```
+
+常用数据库命令：
+
+```bash
+bun run db:generate
+bun run db:migrate
+bun run db:studio
+```
+
+## 代码检查
+
+提交前至少运行：
+
+```bash
+bun run check-types
+bun x ultracite check
+```
+
+需要自动修复格式和静态检查问题时运行：
+
+```bash
+bun x ultracite fix
+```
+
+根目录也提供了等价脚本：
+
+```bash
+bun run check
+bun run fix
+```
+
+## 协作文档
+
+- `AGENTS.md`：面向 AI / LLM 协作者的项目协作准则、架构取舍和编码要求。
+- `DESIGN.md`：前端设计准则，描述产品气质、布局、颜色、组件和交互规则。
+
+README 只保留项目入口、启动方式和常用命令；更细的协作与设计约束以后分别维护在对应文档中。
