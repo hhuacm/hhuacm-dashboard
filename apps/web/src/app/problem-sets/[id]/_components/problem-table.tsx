@@ -1,4 +1,4 @@
-import { Card, Table } from "@heroui/react";
+import { Card, Table, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
@@ -31,7 +31,7 @@ function LinkedProblemText({
   isTruncated?: boolean;
   title?: string;
 }) {
-  return (
+  const link = (
     <a
       className={clsx(
         "inline-flex min-w-0 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline",
@@ -40,12 +40,25 @@ function LinkedProblemText({
       href={href}
       rel="noopener noreferrer"
       target="_blank"
-      title={title}
     >
       <span className={clsx(isTruncated && "block min-w-0 truncate")}>
         {children}
       </span>
     </a>
+  );
+
+  if (!(isTruncated && title)) {
+    return link;
+  }
+
+  return (
+    <Tooltip delay={0}>
+      <Tooltip.Trigger>{link}</Tooltip.Trigger>
+      <Tooltip.Content className="wrap-break-word max-w-96" showArrow>
+        <Tooltip.Arrow />
+        {title}
+      </Tooltip.Content>
+    </Tooltip>
   );
 }
 
