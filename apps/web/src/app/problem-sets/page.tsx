@@ -46,7 +46,7 @@ function ProblemSetCard({
         <Card.Header className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <Card.Description>洛谷题单</Card.Description>
-            <Card.Title className="mt-1 break-words text-lg leading-snug">
+            <Card.Title className="wrap-break-word mt-1 text-lg leading-snug">
               {title}
             </Card.Title>
           </div>

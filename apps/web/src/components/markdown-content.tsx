@@ -103,7 +103,7 @@ export function MarkdownContent({ emptyText, markdown }: MarkdownContentProps) {
   }
 
   return (
-    <div className="grid gap-3 break-words text-sm leading-6">
+    <div className="wrap-break-word grid gap-3 text-sm leading-6">
       <ReactMarkdown
         components={markdownComponents}
         remarkPlugins={[remarkGfm]}
