@@ -47,7 +47,7 @@ export function createAuth() {
         httpOnly: true,
       },
     },
-    plugins: [username()],
+    plugins: [username({ usernameNormalization: false })],
   });
 }
 

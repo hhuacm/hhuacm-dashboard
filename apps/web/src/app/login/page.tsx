@@ -102,13 +102,15 @@ export default function LoginPage() {
           return;
         }
 
+        const signedInUsername =
+          response.data?.user.username ??
+          (isEmailIdentifier(normalizedIdentifier)
+            ? user?.username
+            : normalizedIdentifier);
+
         router.push(
           redirectPath === "/profile"
-            ? getUserProfilePath(
-                isEmailIdentifier(normalizedIdentifier)
-                  ? user?.username
-                  : normalizedIdentifier
-              )
+            ? getUserProfilePath(signedInUsername)
             : redirectPath
         );
         await session.refetch();
