@@ -1,11 +1,10 @@
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
-import { isPublicActivityMemberStatus } from "../member-status";
 import {
   clearOjAccountRefresh,
   requestOjAccountRefresh,
@@ -57,15 +56,14 @@ export const clearCodeforcesStatsForUserAccounts = async (
   }
 };
 
-const isPublicActivityUser = async (db: Database, userId: string) => {
-  const [profile] = await db
-    .select({ memberStatus: userProfile.memberStatus })
-    .from(userProfile)
-    .where(eq(userProfile.userId, userId))
+const isCurrentMember = async (db: Database, userId: string) => {
+  const [member] = await db
+    .select({ userId: currentMember.userId })
+    .from(currentMember)
+    .where(eq(currentMember.userId, userId))
     .limit(1);
-  const memberStatus = profile?.memberStatus ?? defaultMemberStatus;
 
-  return isPublicActivityMemberStatus(memberStatus);
+  return Boolean(member);
 };
 
 export const requestOjAccountRefreshEffectsIfNeeded = async (
@@ -77,7 +75,7 @@ export const requestOjAccountRefreshEffectsIfNeeded = async (
     return;
   }
 
-  if (!(await isPublicActivityUser(db, userId))) {
+  if (!(await isCurrentMember(db, userId))) {
     return;
   }
 

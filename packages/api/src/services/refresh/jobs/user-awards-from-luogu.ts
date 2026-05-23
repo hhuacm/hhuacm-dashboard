@@ -1,18 +1,9 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { userAwardSync } from "@hhuacm-dashboard/db/schema/user-award";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 
 import type { Context } from "../../../context";
-import {
-  isPublicActivityMemberStatus,
-  publicActivityMemberStatuses,
-} from "../../member-status";
 import {
   markUserAwardsFromLuoguRefreshFailed,
   syncUserAwardsFromLuogu,
@@ -33,20 +24,13 @@ const luoguAccountFields = {
   userId: userOjAccount.userId,
 } as const;
 
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
-
 const handleUserAwardsFromLuoguRequest = async (
   db: Database,
   request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
-    .select({
-      ...luoguAccountFields,
-      memberStatus: memberStatusExpression,
-    })
+    .select(luoguAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
         eq(userOjAccount.id, request.targetId),
@@ -57,10 +41,6 @@ const handleUserAwardsFromLuoguRequest = async (
 
   if (!account) {
     throw new Error(`Luogu account does not exist: ${request.targetId}`);
-  }
-
-  if (!isPublicActivityMemberStatus(account.memberStatus)) {
-    return;
   }
 
   try {
@@ -75,8 +55,7 @@ const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
   const staleAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
       userAwardSync,
       and(
@@ -87,7 +66,6 @@ const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
     .where(
       and(
         eq(userOjAccount.platform, "luogu"),
-        inArray(memberStatusExpression, publicActivityMemberStatuses),
         or(
           isNull(userAwardSync.userId),
           isNull(userAwardSync.fetchedAt),

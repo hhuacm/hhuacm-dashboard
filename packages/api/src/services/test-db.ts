@@ -2,6 +2,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import {
   luoguAcceptedProblem,
   luoguAccountStats,
@@ -49,6 +50,19 @@ create table user_profile (
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
 )
+`,
+  `
+create view current_member as
+select
+  user.id as user_id,
+  user.username as username,
+  user_profile.real_name as real_name,
+  user_profile.grade as grade,
+  user_profile.student_id as student_id,
+  user_profile.major as major
+from user
+left join user_profile on user_profile.user_id = user.id
+where coalesce(user_profile.member_status, 'selection') in ('selection', 'active')
 `,
   `
 create table user_oj_account (
@@ -174,6 +188,7 @@ create table site_setting (
 
 const testSchema = {
   codeforcesAccountStats,
+  currentMember,
   luoguAcceptedProblem,
   luoguAccountStats,
   problemSet,

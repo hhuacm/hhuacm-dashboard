@@ -15,6 +15,7 @@ import {
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
 } from "./schema/codeforces-account-stats";
+import { currentMember } from "./schema/current-member";
 import {
   luoguAcceptedProblem,
   luoguAcceptedProblemRelations,
@@ -46,6 +47,7 @@ const schema = {
   accountRelations,
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
+  currentMember,
   luoguAcceptedProblem,
   luoguAcceptedProblemRelations,
   luoguAccountStats,

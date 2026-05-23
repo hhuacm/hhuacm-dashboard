@@ -101,7 +101,7 @@ describe("listCodeforcesRankRows", () => {
     });
   };
 
-  it("includes only public activity member statuses", async () => {
+  it("includes only current members", async () => {
     const db = await createServiceTestDb();
 
     await createRankUser(db, {

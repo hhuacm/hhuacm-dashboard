@@ -45,7 +45,7 @@ describe("user awards from Luogu refresh request", () => {
     });
   };
 
-  it("only enqueues stale Luogu award refreshes for public activity members", async () => {
+  it("only enqueues stale Luogu award refreshes for current members", async () => {
     const db = await createServiceTestDb();
     const staleFetchedAt = new Date("2026-01-01T00:00:00.000Z");
     const freshFetchedAt = new Date();
@@ -91,9 +91,13 @@ describe("user awards from Luogu refresh request", () => {
     expect(targetIds).not.toContain("account-frozen-user");
   });
 
-  it("does not delete retired users' cached awards", async () => {
+  it("handles queued retired users and preserves cached awards on failure", async () => {
     const db = await createServiceTestDb();
-    await createAccount(db, { id: "retired-user", memberStatus: "retired" });
+    await createAccount(db, {
+      id: "retired-user",
+      memberStatus: "retired",
+      profileUrl: "",
+    });
     await db.insert(userAward).values({
       contest: "Cached Contest",
       event: null,
@@ -114,9 +118,11 @@ describe("user awards from Luogu refresh request", () => {
     });
 
     const awards = await db.select().from(userAward);
+    const [sync] = await db.select().from(userAwardSync);
 
     expect(awards).toHaveLength(1);
     expect(awards[0]?.contest).toBe("Cached Contest");
+    expect(sync?.lastError).toBe("Luogu UID is missing");
   });
 
   it("records missing UID failures without deleting cached awards", async () => {

@@ -138,7 +138,7 @@ describe("getPublicProfile", () => {
     expect(refreshRequests).toHaveLength(0);
   });
 
-  it("enqueues missing awards refresh for public activity users", async () => {
+  it("enqueues missing awards refresh for current members", async () => {
     const db = await createServiceTestDb();
 
     await db.insert(user).values({

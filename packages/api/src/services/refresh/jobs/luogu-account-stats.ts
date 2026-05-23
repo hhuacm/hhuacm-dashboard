@@ -1,22 +1,13 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 
 import type { Context } from "../../../context";
 import {
   markLuoguAccountStatsRefreshFailed,
   syncLuoguAccountStats,
 } from "../../luogu/sync";
-import {
-  isPublicActivityMemberStatus,
-  publicActivityMemberStatuses,
-} from "../../member-status";
 import { refreshDefaults } from "../policy";
 import type { RefreshRequestDefinition } from "../registry";
 import { luoguAccountStatsRequestKind } from "../request-types";
@@ -30,20 +21,13 @@ const luoguAccountFields = {
   profileUrl: userOjAccount.profileUrl,
 } as const;
 
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
-
 const handleLuoguAccountStatsRequest = async (
   db: Database,
   request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
-    .select({
-      ...luoguAccountFields,
-      memberStatus: memberStatusExpression,
-    })
+    .select(luoguAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
         eq(userOjAccount.id, request.targetId),
@@ -54,10 +38,6 @@ const handleLuoguAccountStatsRequest = async (
 
   if (!account) {
     throw new Error(`Luogu account does not exist: ${request.targetId}`);
-  }
-
-  if (!isPublicActivityMemberStatus(account.memberStatus)) {
-    return;
   }
 
   try {
@@ -72,8 +52,7 @@ const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
   const staleAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
       luoguAccountStats,
       eq(luoguAccountStats.accountId, userOjAccount.id)
@@ -81,7 +60,6 @@ const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
     .where(
       and(
         eq(userOjAccount.platform, "luogu"),
-        inArray(memberStatusExpression, publicActivityMemberStatuses),
         or(
           isNull(luoguAccountStats.accountId),
           isNull(luoguAccountStats.fetchedAt),

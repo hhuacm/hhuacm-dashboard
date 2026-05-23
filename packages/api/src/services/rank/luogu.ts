@@ -1,15 +1,9 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { publicActivityMemberStatuses } from "../member-status";
 import { getLuoguRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
@@ -22,8 +16,7 @@ export type LuoguRankStatus =
   | "refreshing"
   | "stale";
 
-const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${userProfile.realName}), ''), nullif(trim(${user.username}), ''), '')`;
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
+const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
@@ -60,35 +53,29 @@ export const listLuoguRankRows = async (db: Database) => {
       accountId: userOjAccount.id,
       averageAcceptedDifficulty: luoguAccountStats.averageAcceptedDifficulty,
       fetchedAt: luoguAccountStats.fetchedAt,
-      grade: userProfile.grade,
+      grade: currentMember.grade,
       handle: userOjAccount.handle,
       lastError: luoguAccountStats.lastError,
-      major: userProfile.major,
+      major: currentMember.major,
       profileUrl: userOjAccount.profileUrl,
-      realName: userProfile.realName,
+      realName: currentMember.realName,
       uid: luoguAccountStats.uid,
-      userId: user.id,
-      username: user.username,
+      userId: currentMember.userId,
+      username: currentMember.username,
     })
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
       luoguAccountStats,
       eq(luoguAccountStats.accountId, userOjAccount.id)
     )
-    .where(
-      and(
-        eq(userOjAccount.platform, "luogu"),
-        inArray(memberStatusExpression, publicActivityMemberStatuses)
-      )
-    )
+    .where(eq(userOjAccount.platform, "luogu"))
     .orderBy(
       desc(luoguAccountStats.acceptedWeightedScore),
       desc(luoguAccountStats.acceptedProblemCount),
       desc(luoguAccountStats.averageAcceptedDifficulty),
       asc(userNameLabelSortExpression),
-      asc(user.id)
+      asc(currentMember.userId)
     );
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []

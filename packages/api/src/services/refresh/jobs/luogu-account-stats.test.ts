@@ -40,7 +40,7 @@ describe("Luogu account stats refresh request", () => {
     });
   };
 
-  it("only enqueues stale Luogu accounts for public activity members", async () => {
+  it("only enqueues stale Luogu accounts for current members", async () => {
     const db = await createServiceTestDb();
 
     await createAccount(db, {

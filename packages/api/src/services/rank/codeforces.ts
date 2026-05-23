@@ -1,15 +1,9 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { publicActivityMemberStatuses } from "../member-status";
 import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
@@ -22,8 +16,7 @@ export type CodeforcesRankStatus =
   | "refreshing"
   | "stale";
 
-const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${userProfile.realName}), ''), nullif(trim(${user.username}), ''), '')`;
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
+const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
@@ -65,33 +58,27 @@ export const listCodeforcesRankRows = async (db: Database) => {
         codeforcesAccountStats.acceptedProblemCountInMonth,
       accountId: userOjAccount.id,
       fetchedAt: codeforcesAccountStats.fetchedAt,
-      grade: userProfile.grade,
+      grade: currentMember.grade,
       handle: userOjAccount.handle,
       lastError: codeforcesAccountStats.lastError,
       lastOnlineAt: codeforcesAccountStats.lastOnlineAt,
-      major: userProfile.major,
+      major: currentMember.major,
       maxRating: codeforcesAccountStats.maxRating,
       profileUrl: userOjAccount.profileUrl,
       rating: codeforcesAccountStats.rating,
-      realName: userProfile.realName,
+      realName: currentMember.realName,
       statsHandle: codeforcesAccountStats.handle,
-      userId: user.id,
-      username: user.username,
+      userId: currentMember.userId,
+      username: currentMember.username,
     })
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
       codeforcesAccountStats,
       eq(codeforcesAccountStats.accountId, userOjAccount.id)
     )
-    .where(
-      and(
-        eq(userOjAccount.platform, "codeforces"),
-        inArray(memberStatusExpression, publicActivityMemberStatuses)
-      )
-    )
-    .orderBy(asc(userNameLabelSortExpression), asc(user.id));
+    .where(eq(userOjAccount.platform, "codeforces"))
+    .orderBy(asc(userNameLabelSortExpression), asc(currentMember.userId));
   const accountIds = rows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );

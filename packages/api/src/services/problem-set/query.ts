@@ -1,20 +1,14 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { luoguAcceptedProblem } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { publicActivityMemberStatuses } from "../member-status";
 import {
   attachAcceptedStatus,
   getCurrentLuoguCompletionSource,
@@ -37,8 +31,6 @@ const problemSetProblemFields = {
   sortOrder: problemSetProblem.sortOrder,
   title: problemSetProblem.title,
 } as const;
-
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const toIsoString = (date: Date) => date.toISOString();
 
@@ -163,9 +155,9 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
   const rows = await db
     .select({
       completedProblemCount: count(luoguAcceptedProblem.pid),
-      realName: userProfile.realName,
-      userId: user.id,
-      username: user.username,
+      realName: currentMember.realName,
+      userId: currentMember.userId,
+      username: currentMember.username,
     })
     .from(problemSetProblem)
     .innerJoin(
@@ -179,15 +171,13 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
         eq(userOjAccount.platform, "luogu")
       )
     )
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
-    .where(
-      and(
-        eq(problemSetProblem.problemSetId, id),
-        inArray(memberStatusExpression, publicActivityMemberStatuses)
-      )
-    )
-    .groupBy(user.id, user.username, userProfile.realName);
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
+    .where(eq(problemSetProblem.problemSetId, id))
+    .groupBy(
+      currentMember.userId,
+      currentMember.username,
+      currentMember.realName
+    );
 
   return rows
     .filter((row) => row.completedProblemCount > 0)

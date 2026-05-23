@@ -63,7 +63,7 @@ describe("addOjAccount", () => {
     }
   };
 
-  it("enqueues OJ refreshes only for public activity members", async () => {
+  it("enqueues OJ refreshes only for current members", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "active-user", memberStatus: "active" });

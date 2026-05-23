@@ -1,22 +1,13 @@
-import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
+import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, ne, or } from "drizzle-orm";
 
 import type { Context } from "../../../context";
 import {
   markCodeforcesAccountStatsRefreshFailed,
   syncCodeforcesAccountStats,
 } from "../../codeforces/sync";
-import {
-  isPublicActivityMemberStatus,
-  publicActivityMemberStatuses,
-} from "../../member-status";
 import { refreshDefaults } from "../policy";
 import type { RefreshRequestDefinition } from "../registry";
 import { codeforcesAccountStatsRequestKind } from "../request-types";
@@ -29,20 +20,13 @@ const codeforcesAccountFields = {
   id: userOjAccount.id,
 } as const;
 
-const memberStatusExpression = sql<MemberStatus>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
-
 const handleCodeforcesAccountStatsRequest = async (
   db: Database,
   request: Parameters<RefreshRequestDefinition["handle"]>[1]
 ) => {
   const [account] = await db
-    .select({
-      ...codeforcesAccountFields,
-      memberStatus: memberStatusExpression,
-    })
+    .select(codeforcesAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(
       and(
         eq(userOjAccount.id, request.targetId),
@@ -53,10 +37,6 @@ const handleCodeforcesAccountStatsRequest = async (
 
   if (!account) {
     throw new Error(`Codeforces account does not exist: ${request.targetId}`);
-  }
-
-  if (!isPublicActivityMemberStatus(account.memberStatus)) {
-    return;
   }
 
   try {
@@ -76,8 +56,7 @@ const scanStaleCodeforcesAccountStatsTargets = async (
   const staleAccounts = await db
     .select(codeforcesAccountFields)
     .from(userOjAccount)
-    .innerJoin(user, eq(user.id, userOjAccount.userId))
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
       codeforcesAccountStats,
       eq(codeforcesAccountStats.accountId, userOjAccount.id)
@@ -85,7 +64,6 @@ const scanStaleCodeforcesAccountStatsTargets = async (
     .where(
       and(
         eq(userOjAccount.platform, "codeforces"),
-        inArray(memberStatusExpression, publicActivityMemberStatuses),
         or(
           isNull(codeforcesAccountStats.accountId),
           isNull(codeforcesAccountStats.fetchedAt),
