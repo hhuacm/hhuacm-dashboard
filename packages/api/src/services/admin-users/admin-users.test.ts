@@ -5,10 +5,12 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
+import { eq } from "drizzle-orm";
 
 import { createServiceTestDb } from "../test-db";
 import { deleteAdminUser } from "./delete-user";
 import { getAdminUser } from "./detail";
+import { exportAdminUsers } from "./export";
 import { listAdminUsers } from "./list-query";
 import { getAdminUsersMetadata } from "./metadata";
 import type { Database } from "./types";
@@ -249,6 +251,128 @@ describe("admin users", () => {
       "atcoder",
       "nowcoder",
     ]);
+  });
+
+  it("exports an empty user snapshot with a stable content hash", async () => {
+    const db = await createServiceTestDb();
+
+    const firstExport = await exportAdminUsers(db);
+    const secondExport = await exportAdminUsers(db);
+
+    expect(firstExport.version).toBe(1);
+    expect(firstExport.users).toEqual([]);
+    expect(firstExport.hash).toBe(secondExport.hash);
+    expect(firstExport.exportedAt).not.toBe("");
+  });
+
+  it("exports users with default profile values and stable ordering", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, {
+      email: "beta@example.com",
+      id: "beta",
+      username: "beta",
+    });
+    await createUser(db, {
+      email: "alpha@example.com",
+      grade: "2024级",
+      id: "alpha",
+      realName: "Alpha",
+      username: "alpha",
+    });
+    await createOjAccount(db, {
+      handle: "alphaLuogu",
+      platform: "luogu",
+      userId: "alpha",
+    });
+    await createOjAccount(db, {
+      handle: "alphaCf",
+      platform: "codeforces",
+      userId: "alpha",
+    });
+
+    const result = await exportAdminUsers(db);
+
+    expect(result.users.map((exportedUser) => exportedUser.username)).toEqual([
+      "alpha",
+      "beta",
+    ]);
+    expect(result.users[0]).toEqual({
+      email: "alpha@example.com",
+      grade: "2024级",
+      major: null,
+      ojAccounts: [
+        {
+          handle: "alphaCf",
+          platform: "codeforces",
+        },
+        {
+          handle: "alphaLuogu",
+          platform: "luogu",
+        },
+      ],
+      realName: "Alpha",
+      studentId: null,
+      username: "alpha",
+    });
+    expect(result.users[1]).toEqual({
+      email: "beta@example.com",
+      grade: null,
+      major: null,
+      ojAccounts: [],
+      realName: null,
+      studentId: null,
+      username: "beta",
+    });
+  });
+
+  it("keeps the export hash stable across exportedAt changes", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, {
+      grade: "2024级",
+      id: "stable-user",
+      realName: "Stable",
+    });
+
+    const firstExport = await exportAdminUsers(db);
+    const secondExport = await exportAdminUsers(db);
+
+    expect(firstExport.hash).toBe(secondExport.hash);
+  });
+
+  it("changes the export hash when exported user data changes", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, {
+      id: "changed-user",
+      realName: "Before",
+    });
+    const beforeChange = await exportAdminUsers(db);
+    await db
+      .update(userProfile)
+      .set({ realName: "After" })
+      .where(eq(userProfile.userId, "changed-user"));
+
+    const afterChange = await exportAdminUsers(db);
+
+    expect(afterChange.hash).not.toBe(beforeChange.hash);
+  });
+
+  it("does not export authentication secrets", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, {
+      id: "secret-user",
+    });
+
+    const result = await exportAdminUsers(db);
+    const serialized = JSON.stringify(result);
+
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("session");
+    expect(serialized).not.toContain("accessToken");
+    expect(serialized).not.toContain("refreshToken");
+    expect(serialized).not.toContain("profileUrl");
+    expect(serialized).not.toContain("memberStatus");
+    expect(serialized).not.toContain("createdAt");
+    expect(serialized).not.toContain("updatedAt");
   });
 
   it("rejects deleting admins, non-frozen users, and wrong confirmations", async () => {

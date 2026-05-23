@@ -1,6 +1,7 @@
 import { adminProcedure, router } from "../index";
 import { deleteAdminUser } from "../services/admin-users/delete-user";
 import { getAdminUser } from "../services/admin-users/detail";
+import { exportAdminUsers } from "../services/admin-users/export";
 import { listAdminUsers } from "../services/admin-users/list-query";
 import { getAdminUsersMetadata } from "../services/admin-users/metadata";
 import {
@@ -61,6 +62,9 @@ export const adminRouter = router({
     list: adminProcedure
       .input(adminUsersListInputSchema)
       .query(async ({ ctx, input }) => await listAdminUsers(ctx.db, input)),
+    export: adminProcedure.query(
+      async ({ ctx }) => await exportAdminUsers(ctx.db)
+    ),
     metadata: adminProcedure.query(
       async ({ ctx }) => await getAdminUsersMetadata(ctx.db)
     ),
