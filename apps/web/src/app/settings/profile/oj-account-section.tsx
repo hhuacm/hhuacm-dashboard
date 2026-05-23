@@ -17,7 +17,7 @@ import {
 } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Code2, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { type Key, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -263,7 +263,7 @@ export function OjAccountSection({
   );
   const dialogTitle =
     dialog?.mode === "edit"
-      ? `编辑 ${dialogPlatformConfig?.label ?? formValues.platform} 账号`
+      ? `编辑 ${dialogPlatformConfig.label} 账号`
       : "添加 OJ 账号";
 
   const openAddDialog = (platform?: OjPlatform) => {
@@ -492,17 +492,13 @@ export function OjAccountSection({
             <Form className="contents" onSubmit={handleSubmit}>
               <Modal.Header>
                 <Modal.Icon className="bg-default">
-                  {dialogPlatformConfig ? (
-                    <Image
-                      alt={`${dialogPlatformConfig.label} logo`}
-                      className="size-6 object-contain"
-                      height={24}
-                      src={dialogPlatformConfig.iconSrc}
-                      width={24}
-                    />
-                  ) : (
-                    <Code2 className="size-5 text-accent" />
-                  )}
+                  <Image
+                    alt={`${dialogPlatformConfig.label} logo`}
+                    className="size-6 object-contain"
+                    height={24}
+                    src={dialogPlatformConfig.iconSrc}
+                    width={24}
+                  />
                 </Modal.Icon>
                 <Modal.Heading>{dialogTitle}</Modal.Heading>
               </Modal.Header>
@@ -632,7 +628,7 @@ export function OjAccountSection({
                 <p>
                   将删除
                   {deleteTarget
-                    ? ` ${getOjPlatformConfig(deleteTarget.platform)?.label ?? deleteTarget.platform} `
+                    ? ` ${getOjPlatformConfig(deleteTarget.platform).label} `
                     : " "}
                   的账号记录。删除后可以重新添加。
                 </p>

@@ -121,7 +121,7 @@ export interface AdminUserTableRow {
   grade: null | string;
   id: string;
   major: null | string;
-  memberStatus: string;
+  memberStatus: MemberStatus;
   ojAccounts: AdminUserOjAccount[];
   realName: null | string;
   role: UserRole;
@@ -143,7 +143,7 @@ export type AdminProfileUpdateValues = ProfileUpdateValues & {
   memberStatus?: MemberStatus;
 };
 
-export const clampPageSize = (pageSize: number) =>
+const clampPageSize = (pageSize: number) =>
   Math.min(maxPageSize, Math.max(minPageSize, pageSize));
 
 export const emptyAdminUsersFilters: AdminUsersFilters = {

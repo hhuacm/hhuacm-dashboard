@@ -22,7 +22,7 @@ interface RefreshActivityTargetGroup {
   targetIds: string[];
 }
 
-export interface RefreshActivity {
+interface RefreshActivity {
   isRefreshing: boolean;
   requestedAt: Date | null;
 }

@@ -27,7 +27,7 @@ export const clearCodeforcesStatsIfNeeded = async (
     await clearOjAccountRefresh(db, account);
   }
 };
-export const clearLuoguStatsIfNeeded = async (
+const clearLuoguStatsIfNeeded = async (
   db: Database,
   account: AccountStatsEffectTarget
 ) => {
@@ -57,13 +57,13 @@ export const clearCodeforcesStatsForUserAccounts = async (
 };
 
 const isCurrentMember = async (db: Database, userId: string) => {
-  const [member] = await db
+  const [currentMemberRow] = await db
     .select({ userId: currentMember.userId })
     .from(currentMember)
     .where(eq(currentMember.userId, userId))
     .limit(1);
 
-  return Boolean(member);
+  return Boolean(currentMemberRow);
 };
 
 export const requestOjAccountRefreshEffectsIfNeeded = async (

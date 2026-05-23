@@ -1,5 +1,3 @@
-import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
-
 export const emptyText = "—";
 
 const minuteSeconds = 60;
@@ -47,12 +45,6 @@ export type SortDirection = "ascending" | "descending";
 export interface FilterOption {
   label: string;
   value: string;
-}
-
-export interface RankColumnConfigBase<ColumnId extends string>
-  extends TableColumnVisibilityConfig<ColumnId> {
-  cellClassName?: string;
-  minWidth: number;
 }
 
 export const getVisibleTableMinWidth = (

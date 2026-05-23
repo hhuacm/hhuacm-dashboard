@@ -7,7 +7,7 @@ import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 type Database = Context["db"];
 export type LuoguProblemLoader = typeof luoguSource.problem;
 
-export interface LuoguProblemDetails {
+interface LuoguProblemDetails {
   difficulty: null | number;
   pid: string;
   title: string;

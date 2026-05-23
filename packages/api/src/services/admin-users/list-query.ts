@@ -51,7 +51,7 @@ const getAdminUsersSortExpression = (column: AdminUsersSortColumn) => {
   return usernameSortExpression;
 };
 
-export const getAdminUsersOrderBy = (sort: AdminUsersListInput["sort"]) => {
+const getAdminUsersOrderBy = (sort: AdminUsersListInput["sort"]) => {
   if (!sort) {
     return [asc(usernameSortExpression), asc(user.email), asc(user.id)];
   }

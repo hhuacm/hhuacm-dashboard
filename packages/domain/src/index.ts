@@ -16,7 +16,7 @@ export const memberStatusLabels = {
   selection: "选拔中",
 } as const satisfies Record<MemberStatus, string>;
 
-export const unnamedUserLabel = "未命名用户";
+const unnamedUserLabel = "未命名用户";
 
 const normalizeUserNamePart = (value: null | string | undefined) => {
   const normalizedValue = value?.trim();
@@ -55,7 +55,7 @@ export const ojPlatformNames = {
   nowcoder: "Nowcoder",
 } as const satisfies Record<OjPlatform, string>;
 
-export const gradeOtherOption = "其他";
+const gradeOtherOption = "其他";
 
 const gradeLookbackYears = 7;
 

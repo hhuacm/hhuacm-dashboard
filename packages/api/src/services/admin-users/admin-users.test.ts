@@ -21,7 +21,6 @@ const createUser = async (
     id: string;
     major?: string;
     memberStatus?: MemberStatus;
-    name?: string;
     realName?: string;
     role?: "admin" | "user";
     studentId?: string;
@@ -31,7 +30,7 @@ const createUser = async (
   await db.insert(user).values({
     email: input.email ?? `${input.id}@example.com`,
     id: input.id,
-    name: input.name ?? input.id,
+    name: input.id,
     role: input.role ?? "user",
     username: input.username ?? input.id,
   });

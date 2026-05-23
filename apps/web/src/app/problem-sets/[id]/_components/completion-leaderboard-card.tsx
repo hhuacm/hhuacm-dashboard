@@ -31,15 +31,6 @@ function LinkedProfileName({
 }) {
   const nameLabel = getUserNameLabel(row);
 
-  if (!row.username) {
-    return (
-      <span className="inline-flex min-w-0 max-w-full justify-center">
-        <span className="truncate">{nameLabel}</span>
-        <CurrentUserSuffix isCurrentUser={isCurrentUser} />
-      </span>
-    );
-  }
-
   return (
     <a
       className="inline-flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"

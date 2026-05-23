@@ -1,4 +1,4 @@
-export type CodeforcesRatingTier =
+type CodeforcesRatingTier =
   | "candidate-master"
   | "expert"
   | "grandmaster"
@@ -7,41 +7,38 @@ export type CodeforcesRatingTier =
   | "pupil"
   | "specialist";
 
-export const getCodeforcesRatingTier = (
-  rating: null | number | string | undefined
+const getCodeforcesRatingTier = (
+  rating: null | number | undefined
 ): CodeforcesRatingTier => {
-  if (rating === null || rating === undefined || rating === "—") {
+  if (rating === null || rating === undefined) {
     return "newbie";
   }
 
-  const parsedRating =
-    typeof rating === "string" ? Number.parseInt(rating, 10) : rating;
-
-  if (!Number.isFinite(parsedRating)) {
+  if (!Number.isFinite(rating)) {
     return "newbie";
   }
 
-  if (parsedRating < 1200) {
+  if (rating < 1200) {
     return "newbie";
   }
 
-  if (parsedRating < 1400) {
+  if (rating < 1400) {
     return "pupil";
   }
 
-  if (parsedRating < 1600) {
+  if (rating < 1600) {
     return "specialist";
   }
 
-  if (parsedRating < 1900) {
+  if (rating < 1900) {
     return "expert";
   }
 
-  if (parsedRating < 2200) {
+  if (rating < 2200) {
     return "candidate-master";
   }
 
-  if (parsedRating < 2400) {
+  if (rating < 2400) {
     return "master";
   }
 
@@ -49,7 +46,7 @@ export const getCodeforcesRatingTier = (
 };
 
 export const getCodeforcesRatingClassName = (
-  rating: null | number | string | undefined
+  rating: null | number | undefined
 ) => {
   const tier = getCodeforcesRatingTier(rating);
 

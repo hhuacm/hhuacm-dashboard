@@ -8,7 +8,7 @@ import { getLuoguRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
 
-export type LuoguRankStatus =
+type LuoguRankStatus =
   | "empty"
   | "failed"
   | "missing-account"
@@ -20,7 +20,7 @@ const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMe
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
-export const getLuoguRankStatus = (input: {
+const getLuoguRankStatus = (input: {
   fetchedAt: Date | null;
   hasActiveRefreshRequest: boolean;
   isFresh: boolean;

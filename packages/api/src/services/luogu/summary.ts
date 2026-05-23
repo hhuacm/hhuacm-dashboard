@@ -9,16 +9,15 @@ interface LuoguPracticeStatsInput {
   passedProblemCount: LuoguPracticePageData["user"]["passedProblemCount"];
 }
 
-export interface LuoguStatsSummary {
+interface LuoguStatsSummary {
   acceptedProblemCount: number;
   acceptedWeightedScore: number;
   averageAcceptedDifficulty: null | number;
 }
 
-export const getLuoguDifficultyWeight = (difficulty: null | number) =>
-  difficulty ?? 0;
+const getLuoguDifficultyWeight = (difficulty: null | number) => difficulty ?? 0;
 
-export const summarizeLuoguAcceptedProblems = (
+const summarizeLuoguAcceptedProblems = (
   problems: LuoguAcceptedProblemInput[],
   passedProblemCount?: null | number
 ): LuoguStatsSummary => {

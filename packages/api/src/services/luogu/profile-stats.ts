@@ -10,13 +10,9 @@ import type { LuoguAccount } from "./types";
 
 type Database = Context["db"];
 
-export type LuoguProfileStatsStatus =
-  | "empty"
-  | "failed"
-  | "ready"
-  | "refreshing";
+type LuoguProfileStatsStatus = "empty" | "failed" | "ready" | "refreshing";
 
-export interface PublicLuoguDifficultyCount {
+interface PublicLuoguDifficultyCount {
   count: number;
   difficulty: number;
   label: string;

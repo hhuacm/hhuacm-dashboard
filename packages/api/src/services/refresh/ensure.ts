@@ -17,7 +17,7 @@ import {
 
 type Database = Context["db"];
 
-export interface RefreshRequestState {
+interface RefreshRequestState {
   isFresh: boolean;
   isQueued: boolean;
   requestedAt: Date | null;

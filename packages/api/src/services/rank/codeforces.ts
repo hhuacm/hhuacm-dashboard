@@ -8,7 +8,7 @@ import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
 
 type Database = Context["db"];
 
-export type CodeforcesRankStatus =
+type CodeforcesRankStatus =
   | "empty"
   | "failed"
   | "missing-account"

@@ -1,6 +1,6 @@
 import { Chip } from "@heroui/react";
 import clsx from "clsx";
-import { CircleAlert, ExternalLink, UserRound } from "lucide-react";
+import { CircleAlert, ExternalLink } from "lucide-react";
 import Image from "next/image";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
@@ -207,22 +207,16 @@ export function OjAccountCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-default">
-            {platform ? (
-              <Image
-                alt={`${platform.label} logo`}
-                className="size-6 object-contain"
-                height={24}
-                src={platform.iconSrc}
-                width={24}
-              />
-            ) : (
-              <UserRound className="size-5 text-accent" />
-            )}
+            <Image
+              alt={`${platform.label} logo`}
+              className="size-6 object-contain"
+              height={24}
+              src={platform.iconSrc}
+              width={24}
+            />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-foreground">
-              {platform?.label ?? account.platform}
-            </p>
+            <p className="font-medium text-foreground">{platform.label}</p>
             {isCodeforces && !isStatsDisabled ? (
               <p
                 className={clsx(

@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import {
+  type MemberStatus,
   memberStatusLabels,
   ojPlatformLabels,
   ojPlatforms,
@@ -52,7 +53,6 @@ import {
   getFirstVisibleSortColumn,
   getPaginationItems,
   getVisibleTableMinWidth,
-  isMemberStatus,
   isSortColumn,
   memberStatusConfig,
   type SortDirection,
@@ -100,20 +100,18 @@ interface FilterMenuProps {
 }
 
 interface AdminUserActionsCellProps {
-  memberStatus: string;
+  memberStatus: MemberStatus;
   onDelete: () => void;
   onEdit: () => void;
   role: UserRole;
-  username: string;
 }
 
-function MemberStatusChip({ status }: { status: string }) {
-  const memberStatus = isMemberStatus(status) ? status : "selection";
-  const config = memberStatusConfig[memberStatus];
+function MemberStatusChip({ status }: { status: MemberStatus }) {
+  const config = memberStatusConfig[status];
 
   return (
     <Chip color={config.color} size="sm" variant="soft">
-      {memberStatusLabels[memberStatus]}
+      {memberStatusLabels[status]}
     </Chip>
   );
 }
@@ -192,11 +190,10 @@ function AdminUserActionsCell({
   onDelete,
   onEdit,
   role,
-  username,
 }: AdminUserActionsCellProps) {
   const isAdminUser = role === "admin";
   const isFrozenUser = memberStatus === "frozen";
-  const canDelete = Boolean(username) && !isAdminUser && isFrozenUser;
+  const canDelete = !isAdminUser && isFrozenUser;
   const deleteLabel = (() => {
     if (isAdminUser) {
       return "管理员账户不能在面板删除";
@@ -204,10 +201,6 @@ function AdminUserActionsCell({
 
     if (!isFrozenUser) {
       return "只有已冻结用户才能删除";
-    }
-
-    if (!username) {
-      return "缺少注册用户名，暂不能删除";
     }
 
     return "删除用户";
@@ -622,7 +615,6 @@ function AdminUsersTable({
                       onDelete={() => onDeleteUser(user)}
                       onEdit={() => onEditUser(user)}
                       role={user.role}
-                      username={user.username}
                     />
                   </Table.Cell>
                 </Table.Row>

@@ -1,6 +1,6 @@
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
-export const statsDisabledMemberStatuses = [
+const statsDisabledMemberStatuses = [
   "retired",
   "frozen",
 ] as const satisfies readonly MemberStatus[];

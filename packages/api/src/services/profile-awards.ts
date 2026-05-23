@@ -17,7 +17,7 @@ type LuoguUserLoader = typeof luoguSource.user;
 
 const userAwardSource = "luogu";
 
-export type ProfileAwardStatus = "empty" | "failed" | "ready" | "refreshing";
+type ProfileAwardStatus = "empty" | "failed" | "ready" | "refreshing";
 
 export interface PublicProfileAward {
   contest: string;

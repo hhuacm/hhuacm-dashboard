@@ -40,8 +40,17 @@ export const ojPlatformConfigs = ojPlatforms.map((platform) => {
   };
 });
 
-export const getOjPlatformConfig = (platform: OjPlatform) =>
-  ojPlatformConfigs.find((config) => config.key === platform);
+type OjPlatformConfig = (typeof ojPlatformConfigs)[number];
+
+export const getOjPlatformConfig = (platform: OjPlatform): OjPlatformConfig => {
+  const config = ojPlatformConfigs.find((item) => item.key === platform);
+
+  if (!config) {
+    throw new Error(`Missing OJ platform config: ${platform}`);
+  }
+
+  return config;
+};
 
 export const isOjPlatform = (value: string): value is OjPlatform =>
   ojPlatforms.includes(value as OjPlatform);

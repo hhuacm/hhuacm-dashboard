@@ -32,7 +32,6 @@ const createLuoguUser = async (
     fetchedAt?: Date;
     id: string;
     memberStatus?: MemberStatus;
-    name?: string;
     realName?: null | string;
     username?: string;
   }
@@ -40,7 +39,7 @@ const createLuoguUser = async (
   await db.insert(user).values({
     email: `${input.id}@example.com`,
     id: input.id,
-    name: input.name ?? input.id,
+    name: input.id,
     username: input.username ?? input.id,
   });
 
