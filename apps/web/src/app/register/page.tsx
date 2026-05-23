@@ -26,7 +26,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app-shell";
-import { authClient, getPreferredUsername } from "@/utils/auth-client";
+import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
   getChangedProfileValues,
@@ -253,7 +253,7 @@ export default function RegisterPage() {
             <Card.Header>
               <Card.Description>当前账号</Card.Description>
               <Card.Title className="break-all">
-                {getPreferredUsername(user)}
+                {getUsernameLabel(user)}
               </Card.Title>
               <Card.Description>
                 你已经登录，可以直接进入个人主页。

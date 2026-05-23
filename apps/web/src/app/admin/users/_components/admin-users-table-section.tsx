@@ -48,7 +48,7 @@ import {
   type AdminUserTableRow,
   adminUsersColumns,
   type FilterOption,
-  getAdminDisplayUsername,
+  getAdminUsernameLabel,
   getFirstVisibleSortColumn,
   getPaginationItems,
   getVisibleTableMinWidth,
@@ -104,7 +104,7 @@ interface AdminUserActionsCellProps {
   onDelete: () => void;
   onEdit: () => void;
   role: UserRole;
-  username: null | string;
+  username: string;
 }
 
 function MemberStatusChip({ status }: { status: string }) {
@@ -479,7 +479,7 @@ function renderAdminUserCell(
 ) {
   if (columnId === "username") {
     return (
-      <span className="block truncate">{getAdminDisplayUsername(user)}</span>
+      <span className="block truncate">{getAdminUsernameLabel(user)}</span>
     );
   }
 
@@ -599,7 +599,7 @@ function AdminUsersTable({
           </Table.Header>
           <Table.Body>
             {users.map((user) => {
-              const usernameLabel = getAdminDisplayUsername(user);
+              const usernameLabel = getAdminUsernameLabel(user);
 
               return (
                 <Table.Row

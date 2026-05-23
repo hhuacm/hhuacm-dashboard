@@ -32,7 +32,7 @@ create table user (
   email text not null unique,
   email_verified integer default 0 not null,
   image text,
-  username text unique,
+  username text not null unique,
   display_username text,
   role text default 'user' not null,
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,

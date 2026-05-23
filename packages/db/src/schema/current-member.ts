@@ -10,7 +10,7 @@ export const currentMember = sqliteView("current_member", {
   realName: text("real_name"),
   studentId: text("student_id"),
   userId: text("user_id").notNull(),
-  username: text("username"),
+  username: text("username").notNull(),
 }).as(sql`
   select
     ${user.id} as user_id,

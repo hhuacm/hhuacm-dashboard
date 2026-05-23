@@ -21,7 +21,8 @@ export const getAdminUser = async (db: Database, userId: string) => {
     .orderBy(asc(userOjAccount.platform));
 
   return {
-    ...targetUser,
+    email: targetUser.email,
+    id: targetUser.id,
     ojAccounts,
     profile: {
       grade: profile?.grade ?? null,
@@ -30,5 +31,7 @@ export const getAdminUser = async (db: Database, userId: string) => {
       realName: profile?.realName ?? null,
       studentId: profile?.studentId ?? null,
     },
+    role: targetUser.role,
+    username: targetUser.username,
   };
 };

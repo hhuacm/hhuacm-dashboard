@@ -110,11 +110,10 @@ export interface AdminUserProfile {
 export interface AdminUserDetail {
   email: string;
   id: string;
-  name: string;
   ojAccounts: AdminUserOjAccount[];
   profile: AdminUserProfile;
   role: UserRole;
-  username: null | string;
+  username: string;
 }
 
 export interface AdminUserTableRow {
@@ -123,12 +122,11 @@ export interface AdminUserTableRow {
   id: string;
   major: null | string;
   memberStatus: string;
-  name: string;
   ojAccounts: AdminUserOjAccount[];
   realName: null | string;
   role: UserRole;
   studentId: null | string;
-  username: null | string;
+  username: string;
 }
 
 export interface AdminUsersMetadata {
@@ -250,26 +248,15 @@ export const calculatePageSize = (element: HTMLDivElement | null) => {
   return clampPageSize(visibleRows);
 };
 
-const getUsernameLabel = (user: { name: string; username: null | string }) => {
-  const candidates = [user.username, user.name];
+export const getAdminUsernameLabel = (user: { username: string }) => {
+  const username = user.username.trim();
 
-  for (const candidate of candidates) {
-    const value = candidate?.trim();
-
-    if (value) {
-      return value;
-    }
+  if (username) {
+    return username;
   }
 
   return "未设置";
 };
-
-export const getAdminDisplayUsername = (user: AdminUserTableRow) =>
-  getUsernameLabel(user);
-
-export const getAdminDetailDisplayUsername = (
-  user: AdminUserDetail | AdminUserTableRow | null | undefined
-) => (user ? getUsernameLabel(user) : "未设置");
 
 export const isMemberStatus = (status: string): status is MemberStatus =>
   status in memberStatusConfig;

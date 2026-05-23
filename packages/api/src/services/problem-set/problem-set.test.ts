@@ -34,14 +34,14 @@ const createLuoguUser = async (
     memberStatus?: MemberStatus;
     name?: string;
     realName?: null | string;
-    username?: null | string;
+    username?: string;
   }
 ) => {
   await db.insert(user).values({
     email: `${input.id}@example.com`,
     id: input.id,
     name: input.name ?? input.id,
-    username: input.username === undefined ? input.id : input.username,
+    username: input.username ?? input.id,
   });
 
   if (input.memberStatus || input.realName !== undefined) {

@@ -145,13 +145,7 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = (nextUser: AdminUserTableRow) => {
-    if (
-      !(
-        nextUser.username &&
-        nextUser.role !== "admin" &&
-        nextUser.memberStatus === "frozen"
-      )
-    ) {
+    if (!(nextUser.role !== "admin" && nextUser.memberStatus === "frozen")) {
       return;
     }
 

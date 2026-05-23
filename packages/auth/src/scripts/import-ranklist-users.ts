@@ -48,7 +48,7 @@ interface ImportCandidate {
 interface ExistingUser {
   email: string;
   id: string;
-  username: null | string;
+  username: string;
 }
 
 interface ExistingCodeforcesAccount {
@@ -740,9 +740,7 @@ const main = async () => {
     existingUsers.map((existingUser) => [existingUser.email, existingUser])
   );
   const usersByUsername = new Map(
-    existingUsers
-      .filter((existingUser) => existingUser.username)
-      .map((existingUser) => [existingUser.username ?? "", existingUser])
+    existingUsers.map((existingUser) => [existingUser.username, existingUser])
   );
   const existingCodeforcesByHandle = new Map(
     existingCodeforcesAccounts.map((existingAccount) => [

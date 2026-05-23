@@ -9,9 +9,8 @@ export const authClient = createAuthClient({
 });
 
 interface UserNameFields {
-  name: string;
   username?: null | string;
 }
 
-export const getPreferredUsername = (user: UserNameFields) =>
-  user.username ?? user.name;
+export const getUsernameLabel = (user: UserNameFields) =>
+  user.username ?? "未设置";

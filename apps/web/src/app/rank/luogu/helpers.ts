@@ -213,7 +213,7 @@ export const filterRankRows = (
 export const getNameLabel = (row: RankRow) => getUserNameLabel(row);
 
 export const getProfileUrl = (row: RankRow) =>
-  row.username ? `/profile/${encodeURIComponent(row.username)}` : null;
+  `/profile/${encodeURIComponent(row.username)}`;
 
 const getSortValue = (row: RankRow, column: SortColumn) => {
   const luogu = row.luogu;

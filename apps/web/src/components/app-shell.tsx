@@ -17,7 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { type Key, useState } from "react";
 
-import { authClient, getPreferredUsername } from "@/utils/auth-client";
+import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 const maxWidthClassNames = {
@@ -177,7 +177,7 @@ function HeaderActions({ action }: { action?: ReactNode }) {
     })
   );
   const isAdmin = accountMe.data?.role === "admin";
-  const username = user ? getPreferredUsername(user) : "";
+  const username = user ? getUsernameLabel(user) : "";
 
   const handleLogout = async () => {
     await authClient.signOut();

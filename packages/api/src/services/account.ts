@@ -11,7 +11,6 @@ export const getCurrentUser = async (db: Database, userId: string) => {
     .select({
       email: user.email,
       id: user.id,
-      name: user.name,
       role: user.role,
       username: user.username,
     })

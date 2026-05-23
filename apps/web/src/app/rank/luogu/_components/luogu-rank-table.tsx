@@ -48,17 +48,12 @@ function EmptyRankCell() {
 
 const renderNameCell = (row: RankRow) => {
   const nameLabel = getNameLabel(row);
-  const profileUrl = getProfileUrl(row);
 
-  if (profileUrl) {
-    return (
-      <LinkedText href={profileUrl} tone="text-foreground">
-        {nameLabel}
-      </LinkedText>
-    );
-  }
-
-  return <span className="truncate">{nameLabel}</span>;
+  return (
+    <LinkedText href={getProfileUrl(row)} tone="text-foreground">
+      {nameLabel}
+    </LinkedText>
+  );
 };
 
 const renderMajorCell = (row: RankRow) =>

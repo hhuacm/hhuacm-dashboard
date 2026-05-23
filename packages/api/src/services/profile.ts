@@ -36,7 +36,6 @@ export const profileFields = {
 const userFields = {
   email: user.email,
   id: user.id,
-  name: user.name,
   role: user.role,
   username: user.username,
 } as const;
@@ -85,7 +84,7 @@ const getTargetUserByUsername = async (db: Database, username: string) => {
     .where(eq(user.username, username))
     .limit(1);
 
-  if (!targetUser?.username) {
+  if (!targetUser) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: `User does not exist: ${username}`,
@@ -188,7 +187,6 @@ export const getPublicProfile = async (
     profile,
     user: {
       email: targetUser.email,
-      name: targetUser.name,
       username: targetUser.username,
     },
   };
@@ -204,7 +202,6 @@ export const getSettingsProfile = async (db: Database, userId: string) => {
     profile,
     user: {
       email: currentUser.email,
-      name: currentUser.name,
       username: currentUser.username,
     },
   };

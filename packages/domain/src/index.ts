@@ -26,7 +26,7 @@ const normalizeUserNamePart = (value: null | string | undefined) => {
 
 export const getUserNameLabel = (user: {
   realName?: null | string;
-  username?: null | string;
+  username: string;
 }) =>
   normalizeUserNamePart(user.realName) ??
   normalizeUserNamePart(user.username) ??

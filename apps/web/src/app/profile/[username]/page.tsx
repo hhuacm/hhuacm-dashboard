@@ -33,7 +33,7 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
     )
   );
   const profile = profileQuery.data;
-  const nameLabel = profile?.user.username ?? profile?.user.name ?? username;
+  const usernameLabel = profile?.user.username ?? username;
   const isOjStatsDisabled = isStatsDisabledMemberStatus(
     profile?.profile.memberStatus
   );
@@ -49,7 +49,7 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
 
     router.push(
       `/admin/users?username=${encodeURIComponent(
-        profile.user.username ?? username
+        profile.user.username
       )}` as Route
     );
   };
@@ -83,10 +83,10 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
         {profile ? (
           <>
             <ProfileSummaryCard
-              nameLabel={nameLabel}
               onOpenAdmin={openAdmin}
               onOpenSettings={openSettings}
               profile={profile}
+              usernameLabel={usernameLabel}
             />
             <ProfileAwardsSection awards={profile.awards} />
             <OjAccountsSection

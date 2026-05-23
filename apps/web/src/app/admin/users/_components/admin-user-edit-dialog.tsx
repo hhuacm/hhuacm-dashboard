@@ -43,7 +43,6 @@ import {
   type AdminUserOjAccount,
   type AdminUserTableRow,
   buildAdminProfileFormValues,
-  getAdminDetailDisplayUsername,
   getAdminEditErrorMessage,
   getChangedAdminProfileValues,
   getOjAccountByPlatform,
@@ -189,7 +188,6 @@ function AdminUserBasicInfoEditor({
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="font-semibold text-base">基础信息</h3>
-          <p className="text-muted text-sm">状态、姓名、年级、学号和专业。</p>
         </div>
         {isLoading ? (
           <span className="inline-flex items-center gap-2 text-muted text-sm">
@@ -575,7 +573,6 @@ function AdminUserOjAccountEditor({
     <section className="grid gap-4">
       <div>
         <h3 className="font-semibold text-base">OJ 账号</h3>
-        <p className="text-muted text-sm">每个平台账号独立保存。</p>
       </div>
       <div className="grid gap-3">
         {ojPlatforms.map((platform) => (
@@ -609,7 +606,6 @@ export function AdminUserEditDialog({
     )
   );
   const detail = detailQuery.data;
-  const usernameLabel = getAdminDetailDisplayUsername(detail ?? user);
   const isOpen = Boolean(user);
 
   return (
@@ -628,17 +624,14 @@ export function AdminUserEditDialog({
             <Modal.Icon className="bg-default">
               <Pencil className="size-5 text-accent" />
             </Modal.Icon>
-            <div>
-              <Modal.Heading>编辑用户</Modal.Heading>
-              <p className="mt-1 text-muted text-sm">{usernameLabel}</p>
-            </div>
+            <Modal.Heading>编辑用户</Modal.Heading>
           </Modal.Header>
           <Modal.Body className="grid max-h-[72vh] gap-5 overflow-y-auto px-0.5 pt-3 pb-0.5">
-            <div className="grid gap-2 rounded-md border border-border bg-surface px-3 py-3 text-sm sm:grid-cols-3">
+            <div className="grid gap-2 rounded-md border border-border bg-surface px-3 py-3 text-sm sm:grid-cols-2">
               <div>
                 <span className="text-muted">注册用户名</span>
                 <p className="mt-1 break-all font-mono">
-                  {detail?.username ?? user?.username ?? "未设置"}
+                  {detail?.username ?? user?.username}
                 </p>
               </div>
               <div>
@@ -646,10 +639,6 @@ export function AdminUserEditDialog({
                 <p className="mt-1 break-all">
                   {detail?.email ?? user?.email ?? "未填写"}
                 </p>
-              </div>
-              <div>
-                <span className="text-muted">显示名</span>
-                <p className="mt-1 break-all">{usernameLabel}</p>
               </div>
             </div>
 

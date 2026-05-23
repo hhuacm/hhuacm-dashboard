@@ -6,7 +6,7 @@ import {
   type AdminProfileFormValues,
   type AdminUserTableRow,
   emptyAdminUsersFilters,
-  getAdminDisplayUsername,
+  getAdminUsernameLabel,
   getChangedAdminProfileValues,
   getFirstVisibleSortColumn,
   getPaginationItems,
@@ -23,25 +23,29 @@ const createUser = (
   id: input.id,
   major: input.major ?? null,
   memberStatus: input.memberStatus ?? "selection",
-  name: input.name ?? "",
   ojAccounts: input.ojAccounts ?? [],
   realName: input.realName ?? null,
   role: input.role ?? "user",
   studentId: input.studentId ?? null,
-  username: input.username ?? null,
+  username: input.username ?? input.id,
 });
 
 describe("admin users helpers", () => {
-  it("picks the first available username label", () => {
+  it("uses the registered username as username label", () => {
     expect(
-      getAdminDisplayUsername(
+      getAdminUsernameLabel(
         createUser({
           id: "user-1",
-          name: "Name",
           username: "username",
         })
       )
     ).toBe("username");
+  });
+
+  it("does not fall back to auth name for username label", () => {
+    expect(
+      getAdminUsernameLabel(createUser({ id: "user-1", username: "" }))
+    ).toBe("未设置");
   });
 
   it("finds the first visible sortable column", () => {

@@ -25,7 +25,7 @@ const createUser = async (
     realName?: string;
     role?: "admin" | "user";
     studentId?: string;
-    username?: null | string;
+    username?: string;
   }
 ) => {
   await db.insert(user).values({
@@ -33,7 +33,7 @@ const createUser = async (
     id: input.id,
     name: input.name ?? input.id,
     role: input.role ?? "user",
-    username: input.username === undefined ? input.id : input.username,
+    username: input.username ?? input.id,
   });
 
   if (

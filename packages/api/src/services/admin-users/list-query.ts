@@ -20,7 +20,7 @@ import type {
   Database,
 } from "./types";
 
-const usernameSortExpression = sql<string>`coalesce(${user.username}, ${user.name}, '')`;
+const usernameSortExpression = sql<string>`coalesce(${user.username}, '')`;
 const memberStatusSortExpression = sql<string>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
 
 const getAdminUsersSortExpression = (column: AdminUsersSortColumn) => {
@@ -162,7 +162,6 @@ export const listAdminUsers = async (
       id: user.id,
       major: userProfile.major,
       memberStatus: userProfile.memberStatus,
-      name: user.name,
       realName: userProfile.realName,
       role: user.role,
       studentId: userProfile.studentId,

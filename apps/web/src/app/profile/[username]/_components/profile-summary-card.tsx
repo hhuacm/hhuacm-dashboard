@@ -18,7 +18,7 @@ interface PublicProfileSummary {
   };
   user: {
     email: string;
-    username: null | string;
+    username: string;
   };
 }
 
@@ -28,10 +28,10 @@ interface PublicInfoItemProps {
 }
 
 interface ProfileSummaryCardProps {
-  nameLabel: string;
   onOpenAdmin: () => void;
   onOpenSettings: () => void;
   profile: PublicProfileSummary;
+  usernameLabel: string;
 }
 
 function PublicInfoItem({ label, value }: PublicInfoItemProps) {
@@ -46,10 +46,10 @@ function PublicInfoItem({ label, value }: PublicInfoItemProps) {
 }
 
 export function ProfileSummaryCard({
-  nameLabel,
   onOpenAdmin,
   onOpenSettings,
   profile,
+  usernameLabel,
 }: ProfileSummaryCardProps) {
   const canOpenSettings = profile.permissions.isOwner;
   const canOpenAdmin =
@@ -64,7 +64,7 @@ export function ProfileSummaryCard({
           </div>
           <div className="min-w-0">
             <Card.Title className="break-all text-2xl leading-tight">
-              {nameLabel}
+              {usernameLabel}
             </Card.Title>
           </div>
         </div>
@@ -86,10 +86,7 @@ export function ProfileSummaryCard({
       </Card.Header>
       <Card.Content>
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <PublicInfoItem
-            label="用户名"
-            value={profile.user.username ?? "未设置"}
-          />
+          <PublicInfoItem label="用户名" value={profile.user.username} />
           <PublicInfoItem label="邮箱" value={profile.user.email} />
           <div className="rounded-lg border border-border bg-surface p-4">
             <dt className="text-muted text-sm">状态</dt>
