@@ -2,7 +2,7 @@
 
 import { Button, Card, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, UserRound } from "lucide-react";
+import { BadgeCheck, KeyRound, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -14,6 +14,7 @@ import { authClient } from "@/utils/auth-client";
 import type { ProfileUpdateValues } from "@/utils/profile-fields";
 import { trpc } from "@/utils/trpc";
 import { OjAccountSection } from "./oj-account-section";
+import { PasswordChangeDialog } from "./password-change-dialog";
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ProfileSettingsPage() {
   const queryClient = useQueryClient();
   const [profileMessage, setProfileMessage] =
     useState<null | UserBasicInfoMessage>(null);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const profileQuery = useQuery(
     trpc.settings.profile.get.queryOptions(undefined, {
       enabled: Boolean(user),
@@ -50,6 +52,12 @@ export default function ProfileSettingsPage() {
     } catch {
       throw new Error("保存失败，请稍后再试。");
     }
+  };
+
+  const handlePasswordChanged = async () => {
+    await authClient.signOut();
+    await session.refetch();
+    router.replace("/login?redirect=/settings/profile");
   };
 
   useEffect(() => {
@@ -134,7 +142,7 @@ export default function ProfileSettingsPage() {
     >
       <div className="grid gap-8">
         <Card>
-          <Card.Header>
+          <Card.Header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-default text-accent">
                 <BadgeCheck className="size-5" />
@@ -146,6 +154,13 @@ export default function ProfileSettingsPage() {
                 </Card.Title>
               </div>
             </div>
+            <Button
+              onPress={() => setIsPasswordDialogOpen(true)}
+              variant="secondary"
+            >
+              <KeyRound className="size-4" />
+              修改密码
+            </Button>
           </Card.Header>
           <Card.Content>
             <dl className="grid gap-3 sm:grid-cols-3">
@@ -181,6 +196,11 @@ export default function ProfileSettingsPage() {
           isLoading={profileQuery.isPending}
         />
       </div>
+      <PasswordChangeDialog
+        isOpen={isPasswordDialogOpen}
+        onClose={() => setIsPasswordDialogOpen(false)}
+        onPasswordChanged={handlePasswordChanged}
+      />
     </AppShell>
   );
 }
