@@ -99,25 +99,21 @@ bun run db:migrate
 bun run db:studio
 ```
 
-## 代码检查
+## 代码检查与测试
 
-提交前至少运行：
-
-```bash
-bun run check-types
-bun x ultracite check
-```
-
-需要自动修复格式和静态检查问题时运行：
+提交前运行完整验证：
 
 ```bash
-bun x ultracite fix
+bun run verify
 ```
 
-根目录也提供了等价脚本：
+它会自动修复可安全处理的格式和静态问题，然后执行类型检查、风格检查和全部测试。
+
+需要拆开排查时，可以分别运行：
 
 ```bash
 bun run check
+bun run test
 bun run fix
 ```
 
