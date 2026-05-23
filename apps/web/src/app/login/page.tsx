@@ -20,6 +20,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app-shell";
+import { PasswordField } from "@/components/password-field";
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
 
 interface LoginFormValues {
@@ -204,21 +205,15 @@ export default function LoginPage() {
                     control={control}
                     name="password"
                     render={({ field }) => (
-                      <TextField
-                        fullWidth
+                      <PasswordField
+                        autoComplete="current-password"
                         isDisabled={submitting}
+                        label="密码"
                         name={field.name}
                         onChange={field.onChange}
-                        type="password"
+                        placeholder="输入密码"
                         value={field.value}
-                      >
-                        <Label>密码</Label>
-                        <Input
-                          autoComplete="current-password"
-                          placeholder="输入密码"
-                          variant="secondary"
-                        />
-                      </TextField>
+                      />
                     )}
                   />
 
