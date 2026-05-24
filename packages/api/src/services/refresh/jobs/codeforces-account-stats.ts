@@ -1,7 +1,7 @@
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { and, eq, isNull, lt, ne, or } from "drizzle-orm";
+import { and, eq, isNull, lt, or } from "drizzle-orm";
 
 import type { Context } from "../../../context";
 import {
@@ -67,8 +67,7 @@ const scanStaleCodeforcesAccountStatsTargets = async (
         or(
           isNull(codeforcesAccountStats.accountId),
           isNull(codeforcesAccountStats.fetchedAt),
-          lt(codeforcesAccountStats.fetchedAt, staleBefore),
-          ne(codeforcesAccountStats.handle, userOjAccount.handle)
+          lt(codeforcesAccountStats.fetchedAt, staleBefore)
         )
       )
     );

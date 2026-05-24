@@ -25,14 +25,9 @@ export const getCodeforcesRankStatus = (input: {
   hasActiveRefreshRequest: boolean;
   isFresh: boolean;
   lastError: null | string;
-  statsHandle: null | string;
 }): CodeforcesRankStatus => {
   if (input.hasActiveRefreshRequest) {
     return "refreshing";
-  }
-
-  if (!input.statsHandle) {
-    return "empty";
   }
 
   if (input.lastError) {
@@ -67,7 +62,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
       profileUrl: userOjAccount.profileUrl,
       rating: codeforcesAccountStats.rating,
       realName: currentMember.realName,
-      statsHandle: codeforcesAccountStats.handle,
       userId: currentMember.userId,
       username: currentMember.username,
     })
@@ -93,7 +87,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
     codeforces: {
       acceptedProblemCount: row.acceptedProblemCount,
       acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,
-      accountId: row.accountId,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
       lastError: row.lastError,
@@ -106,7 +99,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
           accountId: row.accountId,
           fetchedAt: row.fetchedAt,
           lastError: row.lastError,
-          statsHandle: row.statsHandle,
         })
       ),
     },

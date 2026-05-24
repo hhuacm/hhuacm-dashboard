@@ -152,10 +152,6 @@ describe("profile awards", () => {
     expect(awards[0]?.contest).toBe("New Contest");
     expect(awards[0]?.event).toBe("Final");
     expect(awards[0]?.level).toBe("银牌");
-    expect(awards[0]?.sourceHandle).toBe("forlight");
-    expect(awards[0]?.sourceProfileUrl).toBe(
-      "https://www.luogu.com.cn/user/97238"
-    );
     expect(sync?.fetchedAt?.toISOString()).toBe(secondFetchedAt.toISOString());
     expect(sync?.lastError).toBeNull();
   });
@@ -288,8 +284,6 @@ describe("profile awards", () => {
         event: null,
         level: "铜牌",
         source: "luogu",
-        sourceHandle: "forlight",
-        sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
         year: 2020,
       },
     ]);

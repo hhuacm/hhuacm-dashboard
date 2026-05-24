@@ -90,14 +90,11 @@ describe("Luogu profile stats", () => {
       fetchedAt,
       lastAttemptedAt: fetchedAt,
       lastError: null,
-      uid: 97_238,
     });
     await db.insert(luoguAcceptedProblem).values([
       {
         accountId: "account-luogu",
         difficulty: 1,
-        firstSeenAt: fetchedAt,
-        lastSeenAt: fetchedAt,
         name: "A+B Problem",
         pid: "P1001",
         type: "P",
@@ -105,8 +102,6 @@ describe("Luogu profile stats", () => {
       {
         accountId: "account-luogu",
         difficulty: 7,
-        firstSeenAt: fetchedAt,
-        lastSeenAt: fetchedAt,
         name: "Hard Problem",
         pid: "P9999",
         type: "P",

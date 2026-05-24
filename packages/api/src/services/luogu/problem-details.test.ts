@@ -27,7 +27,6 @@ const createProblemSetWithPid = async (
     title: input.id,
   });
   await db.insert(problemSetProblem).values({
-    id: `problem-${input.id}`,
     pid: input.pid,
     problemSetId: input.id,
     sortOrder: 0,

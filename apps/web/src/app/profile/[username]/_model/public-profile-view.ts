@@ -10,7 +10,6 @@ export interface PublicOjAccount {
     acceptedProblemCount: null | number;
     acceptedProblemCountInMonth: null | number;
     fetchedAt: null | string;
-    handle: string;
     isStale: boolean;
     lastAttemptedAt: string;
     lastError: null | string;
@@ -42,8 +41,6 @@ export interface PublicProfileAward {
   event: null | string;
   level: string;
   source: "luogu";
-  sourceHandle: string;
-  sourceProfileUrl: string;
   year: number;
 }
 

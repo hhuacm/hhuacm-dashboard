@@ -258,12 +258,12 @@ export function OjAccountCard({
             rel="noopener noreferrer"
             target="_blank"
           >
-            <span>{codeforces?.handle ?? account.handle}</span>
+            <span>{account.handle}</span>
             <ExternalLink className="size-4 shrink-0" />
           </a>
         ) : (
           <span className="break-all font-medium text-foreground">
-            {codeforces?.handle ?? account.handle}
+            {account.handle}
           </span>
         )}
       </div>

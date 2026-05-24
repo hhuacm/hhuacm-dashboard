@@ -1,6 +1,6 @@
 import { Card, Chip } from "@heroui/react";
 import clsx from "clsx";
-import { ExternalLink, Medal } from "lucide-react";
+import { Medal } from "lucide-react";
 
 import {
   formatDateTime,
@@ -61,7 +61,6 @@ export function ProfileAwardsSection({
   }
 
   const statusText = getAwardStatusText(awards);
-  const sourceProfileUrl = awards.items[0]?.sourceProfileUrl ?? "";
 
   return (
     <Card>
@@ -80,32 +79,19 @@ export function ProfileAwardsSection({
             />
           ))}
         </div>
-        <div className="mt-3 flex flex-col gap-2 text-muted text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {awards.fetchedAt ? (
-              <span>更新于 {formatDateTime(awards.fetchedAt)}</span>
-            ) : null}
-            {statusText ? (
-              <span
-                className={clsx(
-                  awards.syncStatus === "failed" ? "text-danger" : "text-accent"
-                )}
-              >
-                {statusText}
-                {awards.lastError ? `：${awards.lastError}` : ""}
-              </span>
-            ) : null}
-          </div>
-          {sourceProfileUrl ? (
-            <a
-              className="inline-flex w-fit items-center gap-1 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
-              href={sourceProfileUrl}
-              rel="noopener noreferrer"
-              target="_blank"
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-muted text-sm">
+          {awards.fetchedAt ? (
+            <span>更新于 {formatDateTime(awards.fetchedAt)}</span>
+          ) : null}
+          {statusText ? (
+            <span
+              className={clsx(
+                awards.syncStatus === "failed" ? "text-danger" : "text-accent"
+              )}
             >
-              来源：洛谷
-              <ExternalLink className="size-3.5 shrink-0" />
-            </a>
+              {statusText}
+              {awards.lastError ? `：${awards.lastError}` : ""}
+            </span>
           ) : null}
         </div>
       </Card.Content>

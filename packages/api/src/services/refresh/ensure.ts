@@ -36,11 +36,9 @@ const toRequestState = (input: {
 export const ensureCodeforcesAccountStatsRefresh = async (
   db: Database,
   input: {
-    accountHandle: string;
     accountId: string;
     fetchedAt: Date | null;
     now: Date;
-    statsHandle: null | string;
   }
 ) => {
   const isFresh = isCodeforcesAccountStatsFresh(input);

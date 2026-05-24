@@ -2,7 +2,7 @@ import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
-import { and, eq, lt, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
@@ -30,7 +30,6 @@ const luoguStatsFields = {
   fetchedAt: luoguAccountStats.fetchedAt,
   lastAttemptedAt: luoguAccountStats.lastAttemptedAt,
   lastError: luoguAccountStats.lastError,
-  uid: luoguAccountStats.uid,
 } as const;
 
 const chunks = <T>(items: T[], size: number) => {
@@ -56,46 +55,34 @@ const selectLuoguPracticeStatsFields = (
 const writeAcceptedProblems = async (
   tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
   account: LuoguAccount,
-  practice: LuoguPracticeStatsFields,
-  fetchedAt: Date
+  practice: LuoguPracticeStatsFields
 ) => {
-  for (const chunk of chunks(practice.passed, acceptedProblemChunkSize)) {
+  const problemsByPid = new Map(
+    practice.passed.map((problem) => [problem.pid, problem])
+  );
+
+  await tx
+    .delete(luoguAcceptedProblem)
+    .where(eq(luoguAcceptedProblem.accountId, account.id));
+
+  for (const chunk of chunks(
+    [...problemsByPid.values()],
+    acceptedProblemChunkSize
+  )) {
     if (chunk.length === 0) {
       continue;
     }
 
-    await tx
-      .insert(luoguAcceptedProblem)
-      .values(
-        chunk.map((problem) => ({
-          accountId: account.id,
-          difficulty: problem.difficulty,
-          firstSeenAt: fetchedAt,
-          lastSeenAt: fetchedAt,
-          name: problem.name,
-          pid: problem.pid,
-          type: problem.type,
-        }))
-      )
-      .onConflictDoUpdate({
-        set: {
-          difficulty: sql`excluded.difficulty`,
-          lastSeenAt: fetchedAt,
-          name: sql`excluded.name`,
-          type: sql`excluded.type`,
-        },
-        target: [luoguAcceptedProblem.accountId, luoguAcceptedProblem.pid],
-      });
-  }
-
-  await tx
-    .delete(luoguAcceptedProblem)
-    .where(
-      and(
-        eq(luoguAcceptedProblem.accountId, account.id),
-        lt(luoguAcceptedProblem.lastSeenAt, fetchedAt)
-      )
+    await tx.insert(luoguAcceptedProblem).values(
+      chunk.map((problem) => ({
+        accountId: account.id,
+        difficulty: problem.difficulty,
+        name: problem.name,
+        pid: problem.pid,
+        type: problem.type,
+      }))
     );
+  }
 };
 
 export const syncLuoguAccountStats = async (
@@ -115,7 +102,7 @@ export const syncLuoguAccountStats = async (
   const fetchedAt = now;
 
   return await db.transaction(async (tx) => {
-    await writeAcceptedProblems(tx, account, practice, fetchedAt);
+    await writeAcceptedProblems(tx, account, practice);
 
     const [stats] = await tx
       .insert(luoguAccountStats)
@@ -127,7 +114,6 @@ export const syncLuoguAccountStats = async (
         fetchedAt,
         lastAttemptedAt: fetchedAt,
         lastError: null,
-        uid,
       })
       .onConflictDoUpdate({
         set: {
@@ -137,8 +123,6 @@ export const syncLuoguAccountStats = async (
           fetchedAt,
           lastAttemptedAt: fetchedAt,
           lastError: null,
-          uid,
-          updatedAt: fetchedAt,
         },
         target: luoguAccountStats.accountId,
       })
@@ -158,7 +142,6 @@ export const markLuoguAccountStatsRefreshFailed = async (
   error: unknown,
   now = new Date()
 ) => {
-  const uid = parseLuoguUidFromProfileUrl(account.profileUrl);
   const lastError = truncateRefreshError(getErrorMessage(error));
 
   const [stats] = await db
@@ -167,14 +150,11 @@ export const markLuoguAccountStatsRefreshFailed = async (
       accountId: account.id,
       lastAttemptedAt: now,
       lastError,
-      uid,
     })
     .onConflictDoUpdate({
       set: {
         lastAttemptedAt: now,
         lastError,
-        uid,
-        updatedAt: now,
       },
       target: luoguAccountStats.accountId,
     })

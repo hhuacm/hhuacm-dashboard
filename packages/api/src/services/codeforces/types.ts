@@ -7,7 +7,6 @@ export interface PublicCodeforcesStats {
   acceptedProblemCount: null | number;
   acceptedProblemCountInMonth: null | number;
   fetchedAt: null | string;
-  handle: string;
   isStale: boolean;
   lastAttemptedAt: string;
   lastError: null | string;

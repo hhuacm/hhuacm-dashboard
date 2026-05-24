@@ -24,8 +24,6 @@ export interface PublicProfileAward {
   event: null | string;
   level: string;
   source: typeof userAwardSource;
-  sourceHandle: string;
-  sourceProfileUrl: string;
   year: number;
 }
 
@@ -51,12 +49,9 @@ interface SelectedLuoguUserAward {
 const awardFields = {
   contest: userAward.contest,
   event: userAward.event,
-  fetchedAt: userAward.fetchedAt,
   level: userAward.level,
   sortOrder: userAward.sortOrder,
   source: userAward.source,
-  sourceHandle: userAward.sourceHandle,
-  sourceProfileUrl: userAward.sourceProfileUrl,
   year: userAward.year,
 } as const;
 
@@ -87,8 +82,7 @@ export const selectLuoguUserAwards = (
 const replaceLuoguUserAwards = async (
   tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
   account: LuoguAwardAccount,
-  awards: SelectedLuoguUserAward[],
-  fetchedAt: Date
+  awards: SelectedLuoguUserAward[]
 ) => {
   await tx
     .delete(userAward)
@@ -106,12 +100,9 @@ const replaceLuoguUserAwards = async (
   const values: (typeof userAward.$inferInsert)[] = awards.map((award) => ({
     contest: award.contest,
     event: award.event,
-    fetchedAt,
     level: award.level,
     sortOrder: award.sortOrder,
     source: userAwardSource,
-    sourceHandle: account.handle,
-    sourceProfileUrl: account.profileUrl,
     userId: account.userId,
     year: award.year,
   }));
@@ -135,7 +126,7 @@ export const syncUserAwardsFromLuogu = async (
   const fetchedAt = now;
 
   return await db.transaction(async (tx) => {
-    await replaceLuoguUserAwards(tx, account, awards, fetchedAt);
+    await replaceLuoguUserAwards(tx, account, awards);
 
     const [sync] = await tx
       .insert(userAwardSync)
@@ -151,7 +142,6 @@ export const syncUserAwardsFromLuogu = async (
           fetchedAt,
           lastAttemptedAt: fetchedAt,
           lastError: null,
-          updatedAt: fetchedAt,
         },
         target: [userAwardSync.userId, userAwardSync.source],
       })
@@ -185,7 +175,6 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
       set: {
         lastAttemptedAt: now,
         lastError,
-        updatedAt: now,
       },
       target: [userAwardSync.userId, userAwardSync.source],
     })
@@ -258,8 +247,6 @@ export const getAwardsForPublicProfile = async (
       event: award.event,
       level: award.level,
       source: userAwardSource,
-      sourceHandle: award.sourceHandle,
-      sourceProfileUrl: award.sourceProfileUrl,
       year: award.year,
     })),
     lastError: sync?.lastError ?? null,

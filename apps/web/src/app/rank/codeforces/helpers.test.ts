@@ -21,7 +21,6 @@ const createRankRow = (
   codeforces: {
     acceptedProblemCount: null,
     acceptedProblemCountInMonth: null,
-    accountId: `${input.userId}-cf`,
     fetchedAt: null,
     handle: input.userId,
     lastError: null,

@@ -78,7 +78,6 @@ create table user_oj_account (
   `
 create table codeforces_account_stats (
   account_id text primary key not null,
-  handle text not null,
   rating integer,
   max_rating integer,
   accepted_problem_count integer,
@@ -86,23 +85,18 @@ create table codeforces_account_stats (
   last_online_at integer,
   fetched_at integer,
   last_attempted_at integer not null,
-  last_error text,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  last_error text
 )
 `,
   `
 create table luogu_account_stats (
   account_id text primary key not null,
-  uid integer,
   accepted_problem_count integer,
   accepted_weighted_score integer,
   average_accepted_difficulty real,
   fetched_at integer,
   last_attempted_at integer not null,
-  last_error text,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  last_error text
 )
 `,
   `
@@ -112,8 +106,6 @@ create table luogu_accepted_problem (
   name text not null,
   type text not null,
   difficulty integer,
-  first_seen_at integer not null,
-  last_seen_at integer not null,
   primary key (account_id, pid)
 )
 `,
@@ -128,15 +120,12 @@ create table problem_set (
 `,
   `
 create table problem_set_problem (
-  id text primary key not null,
   problem_set_id text not null references problem_set(id) on delete cascade,
   pid text not null,
   title text not null,
   difficulty integer,
   sort_order integer not null,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  unique (problem_set_id, pid)
+  primary key (problem_set_id, pid)
 )
 `,
   `
@@ -149,19 +138,14 @@ create table refresh_request (
 `,
   `
 create table user_award (
-  id text primary key not null,
   user_id text not null,
   source text not null,
-  source_handle text not null,
-  source_profile_url text not null,
   year integer not null,
   contest text not null,
   event text,
   level text not null,
   sort_order integer not null,
-  fetched_at integer not null,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  primary key (user_id, source, sort_order)
 )
 `,
   `
@@ -171,8 +155,6 @@ create table user_award_sync (
   fetched_at integer,
   last_attempted_at integer not null,
   last_error text,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   primary key (user_id, source)
 )
 `,

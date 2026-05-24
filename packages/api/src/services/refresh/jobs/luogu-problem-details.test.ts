@@ -37,7 +37,6 @@ describe("Luogu problem details refresh request", () => {
       title: "题单",
     });
     await db.insert(problemSetProblem).values({
-      id: "problem-a",
       pid: "P1563",
       problemSetId: "set-a",
       sortOrder: 0,
@@ -64,7 +63,6 @@ describe("Luogu problem details refresh request", () => {
       title: "题单",
     });
     await db.insert(problemSetProblem).values({
-      id: "problem-a",
       pid: "P1563",
       problemSetId: "set-a",
       sortOrder: 0,

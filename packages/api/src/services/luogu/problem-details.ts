@@ -33,7 +33,7 @@ export const enrichProblemSetProblemsByPid = async (
   loadProblem: LuoguProblemLoader = luoguSource.problem
 ) => {
   const [referencedProblem] = await db
-    .select({ id: problemSetProblem.id })
+    .select({ pid: problemSetProblem.pid })
     .from(problemSetProblem)
     .where(eq(problemSetProblem.pid, pid))
     .limit(1);
@@ -49,7 +49,6 @@ export const enrichProblemSetProblemsByPid = async (
     .set({
       difficulty: details.difficulty,
       title: details.title,
-      updatedAt: new Date(),
     })
     .where(eq(problemSetProblem.pid, pid));
 

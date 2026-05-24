@@ -10,7 +10,6 @@ import { markCodeforcesAccountStatsRefreshFailed } from "./sync";
 const createCodeforcesStatsTableSql = `
 create table codeforces_account_stats (
   account_id text primary key not null,
-  handle text not null,
   rating integer,
   max_rating integer,
   accepted_problem_count integer,
@@ -18,9 +17,7 @@ create table codeforces_account_stats (
   last_online_at integer,
   fetched_at integer,
   last_attempted_at integer not null,
-  last_error text,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  last_error text
 )
 `;
 
@@ -52,7 +49,6 @@ describe("Codeforces sync failure recording", () => {
       .from(codeforcesAccountStats)
       .where(eq(codeforcesAccountStats.accountId, "account-1"));
 
-    expect(stats?.handle).toBe("forlight");
     expect(stats?.lastAttemptedAt?.toISOString()).toBe(now.toISOString());
     expect(stats?.lastError).toBe("network failed");
   });

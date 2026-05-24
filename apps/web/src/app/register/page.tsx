@@ -177,17 +177,17 @@ export default function RegisterPage() {
 
   const handleSubmit = handleFormSubmit(
     async (values) => {
-      const normalizedUsername = values.username;
-      const normalizedEmail = values.email.toLowerCase();
+      const username = values.username;
+      const email = values.email.toLowerCase();
       setError("");
       setSubmitting(true);
 
       try {
         const response = await authClient.signUp.email({
-          email: normalizedEmail,
-          name: normalizedUsername,
+          email,
+          name: username,
           password: values.password,
-          username: normalizedUsername,
+          username,
         });
 
         if (response.error) {
@@ -213,7 +213,7 @@ export default function RegisterPage() {
         }
 
         await session.refetch();
-        router.push(`/profile/${normalizedUsername}` as Route);
+        router.push(`/profile/${username}` as Route);
       } catch {
         setError("认证服务暂时不可用，请确认后端和数据库已启动。");
       } finally {

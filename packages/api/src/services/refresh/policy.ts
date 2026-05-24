@@ -26,13 +26,6 @@ export const isUserAwardsCacheFresh = (fetchedAt: Date | null, now: Date) =>
   isFreshByTtl(fetchedAt, now, refreshDefaults.userAwardsTtlMs);
 
 export const isCodeforcesAccountStatsFresh = (input: {
-  accountHandle: string;
   fetchedAt: Date | null;
   now: Date;
-  statsHandle: null | string;
-}) =>
-  Boolean(
-    input.statsHandle &&
-      input.statsHandle.toLowerCase() === input.accountHandle.toLowerCase() &&
-      isCodeforcesStatsCacheFresh(input.fetchedAt, input.now)
-  );
+}) => isCodeforcesStatsCacheFresh(input.fetchedAt, input.now);

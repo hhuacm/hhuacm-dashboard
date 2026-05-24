@@ -26,7 +26,6 @@ const problemSetFields = {
 
 const problemSetProblemFields = {
   difficulty: problemSetProblem.difficulty,
-  id: problemSetProblem.id,
   pid: problemSetProblem.pid,
   sortOrder: problemSetProblem.sortOrder,
   title: problemSetProblem.title,
@@ -67,7 +66,7 @@ export const listProblemSets = async (
       createdAt: problemSet.createdAt,
       descriptionMarkdown: problemSet.descriptionMarkdown,
       id: problemSet.id,
-      problemCount: count(problemSetProblem.id),
+      problemCount: count(problemSetProblem.pid),
       title: problemSet.title,
       updatedAt: problemSet.updatedAt,
     })

@@ -83,19 +83,19 @@ export default function LoginPage() {
 
   const handleSubmit = handleFormSubmit(
     async (values) => {
-      const normalizedIdentifier = values.identifier;
+      const identifier = values.identifier;
       setError("");
       setSubmitting(true);
 
       try {
-        const response = isEmailIdentifier(normalizedIdentifier)
+        const response = isEmailIdentifier(identifier)
           ? await authClient.signIn.email({
-              email: normalizedIdentifier.toLowerCase(),
+              email: identifier.toLowerCase(),
               password: values.password,
             })
           : await authClient.signIn.username({
               password: values.password,
-              username: normalizedIdentifier,
+              username: identifier,
             });
 
         if (response.error) {
@@ -105,9 +105,7 @@ export default function LoginPage() {
 
         const signedInUsername =
           response.data?.user.username ??
-          (isEmailIdentifier(normalizedIdentifier)
-            ? user?.username
-            : normalizedIdentifier);
+          (isEmailIdentifier(identifier) ? user?.username : identifier);
 
         router.push(
           redirectPath === "/profile"

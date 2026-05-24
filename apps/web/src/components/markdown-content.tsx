@@ -96,9 +96,9 @@ const markdownComponents: Components = {
 };
 
 export function MarkdownContent({ emptyText, markdown }: MarkdownContentProps) {
-  const trimmedMarkdown = markdown.trim();
+  const content = markdown.trim();
 
-  if (!trimmedMarkdown) {
+  if (!content) {
     return <p className="text-muted text-sm">{emptyText}</p>;
   }
 
@@ -108,7 +108,7 @@ export function MarkdownContent({ emptyText, markdown }: MarkdownContentProps) {
         components={markdownComponents}
         remarkPlugins={[remarkGfm]}
       >
-        {trimmedMarkdown}
+        {content}
       </ReactMarkdown>
     </div>
   );

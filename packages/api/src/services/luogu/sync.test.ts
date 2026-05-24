@@ -106,7 +106,7 @@ describe("Luogu sync", () => {
     expect(problems).toHaveLength(3);
   });
 
-  it("keeps firstSeenAt, updates lastSeenAt, and removes missing problems", async () => {
+  it("replaces accepted problem snapshots on successful sync", async () => {
     const db = await createServiceTestDb();
     const account = await createLuoguAccount(db);
     const firstFetchedAt = new Date("2026-01-01T00:00:00.000Z");
@@ -138,12 +138,6 @@ describe("Luogu sync", () => {
     expect(problems[0]?.pid).toBe("P1001");
     expect(problems[0]?.name).toBe("A+B Problem Updated");
     expect(problems[0]?.difficulty).toBe(3);
-    expect(problems[0]?.firstSeenAt.toISOString()).toBe(
-      firstFetchedAt.toISOString()
-    );
-    expect(problems[0]?.lastSeenAt.toISOString()).toBe(
-      secondFetchedAt.toISOString()
-    );
   });
 
   it("records failures without deleting existing accepted problems", async () => {

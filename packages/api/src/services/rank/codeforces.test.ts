@@ -15,7 +15,6 @@ describe("getCodeforcesRankStatus", () => {
         hasActiveRefreshRequest: true,
         isFresh: false,
         lastError: "failed",
-        statsHandle: "tourist",
       })
     ).toBe("refreshing");
   });
@@ -23,11 +22,10 @@ describe("getCodeforcesRankStatus", () => {
   it("marks missing stats as empty", () => {
     expect(
       getCodeforcesRankStatus({
-        fetchedAt: new Date(),
+        fetchedAt: null,
         hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: null,
-        statsHandle: null,
       })
     ).toBe("empty");
   });
@@ -39,7 +37,6 @@ describe("getCodeforcesRankStatus", () => {
         hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: "Codeforces unavailable",
-        statsHandle: "tourist",
       })
     ).toBe("failed");
   });
@@ -51,7 +48,6 @@ describe("getCodeforcesRankStatus", () => {
         hasActiveRefreshRequest: false,
         isFresh: false,
         lastError: null,
-        statsHandle: "tourist",
       })
     ).toBe("stale");
   });
@@ -63,7 +59,6 @@ describe("getCodeforcesRankStatus", () => {
         hasActiveRefreshRequest: false,
         isFresh: true,
         lastError: null,
-        statsHandle: "tourist",
       })
     ).toBe("ready");
   });

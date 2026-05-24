@@ -100,12 +100,9 @@ describe("user awards from Luogu refresh request", () => {
     await db.insert(userAward).values({
       contest: "Cached Contest",
       event: null,
-      fetchedAt: new Date("2026-01-01T00:00:00.000Z"),
       level: "铜牌",
       sortOrder: 0,
       source: "luogu",
-      sourceHandle: "forlight",
-      sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "retired-user",
       year: 2020,
     });
@@ -134,12 +131,9 @@ describe("user awards from Luogu refresh request", () => {
     await db.insert(userAward).values({
       contest: "Cached Contest",
       event: null,
-      fetchedAt: new Date("2026-01-01T00:00:00.000Z"),
       level: "铜牌",
       sortOrder: 0,
       source: "luogu",
-      sourceHandle: "forlight",
-      sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "active-user",
       year: 2020,
     });

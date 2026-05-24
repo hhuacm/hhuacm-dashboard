@@ -100,12 +100,9 @@ describe("getPublicProfile", () => {
     await db.insert(userAward).values({
       contest: "ICPC Regional",
       event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
-      fetchedAt,
       level: "铜牌",
       sortOrder: 0,
       source: "luogu",
-      sourceHandle: "forlight",
-      sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "user-retired-award",
       year: 2023,
     });
@@ -124,8 +121,6 @@ describe("getPublicProfile", () => {
           event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
           level: "铜牌",
           source: "luogu",
-          sourceHandle: "forlight",
-          sourceProfileUrl: "https://www.luogu.com.cn/user/97238",
           year: 2023,
         },
       ],

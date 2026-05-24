@@ -17,7 +17,6 @@ const codeforcesStatsFields = {
     codeforcesAccountStats.acceptedProblemCountInMonth,
   accountId: codeforcesAccountStats.accountId,
   fetchedAt: codeforcesAccountStats.fetchedAt,
-  handle: codeforcesAccountStats.handle,
   lastAttemptedAt: codeforcesAccountStats.lastAttemptedAt,
   lastError: codeforcesAccountStats.lastError,
   lastOnlineAt: codeforcesAccountStats.lastOnlineAt,
@@ -73,7 +72,6 @@ export const syncCodeforcesAccountStats = async (
       acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
       accountId: account.id,
       fetchedAt,
-      handle: userInfo.handle,
       lastAttemptedAt: fetchedAt,
       lastError: null,
       lastOnlineAt,
@@ -85,13 +83,11 @@ export const syncCodeforcesAccountStats = async (
         acceptedProblemCount: summary.acceptedProblemCount,
         acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
         fetchedAt,
-        handle: userInfo.handle,
         lastAttemptedAt: fetchedAt,
         lastError: null,
         lastOnlineAt,
         maxRating: userInfo.maxRating ?? null,
         rating: userInfo.rating ?? null,
-        updatedAt: fetchedAt,
       },
       target: codeforcesAccountStats.accountId,
     })
@@ -116,16 +112,13 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
     .insert(codeforcesAccountStats)
     .values({
       accountId: account.id,
-      handle: account.handle,
       lastAttemptedAt: now,
       lastError,
     })
     .onConflictDoUpdate({
       set: {
-        handle: account.handle,
         lastAttemptedAt: now,
         lastError,
-        updatedAt: now,
       },
       target: codeforcesAccountStats.accountId,
     })

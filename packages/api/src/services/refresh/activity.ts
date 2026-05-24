@@ -127,13 +127,11 @@ export const getCodeforcesRankRefreshActivity = async (
       accountId: string;
       fetchedAt: Date | null;
       lastError: null | string;
-      statsHandle: null | string;
     }) => ({
       fetchedAt: input.fetchedAt,
       hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
       isFresh: isCodeforcesStatsCacheFresh(input.fetchedAt, now),
       lastError: input.lastError,
-      statsHandle: input.statsHandle,
     }),
   };
 };

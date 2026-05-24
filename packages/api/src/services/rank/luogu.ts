@@ -59,7 +59,6 @@ export const listLuoguRankRows = async (db: Database) => {
       major: currentMember.major,
       profileUrl: userOjAccount.profileUrl,
       realName: currentMember.realName,
-      uid: luoguAccountStats.uid,
       userId: currentMember.userId,
       username: currentMember.username,
     })
@@ -92,7 +91,6 @@ export const listLuoguRankRows = async (db: Database) => {
     luogu: {
       acceptedProblemCount: row.acceptedProblemCount,
       acceptedWeightedScore: row.acceptedWeightedScore,
-      accountId: row.accountId,
       averageAcceptedDifficulty: row.averageAcceptedDifficulty,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
@@ -105,7 +103,6 @@ export const listLuoguRankRows = async (db: Database) => {
           lastError: row.lastError,
         })
       ),
-      uid: row.uid,
     },
     major: row.major,
     realName: row.realName,

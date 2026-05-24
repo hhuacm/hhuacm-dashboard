@@ -181,10 +181,10 @@ function FilterMenu({
   const [query, setQuery] = useState("");
   const selectedCount = selectedValues.length;
   const buttonLabel = selectedCount > 0 ? `${label} ${selectedCount}` : label;
-  const normalizedQuery = query.trim().toLowerCase();
-  const visibleOptions = normalizedQuery
+  const searchQuery = query.trim().toLowerCase();
+  const visibleOptions = searchQuery
     ? options.filter((option) =>
-        option.label.toLowerCase().includes(normalizedQuery)
+        option.label.toLowerCase().includes(searchQuery)
       )
     : options;
   const shouldShowSearch = options.length >= searchThreshold;

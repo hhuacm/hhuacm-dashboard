@@ -2,9 +2,9 @@ import { relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
-  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const problemSet = sqliteTable("problem_set", {
@@ -25,9 +25,6 @@ export const problemSet = sqliteTable("problem_set", {
 export const problemSetProblem = sqliteTable(
   "problem_set_problem",
   {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
     problemSetId: text("problem_set_id")
       .notNull()
       .references(() => problemSet.id, { onDelete: "cascade" }),
@@ -35,19 +32,12 @@ export const problemSetProblem = sqliteTable(
     title: text("title").notNull(),
     difficulty: integer("difficulty"),
     sortOrder: integer("sort_order").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
   },
   (table) => [
-    uniqueIndex("problem_set_problem_set_pid_unique").on(
-      table.problemSetId,
-      table.pid
-    ),
+    primaryKey({
+      columns: [table.problemSetId, table.pid],
+      name: "problem_set_problem_set_pid_pk",
+    }),
     index("problem_set_problem_set_sort_idx").on(
       table.problemSetId,
       table.sortOrder

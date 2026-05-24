@@ -81,13 +81,13 @@ export const getRankFilterOptions = <Row extends Record<string, unknown>>(
 };
 
 export const parseMinimumFilterValue = (value: string) => {
-  const normalizedValue = value.trim();
+  const input = value.trim();
 
-  if (!normalizedValue) {
+  if (!input) {
     return null;
   }
 
-  const parsedValue = Number(normalizedValue);
+  const parsedValue = Number(input);
 
   return Number.isFinite(parsedValue) ? parsedValue : null;
 };

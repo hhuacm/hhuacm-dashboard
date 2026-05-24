@@ -52,7 +52,6 @@ describe("listLuoguRankRows", () => {
         fetchedAt,
         lastAttemptedAt: fetchedAt,
         lastError: null,
-        uid: 97_238,
       });
     }
   };

@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   index,
   integer,
@@ -24,14 +24,6 @@ export const luoguAccountStats = sqliteTable(
       mode: "timestamp_ms",
     }).notNull(),
     lastError: text("last_error"),
-    uid: integer("uid"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
   },
   (table) => [index("luogu_account_stats_fetched_at_idx").on(table.fetchedAt)]
 );
@@ -43,8 +35,6 @@ export const luoguAcceptedProblem = sqliteTable(
       .notNull()
       .references(() => userOjAccount.id, { onDelete: "cascade" }),
     difficulty: integer("difficulty"),
-    firstSeenAt: integer("first_seen_at", { mode: "timestamp_ms" }).notNull(),
-    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
     name: text("name").notNull(),
     pid: text("pid").notNull(),
     type: text("type").notNull(),

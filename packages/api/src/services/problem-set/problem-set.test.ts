@@ -65,7 +65,6 @@ const createLuoguUser = async (
       fetchedAt: input.fetchedAt,
       lastAttemptedAt: input.fetchedAt,
       lastError: null,
-      uid: 97_238,
     });
   }
 };
@@ -77,13 +76,9 @@ const createAcceptedProblem = async (
     pid: string;
   }
 ) => {
-  const now = new Date("2026-01-01T00:00:00.000Z");
-
   await db.insert(luoguAcceptedProblem).values({
     accountId: input.accountId,
     difficulty: 2,
-    firstSeenAt: now,
-    lastSeenAt: now,
     name: input.pid,
     pid: input.pid,
     type: "P",
@@ -184,8 +179,6 @@ describe("problem sets", () => {
     await db.insert(luoguAcceptedProblem).values({
       accountId: "account-viewer",
       difficulty: 2,
-      firstSeenAt: fetchedAt,
-      lastSeenAt: fetchedAt,
       name: "玩具谜题",
       pid: "P1563",
       type: "P",
@@ -214,8 +207,6 @@ describe("problem sets", () => {
     await db.insert(luoguAcceptedProblem).values({
       accountId: "account-viewer",
       difficulty: 2,
-      firstSeenAt: fetchedAt,
-      lastSeenAt: fetchedAt,
       name: "玩具谜题",
       pid: "P1563",
       type: "P",
