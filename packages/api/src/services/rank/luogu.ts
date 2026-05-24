@@ -5,6 +5,8 @@ import { asc, desc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { getLuoguRankRefreshActivity } from "../refresh/activity";
+import { isLuoguStatsCacheFresh } from "../refresh/policy";
+import { requestLuoguAccountStatsRefresh } from "../refresh/requests";
 
 type Database = Context["db"];
 
@@ -13,8 +15,7 @@ type LuoguRankStatus =
   | "failed"
   | "missing-account"
   | "ready"
-  | "refreshing"
-  | "stale";
+  | "refreshing";
 
 const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
 
@@ -23,7 +24,6 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 const getLuoguRankStatus = (input: {
   fetchedAt: Date | null;
   hasActiveRefreshRequest: boolean;
-  isFresh: boolean;
   lastError: null | string;
 }): LuoguRankStatus => {
   if (input.hasActiveRefreshRequest) {
@@ -36,10 +36,6 @@ const getLuoguRankStatus = (input: {
 
   if (!input.fetchedAt) {
     return "empty";
-  }
-
-  if (!input.isFresh) {
-    return "stale";
   }
 
   return "ready";
@@ -80,11 +76,14 @@ export const listLuoguRankRows = async (db: Database) => {
     row.accountId ? [row.accountId] : []
   );
   const now = new Date();
-  const refreshActivity = await getLuoguRankRefreshActivity(
-    db,
-    accountIds,
-    now
-  );
+
+  for (const row of rows) {
+    if (!isLuoguStatsCacheFresh(row.fetchedAt, now)) {
+      await requestLuoguAccountStatsRefresh(db, row.accountId);
+    }
+  }
+
+  const refreshActivity = await getLuoguRankRefreshActivity(db, accountIds);
 
   return rows.map((row) => ({
     grade: row.grade,

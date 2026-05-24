@@ -3,6 +3,7 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -15,6 +16,7 @@ describe("listLuoguRankRows", () => {
       acceptedProblemCount?: null | number;
       acceptedWeightedScore?: null | number;
       averageAcceptedDifficulty?: null | number;
+      fetchedAt?: Date;
       id: string;
       memberStatus?: MemberStatus;
     }
@@ -42,7 +44,7 @@ describe("listLuoguRankRows", () => {
     });
 
     if (input.acceptedWeightedScore !== undefined) {
-      const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
+      const fetchedAt = input.fetchedAt ?? new Date("2026-05-24T00:00:00.000Z");
 
       await db.insert(luoguAccountStats).values({
         acceptedProblemCount: input.acceptedProblemCount ?? null,
@@ -104,5 +106,37 @@ describe("listLuoguRankRows", () => {
     ]);
     expect(usernames).not.toContain("retired-user");
     expect(usernames).not.toContain("frozen-user");
+  });
+
+  it("enqueues missing and expired stats as refreshing", async () => {
+    const db = await createServiceTestDb();
+    const expiredFetchedAt = new Date("2026-01-01T00:00:00.000Z");
+
+    await createRankUser(db, {
+      acceptedProblemCount: 1,
+      acceptedWeightedScore: 10,
+      averageAcceptedDifficulty: 2,
+      fetchedAt: expiredFetchedAt,
+      id: "expired-user",
+      memberStatus: "active",
+    });
+    await createRankUser(db, {
+      id: "missing-stats-user",
+      memberStatus: "selection",
+    });
+
+    const rows = await listLuoguRankRows(db);
+    const requests = await db.select().from(refreshRequest);
+
+    expect(rows.map((row) => [row.username, row.luogu.status])).toEqual([
+      ["expired-user", "refreshing"],
+      ["missing-stats-user", "refreshing"],
+    ]);
+    expect(
+      requests.map((request) => [request.kind, request.targetId]).sort()
+    ).toEqual([
+      ["luogu.accountStats", "account-expired-user"],
+      ["luogu.accountStats", "account-missing-stats-user"],
+    ]);
   });
 });

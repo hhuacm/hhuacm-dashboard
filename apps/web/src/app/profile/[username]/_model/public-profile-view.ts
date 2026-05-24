@@ -10,7 +10,6 @@ export interface PublicOjAccount {
     acceptedProblemCount: null | number;
     acceptedProblemCountInMonth: null | number;
     fetchedAt: null | string;
-    isStale: boolean;
     lastAttemptedAt: string;
     lastError: null | string;
     lastOnlineAt: null | string;
@@ -161,7 +160,7 @@ export function getCodeforcesStatusText(
     return codeforces.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
   }
 
-  return codeforces.isStale ? "数据待刷新" : "数据已更新";
+  return "数据已更新";
 }
 
 export function getCodeforcesStatusClassName(
@@ -171,7 +170,7 @@ export function getCodeforcesStatusClassName(
     return "text-danger";
   }
 
-  if (codeforces?.syncStatus === "refreshing" || codeforces?.isStale) {
+  if (codeforces?.syncStatus === "refreshing") {
     return "text-accent";
   }
 

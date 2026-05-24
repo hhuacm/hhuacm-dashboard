@@ -1,19 +1,21 @@
 import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
+import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
+import { getCodeforcesStatsSyncStatus } from "../codeforces/sync-status";
 import { createServiceTestDb } from "../test-db";
-import { getCodeforcesRankStatus, listCodeforcesRankRows } from "./codeforces";
+import { listCodeforcesRankRows } from "./codeforces";
 
-describe("getCodeforcesRankStatus", () => {
+describe("getCodeforcesStatsSyncStatus", () => {
   it("prioritizes active refresh requests", () => {
     expect(
-      getCodeforcesRankStatus({
+      getCodeforcesStatsSyncStatus({
         fetchedAt: new Date(),
         hasActiveRefreshRequest: true,
-        isFresh: false,
         lastError: "failed",
       })
     ).toBe("refreshing");
@@ -21,10 +23,9 @@ describe("getCodeforcesRankStatus", () => {
 
   it("marks missing stats as empty", () => {
     expect(
-      getCodeforcesRankStatus({
+      getCodeforcesStatsSyncStatus({
         fetchedAt: null,
         hasActiveRefreshRequest: false,
-        isFresh: true,
         lastError: null,
       })
     ).toBe("empty");
@@ -32,32 +33,19 @@ describe("getCodeforcesRankStatus", () => {
 
   it("marks failed stats before freshness", () => {
     expect(
-      getCodeforcesRankStatus({
+      getCodeforcesStatsSyncStatus({
         fetchedAt: new Date(),
         hasActiveRefreshRequest: false,
-        isFresh: true,
         lastError: "Codeforces unavailable",
       })
     ).toBe("failed");
   });
 
-  it("marks stale stats when refresh policy reports stale", () => {
+  it("marks stats as ready when they have been fetched", () => {
     expect(
-      getCodeforcesRankStatus({
+      getCodeforcesStatsSyncStatus({
         fetchedAt: new Date(),
         hasActiveRefreshRequest: false,
-        isFresh: false,
-        lastError: null,
-      })
-    ).toBe("stale");
-  });
-
-  it("marks fresh stats as ready when refresh policy reports fresh", () => {
-    expect(
-      getCodeforcesRankStatus({
-        fetchedAt: new Date(),
-        hasActiveRefreshRequest: false,
-        isFresh: true,
         lastError: null,
       })
     ).toBe("ready");
@@ -68,6 +56,7 @@ describe("listCodeforcesRankRows", () => {
   const createRankUser = async (
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
+      fetchedAt?: Date;
       id: string;
       memberStatus?: MemberStatus;
     }
@@ -93,6 +82,20 @@ describe("listCodeforcesRankRows", () => {
       profileUrl: `https://codeforces.com/profile/${input.id}`,
       userId: input.id,
     });
+
+    if (input.fetchedAt) {
+      await db.insert(codeforcesAccountStats).values({
+        acceptedProblemCount: 1,
+        acceptedProblemCountInMonth: 1,
+        accountId: `account-${input.id}`,
+        fetchedAt: input.fetchedAt,
+        lastAttemptedAt: input.fetchedAt,
+        lastError: null,
+        lastOnlineAt: input.fetchedAt,
+        maxRating: 1500,
+        rating: 1400,
+      });
+    }
   };
 
   it("includes only current members", async () => {
@@ -115,5 +118,38 @@ describe("listCodeforcesRankRows", () => {
     expect(usernames).toContain("missing-profile-user");
     expect(usernames).not.toContain("retired-user");
     expect(usernames).not.toContain("frozen-user");
+    expect(rows[0]?.codeforces).toHaveProperty("syncStatus");
+    expect(rows[0]?.codeforces).not.toHaveProperty("status");
+  });
+
+  it("enqueues missing and expired stats as refreshing", async () => {
+    const db = await createServiceTestDb();
+    const expiredFetchedAt = new Date("2026-01-01T00:00:00.000Z");
+
+    await createRankUser(db, {
+      fetchedAt: expiredFetchedAt,
+      id: "expired-user",
+      memberStatus: "active",
+    });
+    await createRankUser(db, {
+      id: "missing-stats-user",
+      memberStatus: "selection",
+    });
+
+    const rows = await listCodeforcesRankRows(db);
+    const requests = await db.select().from(refreshRequest);
+
+    expect(
+      rows.map((row) => [row.username, row.codeforces.syncStatus])
+    ).toEqual([
+      ["expired-user", "refreshing"],
+      ["missing-stats-user", "refreshing"],
+    ]);
+    expect(
+      requests.map((request) => [request.kind, request.targetId]).sort()
+    ).toEqual([
+      ["codeforces.accountStats", "account-expired-user"],
+      ["codeforces.accountStats", "account-missing-stats-user"],
+    ]);
   });
 });

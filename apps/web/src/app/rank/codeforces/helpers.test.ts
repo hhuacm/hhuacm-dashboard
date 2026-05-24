@@ -28,7 +28,7 @@ const createRankRow = (
     maxRating: null,
     profileUrl: "",
     rating: null,
-    status: "ready",
+    syncStatus: "ready",
     ...input.codeforces,
   },
   grade: input.grade ?? null,

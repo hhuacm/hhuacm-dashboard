@@ -4,46 +4,16 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { asc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
+import { getCodeforcesStatsSyncStatus } from "../codeforces/sync-status";
 import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
+import { isCodeforcesStatsCacheFresh } from "../refresh/policy";
+import { requestCodeforcesAccountStatsRefresh } from "../refresh/requests";
 
 type Database = Context["db"];
-
-type CodeforcesRankStatus =
-  | "empty"
-  | "failed"
-  | "missing-account"
-  | "ready"
-  | "refreshing"
-  | "stale";
 
 const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
-export const getCodeforcesRankStatus = (input: {
-  fetchedAt: Date | null;
-  hasActiveRefreshRequest: boolean;
-  isFresh: boolean;
-  lastError: null | string;
-}): CodeforcesRankStatus => {
-  if (input.hasActiveRefreshRequest) {
-    return "refreshing";
-  }
-
-  if (input.lastError) {
-    return "failed";
-  }
-
-  if (!input.fetchedAt) {
-    return "empty";
-  }
-
-  if (!input.isFresh) {
-    return "stale";
-  }
-
-  return "ready";
-};
 
 export const listCodeforcesRankRows = async (db: Database) => {
   const rows = await db
@@ -77,10 +47,16 @@ export const listCodeforcesRankRows = async (db: Database) => {
     row.accountId ? [row.accountId] : []
   );
   const now = new Date();
+
+  for (const row of rows) {
+    if (!isCodeforcesStatsCacheFresh(row.fetchedAt, now)) {
+      await requestCodeforcesAccountStatsRefresh(db, row.accountId);
+    }
+  }
+
   const refreshActivity = await getCodeforcesRankRefreshActivity(
     db,
-    accountIds,
-    now
+    accountIds
   );
 
   return rows.map((row) => ({
@@ -94,7 +70,7 @@ export const listCodeforcesRankRows = async (db: Database) => {
       maxRating: row.maxRating,
       profileUrl: row.profileUrl,
       rating: row.rating,
-      status: getCodeforcesRankStatus(
+      syncStatus: getCodeforcesStatsSyncStatus(
         refreshActivity.toStatusInput({
           accountId: row.accountId,
           fetchedAt: row.fetchedAt,

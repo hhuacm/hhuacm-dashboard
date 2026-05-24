@@ -115,7 +115,7 @@ const rankCellRenderers = {
   status: (row) => (
     <StatusChip
       lastError={row.codeforces?.lastError}
-      status={row.codeforces?.status ?? "missing-account"}
+      status={row.codeforces?.syncStatus ?? "missing-account"}
       statusConfig={statusConfig}
     />
   ),

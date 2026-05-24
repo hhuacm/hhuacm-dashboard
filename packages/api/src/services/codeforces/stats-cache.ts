@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { ensureCodeforcesAccountStatsRefresh } from "../refresh/ensure";
+import { getCodeforcesStatsSyncStatus } from "./sync-status";
 import type { CodeforcesAccount, PublicCodeforcesStats } from "./types";
 
 type Database = Context["db"];
@@ -34,7 +35,6 @@ const getCodeforcesStats = async (db: Database, accountId: string) =>
 const serializeCodeforcesStats = (
   stats: NonNullable<Awaited<ReturnType<typeof getCodeforcesStats>>>,
   options: {
-    isStale: boolean;
     lastError?: null | string;
     syncStatus: PublicCodeforcesStats["syncStatus"];
   }
@@ -42,7 +42,6 @@ const serializeCodeforcesStats = (
   acceptedProblemCount: stats.acceptedProblemCount,
   acceptedProblemCountInMonth: stats.acceptedProblemCountInMonth,
   fetchedAt: toIsoString(stats.fetchedAt),
-  isStale: options.isStale,
   lastAttemptedAt: stats.lastAttemptedAt.toISOString(),
   lastError: options.lastError ?? stats.lastError,
   lastOnlineAt: toIsoString(stats.lastOnlineAt),
@@ -63,24 +62,17 @@ export const getCodeforcesStatsForProfile = async (
     now,
   });
   const lastError = currentStats?.lastError ?? null;
-  const syncStatus = (() => {
-    if (refreshQueueState.isQueued) {
-      return "refreshing";
-    }
-
-    if (lastError) {
-      return "failed";
-    }
-
-    return currentStats?.fetchedAt ? "ready" : "empty";
-  })();
+  const syncStatus = getCodeforcesStatsSyncStatus({
+    fetchedAt: currentStats?.fetchedAt ?? null,
+    hasActiveRefreshRequest: refreshQueueState.isQueued,
+    lastError,
+  });
 
   if (!currentStats?.fetchedAt) {
     return {
       acceptedProblemCount: null,
       acceptedProblemCountInMonth: null,
       fetchedAt: null,
-      isStale: true,
       lastAttemptedAt:
         currentStats?.lastAttemptedAt.toISOString() ??
         refreshQueueState.requestedAt?.toISOString() ??
@@ -94,7 +86,6 @@ export const getCodeforcesStatsForProfile = async (
   }
 
   return serializeCodeforcesStats(currentStats, {
-    isStale: !refreshQueueState.isFresh,
     lastError,
     syncStatus,
   });

@@ -34,10 +34,6 @@ export const statusConfig = {
     className: "bg-accent-soft text-accent",
     label: "刷新中",
   },
-  stale: {
-    className: "bg-warning-soft text-warning",
-    label: "待刷新",
-  },
 } as const;
 
 export type SortDirection = "ascending" | "descending";

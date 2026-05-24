@@ -18,17 +18,14 @@ import {
 type Database = Context["db"];
 
 interface RefreshRequestState {
-  isFresh: boolean;
   isQueued: boolean;
   requestedAt: Date | null;
 }
 
 const toRequestState = (input: {
-  isFresh: boolean;
   isRefreshing: boolean;
   requestedAt: Date | null;
 }): RefreshRequestState => ({
-  isFresh: input.isFresh,
   isQueued: input.isRefreshing,
   requestedAt: input.requestedAt,
 });
@@ -53,7 +50,6 @@ export const ensureCodeforcesAccountStatsRefresh = async (
   );
 
   return toRequestState({
-    isFresh,
     isRefreshing: activity.isRefreshing,
     requestedAt: activity.requestedAt,
   });
@@ -79,7 +75,6 @@ export const ensureLuoguAccountStatsRefresh = async (
   );
 
   return toRequestState({
-    isFresh,
     isRefreshing: activity.isRefreshing,
     requestedAt: activity.requestedAt,
   });
@@ -109,7 +104,6 @@ export const ensureUserAwardsFromLuoguRefresh = async (
       : null;
 
   return toRequestState({
-    isFresh,
     isRefreshing: activity?.isRefreshing ?? false,
     requestedAt: activity?.requestedAt ?? null,
   });

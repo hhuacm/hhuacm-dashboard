@@ -2,7 +2,6 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { isCodeforcesStatsCacheFresh, isLuoguStatsCacheFresh } from "./policy";
 import {
   codeforcesAccountStatsRequestKind,
   luoguAccountStatsRequestKind,
@@ -114,8 +113,7 @@ const getRefreshingLuoguAccountIds = (db: Database, accountIds: string[]) =>
 
 export const getCodeforcesRankRefreshActivity = async (
   db: Database,
-  accountIds: string[],
-  now: Date
+  accountIds: string[]
 ) => {
   const refreshingAccountIds = await getRefreshingCodeforcesAccountIds(
     db,
@@ -130,7 +128,6 @@ export const getCodeforcesRankRefreshActivity = async (
     }) => ({
       fetchedAt: input.fetchedAt,
       hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
-      isFresh: isCodeforcesStatsCacheFresh(input.fetchedAt, now),
       lastError: input.lastError,
     }),
   };
@@ -138,8 +135,7 @@ export const getCodeforcesRankRefreshActivity = async (
 
 export const getLuoguRankRefreshActivity = async (
   db: Database,
-  accountIds: string[],
-  now: Date
+  accountIds: string[]
 ) => {
   const refreshingAccountIds = await getRefreshingLuoguAccountIds(
     db,
@@ -154,7 +150,6 @@ export const getLuoguRankRefreshActivity = async (
     }) => ({
       fetchedAt: input.fetchedAt,
       hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
-      isFresh: isLuoguStatsCacheFresh(input.fetchedAt, now),
       lastError: input.lastError,
     }),
   };
