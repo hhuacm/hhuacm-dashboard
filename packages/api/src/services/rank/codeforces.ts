@@ -15,8 +15,20 @@ const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMe
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
+const ensureCodeforcesRankStatsRefreshRequests = async (
+  db: Database,
+  rows: { accountId: string; fetchedAt: Date | null }[],
+  now: Date
+) => {
+  for (const row of rows) {
+    if (!isCodeforcesStatsCacheFresh(row.fetchedAt, now)) {
+      await requestCodeforcesAccountStatsRefresh(db, row.accountId);
+    }
+  }
+};
+
 export const listCodeforcesRankRows = async (db: Database) => {
-  const rows = await db
+  const cachedRows = await db
     .select({
       acceptedProblemCount: codeforcesAccountStats.acceptedProblemCount,
       acceptedProblemCountInMonth:
@@ -43,23 +55,20 @@ export const listCodeforcesRankRows = async (db: Database) => {
     )
     .where(eq(userOjAccount.platform, "codeforces"))
     .orderBy(asc(userNameLabelSortExpression), asc(currentMember.userId));
-  const accountIds = rows.flatMap((row) =>
+
+  const accountIds = cachedRows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );
   const now = new Date();
 
-  for (const row of rows) {
-    if (!isCodeforcesStatsCacheFresh(row.fetchedAt, now)) {
-      await requestCodeforcesAccountStatsRefresh(db, row.accountId);
-    }
-  }
+  await ensureCodeforcesRankStatsRefreshRequests(db, cachedRows, now);
 
   const refreshActivity = await getCodeforcesRankRefreshActivity(
     db,
     accountIds
   );
 
-  return rows.map((row) => ({
+  return cachedRows.map((row) => ({
     codeforces: {
       acceptedProblemCount: row.acceptedProblemCount,
       acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,

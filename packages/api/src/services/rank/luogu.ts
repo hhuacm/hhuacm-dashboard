@@ -15,8 +15,20 @@ const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMe
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
+const ensureLuoguRankStatsRefreshRequests = async (
+  db: Database,
+  rows: { accountId: string; fetchedAt: Date | null }[],
+  now: Date
+) => {
+  for (const row of rows) {
+    if (!isLuoguStatsCacheFresh(row.fetchedAt, now)) {
+      await requestLuoguAccountStatsRefresh(db, row.accountId);
+    }
+  }
+};
+
 export const listLuoguRankRows = async (db: Database) => {
-  const rows = await db
+  const cachedRows = await db
     .select({
       acceptedProblemCount: luoguAccountStats.acceptedProblemCount,
       acceptedWeightedScore: luoguAccountStats.acceptedWeightedScore,
@@ -46,20 +58,17 @@ export const listLuoguRankRows = async (db: Database) => {
       asc(userNameLabelSortExpression),
       asc(currentMember.userId)
     );
-  const accountIds = rows.flatMap((row) =>
+
+  const accountIds = cachedRows.flatMap((row) =>
     row.accountId ? [row.accountId] : []
   );
   const now = new Date();
 
-  for (const row of rows) {
-    if (!isLuoguStatsCacheFresh(row.fetchedAt, now)) {
-      await requestLuoguAccountStatsRefresh(db, row.accountId);
-    }
-  }
+  await ensureLuoguRankStatsRefreshRequests(db, cachedRows, now);
 
   const refreshActivity = await getLuoguRankRefreshActivity(db, accountIds);
 
-  return rows.map((row) => ({
+  return cachedRows.map((row) => ({
     grade: row.grade,
     luogu: {
       acceptedProblemCount: row.acceptedProblemCount,
