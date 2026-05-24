@@ -449,9 +449,8 @@ function AdminUserOjAccountRow({
       },
     })
   );
-  const normalizedHandle = handle.trim();
-  const isChanged = normalizedHandle !== (account?.handle ?? "");
-  const canSave = Boolean(normalizedHandle) && isChanged;
+  const isChanged = handle !== (account?.handle ?? "");
+  const canSave = Boolean(handle) && isChanged;
   const isBusy = upsertAccount.isPending || deleteAccount.isPending;
   const platformLabel = ojPlatformLabels[platform];
   const saveIcon = account ? (
@@ -465,14 +464,14 @@ function AdminUserOjAccountRow({
 
     if (!canSave) {
       setMessage({
-        text: normalizedHandle ? "没有需要保存的修改。" : "请填写账号昵称。",
-        tone: normalizedHandle ? "success" : "danger",
+        text: handle ? "没有需要保存的修改。" : "请填写账号昵称。",
+        tone: handle ? "success" : "danger",
       });
       return;
     }
 
     await upsertAccount.mutateAsync({
-      handle: normalizedHandle,
+      handle,
       platform,
       userId,
     });

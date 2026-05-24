@@ -68,7 +68,7 @@ const emptyOjAccountFormValues: OjAccountFormValues = {
 };
 
 const ojAccountFormSchema = z.object({
-  handle: z.string().trim().min(1, "请填写 OJ 账号昵称。"),
+  handle: z.string().min(1, "请填写 OJ 账号昵称。"),
   platform: z.custom<OjPlatform>(
     (value) => typeof value === "string" && isOjPlatform(value),
     { message: "请选择 OJ 平台。" }

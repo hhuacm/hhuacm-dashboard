@@ -38,7 +38,6 @@ describe("user awards from Luogu refresh request", () => {
     await db.insert(userOjAccount).values({
       handle: input.id,
       id: `account-${input.id}`,
-      normalizedHandle: input.id,
       platform: "luogu",
       profileUrl: input.profileUrl ?? "https://www.luogu.com.cn/user/97238",
       userId: input.id,

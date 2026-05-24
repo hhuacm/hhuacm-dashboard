@@ -94,7 +94,6 @@ describe("listCodeforcesRankRows", () => {
     await db.insert(userOjAccount).values({
       handle: input.id,
       id: `account-${input.id}`,
-      normalizedHandle: input.id,
       platform: "codeforces",
       profileUrl: `https://codeforces.com/profile/${input.id}`,
       userId: input.id,

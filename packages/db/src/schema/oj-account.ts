@@ -22,7 +22,6 @@ export const userOjAccount = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     platform: text("platform", { enum: ojPlatforms }).notNull(),
     handle: text("handle").notNull(),
-    normalizedHandle: text("normalized_handle").notNull(),
     profileUrl: text("profile_url").default("").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
@@ -43,7 +42,7 @@ export const userOjAccount = sqliteTable(
     ),
     uniqueIndex("user_oj_account_platform_handle_unique").on(
       table.platform,
-      table.normalizedHandle
+      table.handle
     ),
     index("user_oj_account_platform_userId_idx").on(
       table.platform,

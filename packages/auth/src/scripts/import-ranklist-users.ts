@@ -40,7 +40,6 @@ interface ImportCandidate {
   grade: null | string;
   handle: string;
   major: null | string;
-  normalizedHandle: string;
   realName: null | string;
   username: string;
 }
@@ -54,7 +53,6 @@ interface ExistingUser {
 interface ExistingCodeforcesAccount {
   handle: string;
   id: string;
-  normalizedHandle: string;
   userId: string;
 }
 
@@ -348,14 +346,11 @@ const parseCandidates = (rows: string[][]): ImportCandidate[] => {
       continue;
     }
 
-    const normalizedHandle = handle.toLowerCase();
-
     candidates.push({
-      email: `${normalizedHandle}@${emailDomain}`,
+      email: `${handle.toLowerCase()}@${emailDomain}`,
       grade: normalizeGrade(grade),
       handle,
       major: major || null,
-      normalizedHandle,
       realName: realName || null,
       username: handle,
     });
@@ -369,7 +364,7 @@ const assertNoDuplicateHandles = (candidates: ImportCandidate[]) => {
   const duplicates: string[] = [];
 
   for (const candidate of candidates) {
-    const previousName = seenHandles.get(candidate.normalizedHandle);
+    const previousName = seenHandles.get(candidate.handle);
 
     if (previousName) {
       duplicates.push(
@@ -378,7 +373,7 @@ const assertNoDuplicateHandles = (candidates: ImportCandidate[]) => {
       continue;
     }
 
-    seenHandles.set(candidate.normalizedHandle, candidate.realName ?? "-");
+    seenHandles.set(candidate.handle, candidate.realName ?? "-");
   }
 
   if (duplicates.length > 0) {
@@ -446,7 +441,7 @@ const planImport = ({
 
     const existingUser = targetUser.user;
     const existingCodeforcesForHandle = existingCodeforcesByHandle.get(
-      candidate.normalizedHandle
+      candidate.handle
     );
 
     if (
@@ -483,7 +478,7 @@ const planImport = ({
 
     if (
       existingCodeforcesForUser &&
-      existingCodeforcesForUser.normalizedHandle !== candidate.normalizedHandle
+      existingCodeforcesForUser.handle !== candidate.handle
     ) {
       if (!existingUser) {
         throw new Error(`Unexpected missing user for ${candidate.username}`);
@@ -626,7 +621,6 @@ const importPlannedUsers = async (
           createdAt: now,
           handle: candidate.handle,
           id: randomUUID(),
-          normalizedHandle: candidate.normalizedHandle,
           platform: "codeforces",
           profileUrl: buildProfileUrl(candidate.handle),
           updatedAt: now,
@@ -681,9 +675,7 @@ const main = async () => {
 
   const usernames = candidates.map((candidate) => candidate.username);
   const emails = candidates.map((candidate) => candidate.email);
-  const normalizedHandles = candidates.map(
-    (candidate) => candidate.normalizedHandle
-  );
+  const handles = candidates.map((candidate) => candidate.handle);
 
   const existingUsers = await db
     .select({
@@ -698,14 +690,13 @@ const main = async () => {
     .select({
       handle: userOjAccount.handle,
       id: userOjAccount.id,
-      normalizedHandle: userOjAccount.normalizedHandle,
       userId: userOjAccount.userId,
     })
     .from(userOjAccount)
     .where(
       and(
         eq(userOjAccount.platform, "codeforces"),
-        inArray(userOjAccount.normalizedHandle, normalizedHandles)
+        inArray(userOjAccount.handle, handles)
       )
     );
 
@@ -725,7 +716,6 @@ const main = async () => {
           .select({
             handle: userOjAccount.handle,
             id: userOjAccount.id,
-            normalizedHandle: userOjAccount.normalizedHandle,
             userId: userOjAccount.userId,
           })
           .from(userOjAccount)
@@ -744,7 +734,7 @@ const main = async () => {
   );
   const existingCodeforcesByHandle = new Map(
     existingCodeforcesAccounts.map((existingAccount) => [
-      existingAccount.normalizedHandle,
+      existingAccount.handle,
       existingAccount,
     ])
   );

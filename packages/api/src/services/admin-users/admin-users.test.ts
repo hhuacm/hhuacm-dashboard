@@ -69,7 +69,6 @@ const createOjAccount = async (
   await db.insert(userOjAccount).values({
     handle,
     id,
-    normalizedHandle: handle.toLowerCase(),
     platform: input.platform,
     profileUrl: `https://example.com/${input.platform}/${handle}`,
     userId: input.userId,

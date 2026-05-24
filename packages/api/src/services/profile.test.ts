@@ -29,7 +29,6 @@ describe("getPublicProfile", () => {
       {
         handle: "tourist",
         id: "account-codeforces",
-        normalizedHandle: "tourist",
         platform: "codeforces",
         profileUrl: "https://codeforces.com/profile/tourist",
         userId: "user-retired",
@@ -37,7 +36,6 @@ describe("getPublicProfile", () => {
       {
         handle: "12345",
         id: "account-luogu",
-        normalizedHandle: "12345",
         platform: "luogu",
         profileUrl: "https://www.luogu.com.cn/user/12345",
         userId: "user-retired",
@@ -89,7 +87,6 @@ describe("getPublicProfile", () => {
     await db.insert(userOjAccount).values({
       handle: "forlight",
       id: "account-luogu-award",
-      normalizedHandle: "forlight",
       platform: "luogu",
       profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "user-retired-award",
@@ -154,7 +151,6 @@ describe("getPublicProfile", () => {
     await db.insert(userOjAccount).values({
       handle: "forlight",
       id: "account-luogu-active-award",
-      normalizedHandle: "forlight",
       platform: "luogu",
       profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "user-active-award",

@@ -70,7 +70,6 @@ create table user_oj_account (
   user_id text not null,
   platform text not null,
   handle text not null,
-  normalized_handle text not null,
   profile_url text default '' not null,
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null

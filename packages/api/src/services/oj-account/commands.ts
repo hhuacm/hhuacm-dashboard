@@ -8,7 +8,6 @@ import { buildOjProfileUrl } from "../oj-profile-url";
 import {
   assertNoHandleOwner,
   getExistingCurrentUserAccountMessage,
-  normalizeOjHandle,
 } from "./handle";
 import {
   getInternalOjAccountForUserPlatform,
@@ -36,13 +35,11 @@ interface OjAccountDeleteInput {
 }
 
 const createOjAccount = async (db: Database, input: OjAccountInput) => {
-  const normalizedHandle = normalizeOjHandle(input.handle);
   const profileUrl = await buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .insert(userOjAccount)
     .values({
       handle: input.handle,
-      normalizedHandle,
       platform: input.platform,
       profileUrl,
       userId: input.userId,
@@ -58,13 +55,11 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
   return toPublicOjAccount(account);
 };
 const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
-  const normalizedHandle = normalizeOjHandle(input.handle);
   const profileUrl = await buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .update(userOjAccount)
     .set({
       handle: input.handle,
-      normalizedHandle,
       profileUrl,
       updatedAt: new Date(),
     })

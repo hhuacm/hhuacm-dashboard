@@ -58,7 +58,6 @@ const createLuoguAccount = async (
   await db.insert(userOjAccount).values({
     handle: "forlight",
     id: "account-luogu",
-    normalizedHandle: "forlight",
     platform: "luogu",
     profileUrl: "https://www.luogu.com.cn/user/97238",
     userId: "user-luogu",

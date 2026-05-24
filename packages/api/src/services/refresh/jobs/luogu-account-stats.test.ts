@@ -33,7 +33,6 @@ describe("Luogu account stats refresh request", () => {
     await db.insert(userOjAccount).values({
       handle: input.id,
       id: `account-${input.id}`,
-      normalizedHandle: input.id,
       platform: "luogu",
       profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: input.id,

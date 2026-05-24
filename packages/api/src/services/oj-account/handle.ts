@@ -13,8 +13,6 @@ interface OjHandleInput {
   platform: OjPlatform;
 }
 
-export const normalizeOjHandle = (handle: string) => handle.toLowerCase();
-
 export const getExistingCurrentUserAccountMessage = (account: {
   handle: string;
   platform: string;
@@ -32,7 +30,7 @@ export const assertNoHandleOwner = async (
 ) => {
   const conditions = [
     eq(userOjAccount.platform, input.platform),
-    eq(userOjAccount.normalizedHandle, normalizeOjHandle(input.handle)),
+    eq(userOjAccount.handle, input.handle),
   ];
 
   if (options.excludeUserId) {
