@@ -73,7 +73,6 @@ describe("Luogu profile stats", () => {
       })
     ).resolves.toMatchObject({
       acceptedProblemCount: null,
-      lastError: "Luogu UID is missing",
       syncStatus: "empty",
     });
   });

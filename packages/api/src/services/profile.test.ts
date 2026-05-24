@@ -51,7 +51,6 @@ describe("getPublicProfile", () => {
     expect(profile.awards).toEqual({
       fetchedAt: null,
       items: [],
-      lastError: null,
       syncStatus: "empty",
     });
     expect(profile.profile.memberStatus).toBe("retired");
@@ -124,7 +123,6 @@ describe("getPublicProfile", () => {
           year: 2023,
         },
       ],
-      lastError: null,
       syncStatus: "ready",
     });
     expect(refreshRequests).toHaveLength(0);

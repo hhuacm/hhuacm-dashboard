@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { ensureCodeforcesAccountStatsRefresh } from "../refresh/ensure";
-import { getCodeforcesStatsSyncStatus } from "./sync-status";
+import { getRefreshSyncStatus } from "../refresh/sync-status";
 import type { CodeforcesAccount, PublicCodeforcesStats } from "./types";
 
 type Database = Context["db"];
@@ -35,15 +35,12 @@ const getCodeforcesStats = async (db: Database, accountId: string) =>
 const serializeCodeforcesStats = (
   stats: NonNullable<Awaited<ReturnType<typeof getCodeforcesStats>>>,
   options: {
-    lastError?: null | string;
     syncStatus: PublicCodeforcesStats["syncStatus"];
   }
 ): PublicCodeforcesStats => ({
   acceptedProblemCount: stats.acceptedProblemCount,
   acceptedProblemCountInMonth: stats.acceptedProblemCountInMonth,
   fetchedAt: toIsoString(stats.fetchedAt),
-  lastAttemptedAt: stats.lastAttemptedAt.toISOString(),
-  lastError: options.lastError ?? stats.lastError,
   lastOnlineAt: toIsoString(stats.lastOnlineAt),
   maxRating: stats.maxRating,
   rating: stats.rating,
@@ -62,9 +59,9 @@ export const getCodeforcesStatsForProfile = async (
     now,
   });
   const lastError = currentStats?.lastError ?? null;
-  const syncStatus = getCodeforcesStatsSyncStatus({
+  const syncStatus = getRefreshSyncStatus({
     fetchedAt: currentStats?.fetchedAt ?? null,
-    hasActiveRefreshRequest: refreshQueueState.isQueued,
+    isQueued: refreshQueueState.isQueued,
     lastError,
   });
 
@@ -73,11 +70,6 @@ export const getCodeforcesStatsForProfile = async (
       acceptedProblemCount: null,
       acceptedProblemCountInMonth: null,
       fetchedAt: null,
-      lastAttemptedAt:
-        currentStats?.lastAttemptedAt.toISOString() ??
-        refreshQueueState.requestedAt?.toISOString() ??
-        now.toISOString(),
-      lastError,
       lastOnlineAt: null,
       maxRating: null,
       rating: null,
@@ -86,7 +78,6 @@ export const getCodeforcesStatsForProfile = async (
   }
 
   return serializeCodeforcesStats(currentStats, {
-    lastError,
     syncStatus,
   });
 };

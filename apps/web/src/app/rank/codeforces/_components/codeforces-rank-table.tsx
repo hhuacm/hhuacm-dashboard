@@ -114,7 +114,6 @@ const rankCellRenderers = {
   rating: (row) => <RatingText value={row.codeforces?.rating ?? null} />,
   status: (row) => (
     <StatusChip
-      lastError={row.codeforces?.lastError}
       status={row.codeforces?.syncStatus ?? "missing-account"}
       statusConfig={statusConfig}
     />

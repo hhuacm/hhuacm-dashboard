@@ -91,8 +91,7 @@ const rankCellRenderers = {
   name: renderNameCell,
   status: (row) => (
     <StatusChip
-      lastError={row.luogu.lastError}
-      status={row.luogu.status ?? "missing-account"}
+      status={row.luogu.syncStatus ?? "missing-account"}
       statusConfig={statusConfig}
     />
   ),

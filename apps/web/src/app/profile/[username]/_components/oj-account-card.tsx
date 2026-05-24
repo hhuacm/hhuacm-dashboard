@@ -100,7 +100,6 @@ function CodeforcesStatsContent({
           )}
         >
           {getCodeforcesStatusText(codeforces)}
-          {codeforces?.lastError ? `：${codeforces.lastError}` : ""}
         </dd>
       </div>
     </dl>
@@ -175,7 +174,6 @@ function LuoguStatsContent({
           <dt className="text-muted text-xs">读取状态</dt>
           <dd className="wrap-break-word mt-1 font-medium text-danger">
             {getLuoguStatusText(luogu)}
-            {luogu.lastError ? `：${luogu.lastError}` : ""}
           </dd>
         </div>
       ) : null}

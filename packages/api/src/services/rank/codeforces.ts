@@ -4,10 +4,10 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { asc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { getCodeforcesStatsSyncStatus } from "../codeforces/sync-status";
 import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
 import { isCodeforcesStatsCacheFresh } from "../refresh/policy";
 import { requestCodeforcesAccountStatsRefresh } from "../refresh/requests";
+import { getRefreshSyncStatus } from "../refresh/sync-status";
 
 type Database = Context["db"];
 
@@ -65,12 +65,11 @@ export const listCodeforcesRankRows = async (db: Database) => {
       acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
-      lastError: row.lastError,
       lastOnlineAt: toIsoString(row.lastOnlineAt),
       maxRating: row.maxRating,
       profileUrl: row.profileUrl,
       rating: row.rating,
-      syncStatus: getCodeforcesStatsSyncStatus(
+      syncStatus: getRefreshSyncStatus(
         refreshActivity.toStatusInput({
           accountId: row.accountId,
           fetchedAt: row.fetchedAt,

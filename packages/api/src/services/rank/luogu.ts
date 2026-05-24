@@ -7,39 +7,13 @@ import type { Context } from "../../context";
 import { getLuoguRankRefreshActivity } from "../refresh/activity";
 import { isLuoguStatsCacheFresh } from "../refresh/policy";
 import { requestLuoguAccountStatsRefresh } from "../refresh/requests";
+import { getRefreshSyncStatus } from "../refresh/sync-status";
 
 type Database = Context["db"];
-
-type LuoguRankStatus =
-  | "empty"
-  | "failed"
-  | "missing-account"
-  | "ready"
-  | "refreshing";
 
 const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
-const getLuoguRankStatus = (input: {
-  fetchedAt: Date | null;
-  hasActiveRefreshRequest: boolean;
-  lastError: null | string;
-}): LuoguRankStatus => {
-  if (input.hasActiveRefreshRequest) {
-    return "refreshing";
-  }
-
-  if (input.lastError) {
-    return "failed";
-  }
-
-  if (!input.fetchedAt) {
-    return "empty";
-  }
-
-  return "ready";
-};
 
 export const listLuoguRankRows = async (db: Database) => {
   const rows = await db
@@ -93,9 +67,8 @@ export const listLuoguRankRows = async (db: Database) => {
       averageAcceptedDifficulty: row.averageAcceptedDifficulty,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
-      lastError: row.lastError,
       profileUrl: row.profileUrl,
-      status: getLuoguRankStatus(
+      syncStatus: getRefreshSyncStatus(
         refreshActivity.toStatusInput({
           accountId: row.accountId,
           fetchedAt: row.fetchedAt,

@@ -6,16 +6,16 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
-import { getCodeforcesStatsSyncStatus } from "../codeforces/sync-status";
+import { getRefreshSyncStatus } from "../refresh/sync-status";
 import { createServiceTestDb } from "../test-db";
 import { listCodeforcesRankRows } from "./codeforces";
 
-describe("getCodeforcesStatsSyncStatus", () => {
+describe("getRefreshSyncStatus", () => {
   it("prioritizes active refresh requests", () => {
     expect(
-      getCodeforcesStatsSyncStatus({
+      getRefreshSyncStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshRequest: true,
+        isQueued: true,
         lastError: "failed",
       })
     ).toBe("refreshing");
@@ -23,9 +23,9 @@ describe("getCodeforcesStatsSyncStatus", () => {
 
   it("marks missing stats as empty", () => {
     expect(
-      getCodeforcesStatsSyncStatus({
+      getRefreshSyncStatus({
         fetchedAt: null,
-        hasActiveRefreshRequest: false,
+        isQueued: false,
         lastError: null,
       })
     ).toBe("empty");
@@ -33,9 +33,9 @@ describe("getCodeforcesStatsSyncStatus", () => {
 
   it("marks failed stats before freshness", () => {
     expect(
-      getCodeforcesStatsSyncStatus({
+      getRefreshSyncStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshRequest: false,
+        isQueued: false,
         lastError: "Codeforces unavailable",
       })
     ).toBe("failed");
@@ -43,9 +43,9 @@ describe("getCodeforcesStatsSyncStatus", () => {
 
   it("marks stats as ready when they have been fetched", () => {
     expect(
-      getCodeforcesStatsSyncStatus({
+      getRefreshSyncStatus({
         fetchedAt: new Date(),
-        hasActiveRefreshRequest: false,
+        isQueued: false,
         lastError: null,
       })
     ).toBe("ready");

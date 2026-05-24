@@ -127,7 +127,7 @@ export const getCodeforcesRankRefreshActivity = async (
       lastError: null | string;
     }) => ({
       fetchedAt: input.fetchedAt,
-      hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
+      isQueued: refreshingAccountIds.has(input.accountId),
       lastError: input.lastError,
     }),
   };
@@ -149,7 +149,7 @@ export const getLuoguRankRefreshActivity = async (
       lastError: null | string;
     }) => ({
       fetchedAt: input.fetchedAt,
-      hasActiveRefreshRequest: refreshingAccountIds.has(input.accountId),
+      isQueued: refreshingAccountIds.has(input.accountId),
       lastError: input.lastError,
     }),
   };

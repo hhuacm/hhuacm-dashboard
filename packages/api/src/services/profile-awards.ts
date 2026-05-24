@@ -11,13 +11,15 @@ import { parseLuoguUidFromProfileUrl } from "./luogu/profile-stats";
 import type { LuoguAccount } from "./luogu/types";
 import { ensureUserAwardsFromLuoguRefresh } from "./refresh/ensure";
 import { truncateRefreshError } from "./refresh/policy";
+import {
+  getRefreshSyncStatus,
+  type RefreshSyncStatus,
+} from "./refresh/sync-status";
 
 type Database = Context["db"];
 type LuoguUserLoader = typeof luoguSource.user;
 
 const userAwardSource = "luogu";
-
-type ProfileAwardStatus = "empty" | "failed" | "ready" | "refreshing";
 
 export interface PublicProfileAward {
   contest: string;
@@ -30,8 +32,7 @@ export interface PublicProfileAward {
 export interface PublicProfileAwards {
   fetchedAt: null | string;
   items: PublicProfileAward[];
-  lastError: null | string;
-  syncStatus: ProfileAwardStatus;
+  syncStatus: RefreshSyncStatus;
 }
 
 interface LuoguAwardAccount extends LuoguAccount {
@@ -217,17 +218,11 @@ export const getAwardsForPublicProfile = async (
     fetchedAt: sync?.fetchedAt ?? null,
     now,
   });
-  const syncStatus = (() => {
-    if (refreshQueueState.isQueued) {
-      return "refreshing";
-    }
-
-    if (sync?.lastError) {
-      return "failed";
-    }
-
-    return sync?.fetchedAt ? "ready" : "empty";
-  })();
+  const syncStatus = getRefreshSyncStatus({
+    fetchedAt: sync?.fetchedAt ?? null,
+    isQueued: refreshQueueState.isQueued,
+    lastError: sync?.lastError ?? null,
+  });
 
   const awards = await db
     .select(awardFields)
@@ -249,7 +244,6 @@ export const getAwardsForPublicProfile = async (
       source: userAwardSource,
       year: award.year,
     })),
-    lastError: sync?.lastError ?? null,
     syncStatus,
   };
 };

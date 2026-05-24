@@ -23,7 +23,6 @@ const createRankRow = (
     acceptedProblemCountInMonth: null,
     fetchedAt: null,
     handle: input.userId,
-    lastError: null,
     lastOnlineAt: null,
     maxRating: null,
     profileUrl: "",

@@ -90,7 +90,6 @@ export function ProfileAwardsSection({
               )}
             >
               {statusText}
-              {awards.lastError ? `：${awards.lastError}` : ""}
             </span>
           ) : null}
         </div>

@@ -10,8 +10,6 @@ export interface PublicOjAccount {
     acceptedProblemCount: null | number;
     acceptedProblemCountInMonth: null | number;
     fetchedAt: null | string;
-    lastAttemptedAt: string;
-    lastError: null | string;
     lastOnlineAt: null | string;
     maxRating: null | number;
     rating: null | number;
@@ -28,7 +26,6 @@ export interface PublicOjAccount {
       label: string;
     }[];
     fetchedAt: null | string;
-    lastError: null | string;
     syncStatus: "empty" | "failed" | "ready" | "refreshing";
   };
   platform: OjPlatform;
@@ -46,7 +43,6 @@ export interface PublicProfileAward {
 export interface PublicProfileAwards {
   fetchedAt: null | string;
   items: PublicProfileAward[];
-  lastError: null | string;
   syncStatus: "empty" | "failed" | "ready" | "refreshing";
 }
 

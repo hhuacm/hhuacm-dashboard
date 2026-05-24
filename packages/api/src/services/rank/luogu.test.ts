@@ -128,7 +128,7 @@ describe("listLuoguRankRows", () => {
     const rows = await listLuoguRankRows(db);
     const requests = await db.select().from(refreshRequest);
 
-    expect(rows.map((row) => [row.username, row.luogu.status])).toEqual([
+    expect(rows.map((row) => [row.username, row.luogu.syncStatus])).toEqual([
       ["expired-user", "refreshing"],
       ["missing-stats-user", "refreshing"],
     ]);

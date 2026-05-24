@@ -55,7 +55,6 @@ interface RelativeTimeCellProps {
 }
 
 interface StatusChipProps<Status extends string> {
-  lastError?: null | string;
   status: Status;
   statusConfig: Record<Status, { className: string; label: string }>;
 }
@@ -153,19 +152,13 @@ export function RelativeTimeCell({
 }
 
 export function StatusChip<Status extends string>({
-  lastError,
   status,
   statusConfig,
 }: StatusChipProps<Status>) {
   const config = statusConfig[status];
 
   return (
-    <Chip
-      className={config.className}
-      size="sm"
-      title={lastError ?? undefined}
-      variant="soft"
-    >
+    <Chip className={config.className} size="sm" variant="soft">
       {config.label}
     </Chip>
   );

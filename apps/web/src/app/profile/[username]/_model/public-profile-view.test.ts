@@ -16,8 +16,6 @@ const createCodeforcesStats = (
   acceptedProblemCount: null,
   acceptedProblemCountInMonth: null,
   fetchedAt: null,
-  lastAttemptedAt: "2026-05-24T00:00:00.000Z",
-  lastError: null,
   lastOnlineAt: null,
   maxRating: null,
   rating: null,

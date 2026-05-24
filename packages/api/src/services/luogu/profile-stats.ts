@@ -6,11 +6,13 @@ import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { ensureLuoguAccountStatsRefresh } from "../refresh/ensure";
+import {
+  getRefreshSyncStatus,
+  type RefreshSyncStatus,
+} from "../refresh/sync-status";
 import type { LuoguAccount } from "./types";
 
 type Database = Context["db"];
-
-type LuoguProfileStatsStatus = "empty" | "failed" | "ready" | "refreshing";
 
 interface PublicLuoguDifficultyCount {
   count: number;
@@ -24,8 +26,7 @@ export interface PublicLuoguStats {
   averageAcceptedDifficulty: null | number;
   difficultyCounts: PublicLuoguDifficultyCount[];
   fetchedAt: null | string;
-  lastError: null | string;
-  syncStatus: LuoguProfileStatsStatus;
+  syncStatus: RefreshSyncStatus;
 }
 
 interface LuoguPracticeSummaryInput {
@@ -143,7 +144,6 @@ export const getLuoguStatsForProfile = async (
       averageAcceptedDifficulty: null,
       difficultyCounts: emptyDifficultyCounts,
       fetchedAt: null,
-      lastError: "Luogu UID is missing",
       syncStatus: "empty",
     };
   }
@@ -155,17 +155,11 @@ export const getLuoguStatsForProfile = async (
     fetchedAt: currentStats?.fetchedAt ?? null,
     now,
   });
-  const syncStatus = (() => {
-    if (refreshQueueState.isQueued) {
-      return "refreshing";
-    }
-
-    if (currentStats?.lastError) {
-      return "failed";
-    }
-
-    return currentStats?.fetchedAt ? "ready" : "empty";
-  })();
+  const syncStatus = getRefreshSyncStatus({
+    fetchedAt: currentStats?.fetchedAt ?? null,
+    isQueued: refreshQueueState.isQueued,
+    lastError: currentStats?.lastError ?? null,
+  });
 
   if (!currentStats?.fetchedAt) {
     return {
@@ -174,7 +168,6 @@ export const getLuoguStatsForProfile = async (
       averageAcceptedDifficulty: null,
       difficultyCounts: emptyDifficultyCounts,
       fetchedAt: null,
-      lastError: currentStats?.lastError ?? null,
       syncStatus,
     };
   }
@@ -191,7 +184,6 @@ export const getLuoguStatsForProfile = async (
     averageAcceptedDifficulty: currentStats.averageAcceptedDifficulty,
     difficultyCounts: summary.difficultyCounts,
     fetchedAt: toIsoString(currentStats.fetchedAt),
-    lastError: currentStats.lastError,
     syncStatus,
   };
 };
