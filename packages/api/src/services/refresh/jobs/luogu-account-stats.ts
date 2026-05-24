@@ -47,9 +47,9 @@ const handleLuoguAccountStatsRequest = async (
   }
 };
 
-const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
-  const staleBefore = new Date(now.getTime() - refreshDefaults.luoguStatsTtlMs);
-  const staleAccounts = await db
+const enqueueDueLuoguAccountStatsTargets = async (db: Database, now: Date) => {
+  const dueBefore = new Date(now.getTime() - refreshDefaults.luoguStatsTtlMs);
+  const dueAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
@@ -63,20 +63,20 @@ const scanStaleLuoguAccountStatsTargets = async (db: Database, now: Date) => {
         or(
           isNull(luoguAccountStats.accountId),
           isNull(luoguAccountStats.fetchedAt),
-          lt(luoguAccountStats.fetchedAt, staleBefore)
+          lt(luoguAccountStats.fetchedAt, dueBefore)
         )
       )
     );
 
-  for (const account of staleAccounts) {
+  for (const account of dueAccounts) {
     await requestLuoguAccountStatsRefresh(db, account.id);
   }
 
-  return staleAccounts.length;
+  return dueAccounts.length;
 };
 
 export const luoguAccountStatsRefreshRequestDefinition = {
+  enqueueDueTargets: enqueueDueLuoguAccountStatsTargets,
   handle: handleLuoguAccountStatsRequest,
   kind: luoguAccountStatsRequestKind,
-  scanStaleTargets: scanStaleLuoguAccountStatsTargets,
 } as const satisfies RefreshRequestDefinition;

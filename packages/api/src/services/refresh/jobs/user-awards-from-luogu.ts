@@ -50,9 +50,12 @@ const handleUserAwardsFromLuoguRequest = async (
   }
 };
 
-const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
-  const staleBefore = new Date(now.getTime() - refreshDefaults.userAwardsTtlMs);
-  const staleAccounts = await db
+const enqueueDueUserAwardsFromLuoguTargets = async (
+  db: Database,
+  now: Date
+) => {
+  const dueBefore = new Date(now.getTime() - refreshDefaults.userAwardsTtlMs);
+  const dueAccounts = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
@@ -69,20 +72,20 @@ const scanStaleUserAwardsFromLuoguTargets = async (db: Database, now: Date) => {
         or(
           isNull(userAwardSync.userId),
           isNull(userAwardSync.fetchedAt),
-          lt(userAwardSync.fetchedAt, staleBefore)
+          lt(userAwardSync.fetchedAt, dueBefore)
         )
       )
     );
 
-  for (const account of staleAccounts) {
+  for (const account of dueAccounts) {
     await requestUserAwardsFromLuoguRefresh(db, account.id);
   }
 
-  return staleAccounts.length;
+  return dueAccounts.length;
 };
 
 export const userAwardsFromLuoguRefreshRequestDefinition = {
+  enqueueDueTargets: enqueueDueUserAwardsFromLuoguTargets,
   handle: handleUserAwardsFromLuoguRequest,
   kind: userAwardsFromLuoguRequestKind,
-  scanStaleTargets: scanStaleUserAwardsFromLuoguTargets,
 } as const satisfies RefreshRequestDefinition;

@@ -46,14 +46,14 @@ const handleCodeforcesAccountStatsRequest = async (
   }
 };
 
-const scanStaleCodeforcesAccountStatsTargets = async (
+const enqueueDueCodeforcesAccountStatsTargets = async (
   db: Database,
   now: Date
 ) => {
-  const staleBefore = new Date(
+  const dueBefore = new Date(
     now.getTime() - refreshDefaults.codeforcesStatsTtlMs
   );
-  const staleAccounts = await db
+  const dueAccounts = await db
     .select(codeforcesAccountFields)
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
@@ -67,20 +67,20 @@ const scanStaleCodeforcesAccountStatsTargets = async (
         or(
           isNull(codeforcesAccountStats.accountId),
           isNull(codeforcesAccountStats.fetchedAt),
-          lt(codeforcesAccountStats.fetchedAt, staleBefore)
+          lt(codeforcesAccountStats.fetchedAt, dueBefore)
         )
       )
     );
 
-  for (const account of staleAccounts) {
+  for (const account of dueAccounts) {
     await requestCodeforcesAccountStatsRefresh(db, account.id);
   }
 
-  return staleAccounts.length;
+  return dueAccounts.length;
 };
 
 export const codeforcesAccountStatsRefreshRequestDefinition = {
+  enqueueDueTargets: enqueueDueCodeforcesAccountStatsTargets,
   handle: handleCodeforcesAccountStatsRequest,
   kind: codeforcesAccountStatsRequestKind,
-  scanStaleTargets: scanStaleCodeforcesAccountStatsTargets,
 } as const satisfies RefreshRequestDefinition;

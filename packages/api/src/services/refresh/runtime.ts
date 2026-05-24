@@ -17,7 +17,7 @@ const sleep = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-export const scanStaleRefreshTargets = async (
+export const enqueueDueRefreshTargets = async (
   db: Database,
   definitions: RefreshRequestDefinition[] = refreshRequestDefinitions,
   now = new Date()
@@ -25,11 +25,11 @@ export const scanStaleRefreshTargets = async (
   let enqueuedCount = 0;
 
   for (const definition of definitions) {
-    if (!definition.scanStaleTargets) {
+    if (!definition.enqueueDueTargets) {
       continue;
     }
 
-    enqueuedCount += await definition.scanStaleTargets(db, now);
+    enqueuedCount += await definition.enqueueDueTargets(db, now);
   }
 
   return enqueuedCount;
@@ -62,12 +62,12 @@ export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
   const startSchedulerLoop = async () => {
     while (!isStopped) {
       try {
-        await scanStaleRefreshTargets(db);
+        await enqueueDueRefreshTargets(db);
       } catch (error) {
         console.error("Refresh scheduler iteration failed", error);
       }
 
-      await sleep(refreshDefaults.staleScanIntervalMs);
+      await sleep(refreshDefaults.dueScanIntervalMs);
     }
   };
 

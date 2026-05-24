@@ -39,7 +39,7 @@ describe("Luogu account stats refresh request", () => {
     });
   };
 
-  it("only enqueues stale Luogu accounts for current members", async () => {
+  it("only enqueues due Luogu accounts for current members", async () => {
     const db = await createServiceTestDb();
 
     await createAccount(db, {
@@ -52,7 +52,7 @@ describe("Luogu account stats refresh request", () => {
     await createAccount(db, { id: "missing-profile-user" });
 
     const enqueuedCount =
-      await luoguAccountStatsRefreshRequestDefinition.scanStaleTargets(
+      await luoguAccountStatsRefreshRequestDefinition.enqueueDueTargets(
         db,
         new Date()
       );

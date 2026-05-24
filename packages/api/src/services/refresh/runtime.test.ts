@@ -3,23 +3,23 @@ import { describe, expect, it } from "bun:test";
 import type { Context } from "../../context";
 import type { RefreshRequestDefinition } from "./registry";
 import { codeforcesAccountStatsRequestKind } from "./request-types";
-import { scanStaleRefreshTargets } from "./runtime";
+import { enqueueDueRefreshTargets } from "./runtime";
 
 const fakeDb = null as unknown as Context["db"];
 
 describe("refresh runtime", () => {
-  it("runs stale scans across definitions", async () => {
+  it("enqueues due targets across definitions", async () => {
     const definitions = [
       {
+        enqueueDueTargets: async (_db, now) =>
+          now.toISOString() === "2026-01-01T00:00:00.000Z" ? 2 : 0,
         handle: () => Promise.resolve(undefined),
         kind: codeforcesAccountStatsRequestKind,
-        scanStaleTargets: async (_db, now) =>
-          now.toISOString() === "2026-01-01T00:00:00.000Z" ? 2 : 0,
       },
     ] satisfies RefreshRequestDefinition[];
 
     await expect(
-      scanStaleRefreshTargets(
+      enqueueDueRefreshTargets(
         fakeDb,
         definitions,
         new Date("2026-01-01T00:00:00.000Z")
@@ -27,7 +27,7 @@ describe("refresh runtime", () => {
     ).resolves.toBe(2);
   });
 
-  it("skips event-driven definitions without stale scans", async () => {
+  it("skips event-driven definitions without due scans", async () => {
     const definitions = [
       {
         handle: () => Promise.resolve(undefined),
@@ -35,6 +35,8 @@ describe("refresh runtime", () => {
       },
     ] satisfies RefreshRequestDefinition[];
 
-    await expect(scanStaleRefreshTargets(fakeDb, definitions)).resolves.toBe(0);
+    await expect(enqueueDueRefreshTargets(fakeDb, definitions)).resolves.toBe(
+      0
+    );
   });
 });

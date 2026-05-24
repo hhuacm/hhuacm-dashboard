@@ -5,6 +5,7 @@ import { asc, eq, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
+import { enqueueRefreshIfDue } from "../refresh/ensure";
 import { isCodeforcesStatsCacheFresh } from "../refresh/policy";
 import { requestCodeforcesAccountStatsRefresh } from "../refresh/requests";
 import { getRefreshSyncStatus } from "../refresh/sync-status";
@@ -21,9 +22,13 @@ const ensureCodeforcesRankStatsRefreshRequests = async (
   now: Date
 ) => {
   for (const row of rows) {
-    if (!isCodeforcesStatsCacheFresh(row.fetchedAt, now)) {
-      await requestCodeforcesAccountStatsRefresh(db, row.accountId);
-    }
+    await enqueueRefreshIfDue({
+      fetchedAt: row.fetchedAt,
+      isFresh: isCodeforcesStatsCacheFresh,
+      now,
+      requestRefresh: async () =>
+        await requestCodeforcesAccountStatsRefresh(db, row.accountId),
+    });
   }
 };
 

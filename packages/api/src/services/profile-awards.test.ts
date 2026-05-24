@@ -252,7 +252,7 @@ describe("profile awards", () => {
     expect(sync?.lastError).toBe("Luogu UID is missing");
   });
 
-  it("returns public awards and enqueues refresh when stale", async () => {
+  it("returns public awards and enqueues refresh when due", async () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
     await createUser(db);

@@ -8,9 +8,9 @@ import type { RefreshRequest } from "./request-store";
 type Database = Context["db"];
 
 export interface RefreshRequestDefinition {
+  enqueueDueTargets?: (db: Database, now: Date) => Promise<number>;
   handle: (db: Database, request: RefreshRequest) => Promise<void>;
   kind: RefreshRequest["kind"];
-  scanStaleTargets?: (db: Database, now: Date) => Promise<number>;
 }
 
 export const refreshRequestDefinitions = [

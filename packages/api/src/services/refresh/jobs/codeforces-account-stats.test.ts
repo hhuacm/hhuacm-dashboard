@@ -39,7 +39,7 @@ describe("Codeforces account stats refresh request", () => {
     });
   };
 
-  it("only enqueues stale Codeforces accounts for current members", async () => {
+  it("only enqueues due Codeforces accounts for current members", async () => {
     const db = await createServiceTestDb();
 
     await createAccount(db, {
@@ -52,7 +52,7 @@ describe("Codeforces account stats refresh request", () => {
     await createAccount(db, { id: "missing-profile-user" });
 
     const enqueuedCount =
-      await codeforcesAccountStatsRefreshRequestDefinition.scanStaleTargets(
+      await codeforcesAccountStatsRefreshRequestDefinition.enqueueDueTargets(
         db,
         new Date()
       );

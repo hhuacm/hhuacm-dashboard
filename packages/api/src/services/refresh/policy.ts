@@ -1,9 +1,9 @@
 export const refreshDefaults = {
   codeforcesStatsTtlMs: 10 * 60 * 1000,
+  dueScanIntervalMs: 10 * 60 * 1000,
   jobCooldownMs: 2 * 1000,
   luoguStatsTtlMs: 10 * 60 * 1000,
   maxErrorLength: 500,
-  staleScanIntervalMs: 10 * 60 * 1000,
   userAwardsTtlMs: 30 * 60 * 1000,
   workerPollIntervalMs: 5 * 1000,
 } as const;
@@ -24,8 +24,3 @@ export const isLuoguStatsCacheFresh = (fetchedAt: Date | null, now: Date) =>
 
 export const isUserAwardsCacheFresh = (fetchedAt: Date | null, now: Date) =>
   isFreshByTtl(fetchedAt, now, refreshDefaults.userAwardsTtlMs);
-
-export const isCodeforcesAccountStatsFresh = (input: {
-  fetchedAt: Date | null;
-  now: Date;
-}) => isCodeforcesStatsCacheFresh(input.fetchedAt, input.now);

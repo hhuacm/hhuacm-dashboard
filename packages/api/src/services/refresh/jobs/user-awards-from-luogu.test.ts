@@ -44,9 +44,9 @@ describe("user awards from Luogu refresh request", () => {
     });
   };
 
-  it("only enqueues stale Luogu award refreshes for current members", async () => {
+  it("only enqueues due Luogu award refreshes for current members", async () => {
     const db = await createServiceTestDb();
-    const staleFetchedAt = new Date("2026-01-01T00:00:00.000Z");
+    const dueFetchedAt = new Date("2026-01-01T00:00:00.000Z");
     const freshFetchedAt = new Date();
 
     await createAccount(db, {
@@ -66,15 +66,15 @@ describe("user awards from Luogu refresh request", () => {
         userId: "fresh-user",
       },
       {
-        fetchedAt: staleFetchedAt,
-        lastAttemptedAt: staleFetchedAt,
+        fetchedAt: dueFetchedAt,
+        lastAttemptedAt: dueFetchedAt,
         source: "luogu",
         userId: "selection-user",
       },
     ]);
 
     const enqueuedCount =
-      await userAwardsFromLuoguRefreshRequestDefinition.scanStaleTargets(
+      await userAwardsFromLuoguRefreshRequestDefinition.enqueueDueTargets(
         db,
         new Date()
       );
