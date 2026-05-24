@@ -61,7 +61,6 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
     .set({
       handle: input.handle,
       profileUrl,
-      updatedAt: new Date(),
     })
     .where(
       and(

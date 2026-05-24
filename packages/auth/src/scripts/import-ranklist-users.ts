@@ -606,24 +606,20 @@ const importPlannedUsers = async (
 
       if (plan.createProfile) {
         await tx.insert(userProfile).values({
-          createdAt: now,
           grade: candidate.grade,
           major: candidate.major,
           memberStatus,
           realName: candidate.realName,
-          updatedAt: now,
           userId: plan.userId,
         });
       }
 
       if (plan.createCodeforcesAccount) {
         await tx.insert(userOjAccount).values({
-          createdAt: now,
           handle: candidate.handle,
           id: randomUUID(),
           platform: "codeforces",
           profileUrl: buildProfileUrl(candidate.handle),
-          updatedAt: now,
           userId: plan.userId,
         });
       }

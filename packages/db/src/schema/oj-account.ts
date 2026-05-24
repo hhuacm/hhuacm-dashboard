@@ -3,7 +3,6 @@ import { relations, sql } from "drizzle-orm";
 import {
   check,
   index,
-  integer,
   sqliteTable,
   text,
   uniqueIndex,
@@ -23,13 +22,6 @@ export const userOjAccount = sqliteTable(
     platform: text("platform", { enum: ojPlatforms }).notNull(),
     handle: text("handle").notNull(),
     profileUrl: text("profile_url").default("").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
   },
   (table) => [
     check(

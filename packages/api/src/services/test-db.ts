@@ -46,9 +46,7 @@ create table user_profile (
   grade text,
   student_id text,
   major text,
-  member_status text default 'selection' not null,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  member_status text default 'selection' not null
 )
 `,
   `
@@ -70,9 +68,7 @@ create table user_oj_account (
   user_id text not null,
   platform text not null,
   handle text not null,
-  profile_url text default '' not null,
-  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+  profile_url text default '' not null
 )
 `,
   `
