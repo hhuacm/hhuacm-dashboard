@@ -74,6 +74,7 @@
         "@hhuacm-dashboard/db": "workspace:*",
         "@hhuacm-dashboard/domain": "workspace:*",
         "@trpc/server": "catalog:",
+        "better-auth": "catalog:",
         "dotenv": "catalog:",
         "drizzle-orm": "0.45",
         "zod": "catalog:",
@@ -88,11 +89,8 @@
       "name": "@hhuacm-dashboard/auth",
       "dependencies": {
         "@hhuacm-dashboard/db": "workspace:*",
-        "@hhuacm-dashboard/domain": "workspace:*",
         "@hhuacm-dashboard/env": "workspace:*",
         "better-auth": "catalog:",
-        "dotenv": "catalog:",
-        "drizzle-orm": "0.45",
       },
       "devDependencies": {
         "@hhuacm-dashboard/config": "workspace:*",

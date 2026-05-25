@@ -12,6 +12,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "system:grant-admin": "bun src/system/cli/set-user-role.ts --role admin",
+    "system:import-users": "bun src/system/cli/import-users.ts",
     "system:revoke-admin": "bun src/system/cli/set-user-role.ts --role user"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
     "@trpc/server": "catalog:",
+    "better-auth": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "0.45",
     "zod": "catalog:"

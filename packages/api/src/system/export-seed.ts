@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import {
@@ -6,108 +5,38 @@ import {
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
+import {
+  defaultMemberStatus,
+  type MemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { asc, eq, inArray } from "drizzle-orm";
 import type { Context } from "../context";
 import {
   defaultHomeNoticeMarkdown,
   getHomeNoticeMarkdown,
-} from "./site-setting";
+} from "../services/site-setting";
+import {
+  createSystemSeedFile,
+  type SystemSeed,
+  type SystemSeedFile,
+  type SystemSeedOjAccount,
+  type SystemSeedProblemSet,
+  type SystemSeedSettings,
+  type SystemSeedUser,
+  type SystemSeedUserProfile,
+} from "./seed-format";
 
 type Database = Context["db"];
 
-const exportKind = "hhuacm-dashboard.system-seed";
-const exportVersion = 1;
 const defaultUserRole = "user";
-
-export interface SystemExportOjAccount {
-  handle: string;
-  platform: OjPlatform;
-}
-
-export interface SystemExportUserProfile {
-  grade?: string;
-  major?: string;
-  memberStatus?: string;
-  realName?: string;
-  studentId?: string;
-}
-
-export interface SystemExportUser {
-  email: string;
-  ojAccounts?: SystemExportOjAccount[];
-  profile?: SystemExportUserProfile;
-  role?: "admin";
-  username: string;
-}
-
-export interface SystemExportProblemSet {
-  descriptionMarkdown?: string;
-  pids: string[];
-  title: string;
-}
-
-export interface SystemExportSettings {
-  homeNoticeMarkdown?: string;
-}
-
-interface SystemExportSeed {
-  problemSets: SystemExportProblemSet[];
-  settings: SystemExportSettings;
-  users: SystemExportUser[];
-}
-
-interface SystemExportHashPayload {
-  kind: typeof exportKind;
-  seed: SystemExportSeed;
-  version: typeof exportVersion;
-}
-
-export interface SystemExport extends SystemExportHashPayload {
-  exportedAt: string;
-  hash: string;
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const canonicalize = (value: unknown): unknown => {
-  if (!(value && typeof value === "object")) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(canonicalize);
-  }
-
-  return Object.keys(value)
-    .sort((left, right) => left.localeCompare(right))
-    .reduce<Record<string, unknown>>((result, key) => {
-      if (!isRecord(value)) {
-        return result;
-      }
-
-      const nextValue = value[key];
-      if (nextValue !== undefined) {
-        result[key] = canonicalize(nextValue);
-      }
-      return result;
-    }, {});
-};
-
-const stringifyCanonicalJson = (value: unknown) =>
-  JSON.stringify(canonicalize(value));
-
-const hashCanonicalJson = (value: unknown) =>
-  createHash("sha256").update(stringifyCanonicalJson(value)).digest("hex");
 
 const isFilledString = (value: null | string): value is string =>
   value !== null && value !== "";
 
 const groupOjAccountsByUserId = (
-  accounts: Array<SystemExportOjAccount & { userId: string }>
+  accounts: Array<SystemSeedOjAccount & { userId: string }>
 ) => {
-  const accountsByUserId = new Map<string, SystemExportOjAccount[]>();
+  const accountsByUserId = new Map<string, SystemSeedOjAccount[]>();
 
   for (const account of accounts) {
     const currentAccounts = accountsByUserId.get(account.userId) ?? [];
@@ -123,7 +52,7 @@ const groupOjAccountsByUserId = (
 
 const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
   if (userIds.length === 0) {
-    return new Map<string, SystemExportOjAccount[]>();
+    return new Map<string, SystemSeedOjAccount[]>();
   }
 
   const accounts = await db
@@ -146,11 +75,11 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
 const toExportUserProfile = (profile: {
   grade: null | string;
   major: null | string;
-  memberStatus: null | string;
+  memberStatus: MemberStatus | null;
   realName: null | string;
   studentId: null | string;
 }) => {
-  const exportProfile: SystemExportUserProfile = {};
+  const exportProfile: SystemSeedUserProfile = {};
 
   if (isFilledString(profile.grade)) {
     exportProfile.grade = profile.grade;
@@ -194,7 +123,7 @@ const listExportUsers = async (db: Database) => {
 
   const userIds = users.map((currentUser) => currentUser.id);
   const accountsByUserId = await listOjAccountsForUsers(db, userIds);
-  const exportUsers = users.map((currentUser): SystemExportUser => {
+  const exportUsers = users.map((currentUser): SystemSeedUser => {
     const ojAccounts = accountsByUserId.get(currentUser.id) ?? [];
     const profile = toExportUserProfile(currentUser);
 
@@ -249,7 +178,7 @@ const listExportProblemSets = async (db: Database) => {
 
   return sets
     .map(
-      (set): SystemExportProblemSet => ({
+      (set): SystemSeedProblemSet => ({
         ...(set.descriptionMarkdown
           ? { descriptionMarkdown: set.descriptionMarkdown }
           : {}),
@@ -279,7 +208,7 @@ const listExportProblemSets = async (db: Database) => {
 
 const getExportSettings = async (db: Database) => {
   const homeNoticeMarkdown = await getHomeNoticeMarkdown(db);
-  const settings: SystemExportSettings = {
+  const settings: SystemSeedSettings = {
     ...(homeNoticeMarkdown === defaultHomeNoticeMarkdown
       ? {}
       : { homeNoticeMarkdown }),
@@ -288,28 +217,19 @@ const getExportSettings = async (db: Database) => {
   return settings;
 };
 
-export const exportAdminSystem = async (
+export const exportSystemSeed = async (
   db: Database
-): Promise<SystemExport> => {
+): Promise<SystemSeedFile> => {
   const [users, problemSets, settings] = await Promise.all([
     listExportUsers(db),
     listExportProblemSets(db),
     getExportSettings(db),
   ]);
-  const seed: SystemExportSeed = {
+  const seed: SystemSeed = {
     problemSets,
     settings,
     users,
   };
-  const hashPayload: SystemExportHashPayload = {
-    kind: exportKind,
-    seed,
-    version: exportVersion,
-  };
 
-  return {
-    ...hashPayload,
-    exportedAt: new Date().toISOString(),
-    hash: hashCanonicalJson(hashPayload),
-  };
+  return createSystemSeedFile(seed);
 };

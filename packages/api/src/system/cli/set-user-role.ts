@@ -1,9 +1,5 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
+import { loadServerEnv } from "../runtime";
 import { type SystemUserRole, setUserRoleByUsername } from "../user-role";
-
-const workspaceRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 
 const writeLine = (message: string) => {
   process.stdout.write(`${message}\n`);
@@ -46,13 +42,6 @@ const getRequiredUsername = () => {
   }
 
   return username;
-};
-
-const loadServerEnv = () => {
-  dotenv.config({
-    path: path.join(workspaceRoot, "apps/server/.env"),
-    quiet: true,
-  });
 };
 
 const run = async () => {

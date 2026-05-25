@@ -1,5 +1,4 @@
 import { adminProcedure, router } from "../index";
-import { exportAdminSystem } from "../services/admin-export";
 import { deleteAdminUser } from "../services/admin-users/delete-user";
 import { getAdminUser } from "../services/admin-users/detail";
 import { listAdminUsers } from "../services/admin-users/list-query";
@@ -15,6 +14,7 @@ import {
 } from "../services/problem-set/mutation";
 import { getTargetUser, updateUserProfile } from "../services/profile";
 import { updateHomeNoticeMarkdown } from "../services/site-setting";
+import { exportSystemSeed } from "../system/export-seed";
 import {
   adminHomeNoticeInputSchema,
   adminProblemSetInputSchema,
@@ -30,7 +30,7 @@ import {
 
 export const adminRouter = router({
   export: adminProcedure.query(
-    async ({ ctx }) => await exportAdminSystem(ctx.db)
+    async ({ ctx }) => await exportSystemSeed(ctx.db)
   ),
   problemSets: router({
     create: adminProcedure

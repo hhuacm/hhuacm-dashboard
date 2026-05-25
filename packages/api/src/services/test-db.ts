@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import {
@@ -35,6 +35,23 @@ create table user (
   username text not null unique,
   display_username text,
   role text default 'user' not null,
+  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
+  updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
+)
+`,
+  `
+create table account (
+  id text primary key not null,
+  account_id text not null,
+  provider_id text not null,
+  user_id text not null references user(id) on delete cascade,
+  access_token text,
+  refresh_token text,
+  id_token text,
+  access_token_expires_at integer,
+  refresh_token_expires_at integer,
+  scope text,
+  password text,
   created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
   updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
 )
@@ -164,6 +181,7 @@ create table site_setting (
 ] as const;
 
 const testSchema = {
+  account,
   codeforcesAccountStats,
   currentMember,
   luoguAcceptedProblem,
