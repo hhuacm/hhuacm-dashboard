@@ -1,15 +1,23 @@
 import { describe, expect, it } from "bun:test";
 
 import {
+  currentMemberStatuses,
   defaultMemberStatus,
   getGradeOptions,
   getGradeOptionsWithCurrentValue,
   getUserNameLabel,
+  isCurrentMemberStatus,
+  isMemberStatus,
+  isOjPlatform,
+  isRefreshSyncStatus,
+  isStatsDisabledMemberStatus,
   isValidGradeOption,
   memberStatuses,
   memberStatusLabels,
   ojPlatformLabels,
   ojPlatforms,
+  refreshSyncStatuses,
+  statsDisabledMemberStatuses,
 } from ".";
 
 describe("domain constants", () => {
@@ -20,10 +28,34 @@ describe("domain constants", () => {
     );
   });
 
+  it("validates member status values and status groups", () => {
+    expect(isMemberStatus("active")).toBe(true);
+    expect(isMemberStatus("unknown")).toBe(false);
+    expect(currentMemberStatuses).toEqual(["selection", "active"]);
+    expect(isCurrentMemberStatus("selection")).toBe(true);
+    expect(isCurrentMemberStatus("retired")).toBe(false);
+    expect(statsDisabledMemberStatuses).toEqual(["retired", "frozen"]);
+    expect(isStatsDisabledMemberStatus("frozen")).toBe(true);
+    expect(isStatsDisabledMemberStatus("active")).toBe(false);
+  });
+
   it("keeps OJ platform labels complete", () => {
     expect(Object.keys(ojPlatformLabels).sort()).toEqual(
       [...ojPlatforms].sort()
     );
+    expect(isOjPlatform("codeforces")).toBe(true);
+    expect(isOjPlatform("unknown")).toBe(false);
+  });
+
+  it("validates refresh sync status values", () => {
+    expect(refreshSyncStatuses).toEqual([
+      "empty",
+      "failed",
+      "ready",
+      "refreshing",
+    ]);
+    expect(isRefreshSyncStatus("ready")).toBe(true);
+    expect(isRefreshSyncStatus("queued")).toBe(false);
   });
 });
 

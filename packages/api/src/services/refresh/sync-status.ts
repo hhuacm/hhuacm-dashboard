@@ -1,4 +1,6 @@
-export type RefreshSyncStatus = "empty" | "failed" | "ready" | "refreshing";
+import type { RefreshSyncStatus } from "@hhuacm-dashboard/domain";
+
+export type { RefreshSyncStatus } from "@hhuacm-dashboard/domain";
 
 export const getRefreshSyncStatus = (input: {
   fetchedAt: Date | null;

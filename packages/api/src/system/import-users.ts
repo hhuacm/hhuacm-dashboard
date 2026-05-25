@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
+import {
+  defaultMemberStatus,
+  isCurrentMemberStatus,
+  type OjPlatform,
+} from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
 
 import type { Context } from "../context";
@@ -125,7 +129,7 @@ const validateSeedUsers = (users: SystemSeedUser[]) => {
 const isCurrentMemberSeedUser = (seedUser: SystemSeedUser) => {
   const memberStatus = seedUser.profile?.memberStatus ?? defaultMemberStatus;
 
-  return memberStatus === "selection" || memberStatus === "active";
+  return isCurrentMemberStatus(memberStatus);
 };
 
 const countCreatedRefreshRequest = async (created: Promise<boolean>) =>

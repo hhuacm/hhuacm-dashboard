@@ -1,4 +1,4 @@
-import { memberStatuses } from "@hhuacm-dashboard/domain";
+import { defaultMemberStatus, memberStatuses } from "@hhuacm-dashboard/domain";
 import { relations } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -13,7 +13,7 @@ export const userProfile = sqliteTable("user_profile", {
   studentId: text("student_id"),
   major: text("major"),
   memberStatus: text("member_status", { enum: memberStatuses })
-    .default("selection")
+    .default(defaultMemberStatus)
     .notNull(),
 });
 

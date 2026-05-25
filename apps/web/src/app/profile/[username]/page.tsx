@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert, Spinner } from "@heroui/react";
+import { isStatsDisabledMemberStatus } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
@@ -12,7 +13,6 @@ import { trpc } from "@/utils/trpc";
 import { OjAccountsSection } from "./_components/oj-accounts-section";
 import { ProfileAwardsSection } from "./_components/profile-awards-section";
 import { ProfileSummaryCard } from "./_components/profile-summary-card";
-import { isStatsDisabledMemberStatus } from "./_model/public-profile-view";
 
 interface ProfilePageProps {
   params: Promise<{

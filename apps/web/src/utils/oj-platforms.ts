@@ -24,8 +24,6 @@ const ojPlatformIconConfigs = [
   },
 ] as const satisfies { iconSrc: string; key: OjPlatform }[];
 
-export type { OjPlatform } from "@hhuacm-dashboard/domain";
-
 export const ojPlatformConfigs = ojPlatforms.map((platform) => {
   const config = ojPlatformIconConfigs.find((item) => item.key === platform);
 
@@ -51,6 +49,3 @@ export const getOjPlatformConfig = (platform: OjPlatform): OjPlatformConfig => {
 
   return config;
 };
-
-export const isOjPlatform = (value: string): value is OjPlatform =>
-  ojPlatforms.includes(value as OjPlatform);

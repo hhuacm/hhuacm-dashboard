@@ -1,8 +1,8 @@
 import { Chip } from "@heroui/react";
+import { defaultMemberStatus, isMemberStatus } from "@hhuacm-dashboard/domain";
 
 import {
   getMemberStatusLabel,
-  isMemberStatus,
   memberStatusConfig,
 } from "../_model/public-profile-view";
 
@@ -11,7 +11,7 @@ export function MemberStatusBadge({
 }: {
   status: null | string | undefined;
 }) {
-  const memberStatus = isMemberStatus(status) ? status : "selection";
+  const memberStatus = isMemberStatus(status) ? status : defaultMemberStatus;
   const config = memberStatusConfig[memberStatus];
 
   return (

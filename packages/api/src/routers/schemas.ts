@@ -1,5 +1,5 @@
 import {
-  getGradeOptions,
+  isValidGradeOption,
   memberStatuses,
   ojPlatforms,
 } from "@hhuacm-dashboard/domain";
@@ -9,7 +9,7 @@ export const trimmedStringSchema = z.string().trim().min(1);
 
 export const gradeSchema = z
   .string()
-  .refine((grade) => !grade || getGradeOptions().includes(grade), {
+  .refine((grade) => !grade || isValidGradeOption(grade), {
     message: "Invalid grade",
   });
 

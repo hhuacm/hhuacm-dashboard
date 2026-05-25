@@ -9,6 +9,45 @@ export type MemberStatus = (typeof memberStatuses)[number];
 
 export const defaultMemberStatus = memberStatuses[0];
 
+const memberStatusSet = new Set<string>(memberStatuses);
+
+export const isMemberStatus = (value: unknown): value is MemberStatus =>
+  typeof value === "string" && memberStatusSet.has(value);
+
+export const currentMemberStatuses = [
+  "selection",
+  "active",
+] as const satisfies readonly MemberStatus[];
+
+export type CurrentMemberStatus = (typeof currentMemberStatuses)[number];
+
+const currentMemberStatusSet = new Set<string>(currentMemberStatuses);
+
+export const isCurrentMemberStatus = (
+  value: unknown
+): value is CurrentMemberStatus =>
+  typeof value === "string" && currentMemberStatusSet.has(value);
+
+export type StatsDisabledMemberStatus = Exclude<
+  MemberStatus,
+  CurrentMemberStatus
+>;
+
+export const statsDisabledMemberStatuses: readonly StatsDisabledMemberStatus[] =
+  memberStatuses.filter(
+    (status): status is StatsDisabledMemberStatus =>
+      !isCurrentMemberStatus(status)
+  );
+
+const statsDisabledMemberStatusSet = new Set<string>(
+  statsDisabledMemberStatuses
+);
+
+export const isStatsDisabledMemberStatus = (
+  value: unknown
+): value is StatsDisabledMemberStatus =>
+  typeof value === "string" && statsDisabledMemberStatusSet.has(value);
+
 export const memberStatusLabels = {
   active: "服役中",
   frozen: "已冻结",
@@ -41,6 +80,11 @@ export const ojPlatforms = [
 
 export type OjPlatform = (typeof ojPlatforms)[number];
 
+const ojPlatformSet = new Set<string>(ojPlatforms);
+
+export const isOjPlatform = (value: unknown): value is OjPlatform =>
+  typeof value === "string" && ojPlatformSet.has(value);
+
 export const ojPlatformLabels = {
   atcoder: "AtCoder",
   codeforces: "Codeforces",
@@ -54,6 +98,22 @@ export const ojPlatformNames = {
   luogu: "Luogu",
   nowcoder: "Nowcoder",
 } as const satisfies Record<OjPlatform, string>;
+
+export const refreshSyncStatuses = [
+  "empty",
+  "failed",
+  "ready",
+  "refreshing",
+] as const;
+
+export type RefreshSyncStatus = (typeof refreshSyncStatuses)[number];
+
+const refreshSyncStatusSet = new Set<string>(refreshSyncStatuses);
+
+export const isRefreshSyncStatus = (
+  value: unknown
+): value is RefreshSyncStatus =>
+  typeof value === "string" && refreshSyncStatusSet.has(value);
 
 const gradeOtherOption = "其他";
 

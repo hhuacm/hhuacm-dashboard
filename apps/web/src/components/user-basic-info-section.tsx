@@ -14,7 +14,9 @@ import {
   TextField,
 } from "@heroui/react";
 import {
+  defaultMemberStatus,
   getGradeOptionsWithCurrentValue,
+  isMemberStatus,
   type MemberStatus,
   memberStatusLabels,
 } from "@hhuacm-dashboard/domain";
@@ -91,10 +93,6 @@ const profileFormSchema = z.object({
   studentId: z.string(),
 }) satisfies z.ZodType<ProfileFormValues>;
 
-const isMemberStatus = (
-  status: null | string | undefined
-): status is MemberStatus => Boolean(status && status in memberStatusConfig);
-
 const getErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -115,7 +113,7 @@ function BasicInfoItem({ label, value }: BasicInfoItemProps) {
 }
 
 function MemberStatusBadge({ status }: { status: null | string | undefined }) {
-  const memberStatus = isMemberStatus(status) ? status : "selection";
+  const memberStatus = isMemberStatus(status) ? status : defaultMemberStatus;
   const config = memberStatusConfig[memberStatus];
 
   return (

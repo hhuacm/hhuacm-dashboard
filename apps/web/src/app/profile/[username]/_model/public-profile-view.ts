@@ -1,9 +1,9 @@
 import {
   type MemberStatus,
   memberStatusLabels,
+  type OjPlatform,
+  type RefreshSyncStatus,
 } from "@hhuacm-dashboard/domain";
-
-import type { OjPlatform } from "@/utils/oj-platforms";
 
 export interface PublicOjAccount {
   codeforces?: null | {
@@ -13,7 +13,7 @@ export interface PublicOjAccount {
     lastOnlineAt: null | string;
     maxRating: null | number;
     rating: null | number;
-    syncStatus: "empty" | "failed" | "ready" | "refreshing";
+    syncStatus: RefreshSyncStatus;
   };
   handle: string;
   luogu?: null | {
@@ -26,7 +26,7 @@ export interface PublicOjAccount {
       label: string;
     }[];
     fetchedAt: null | string;
-    syncStatus: "empty" | "failed" | "ready" | "refreshing";
+    syncStatus: RefreshSyncStatus;
   };
   platform: OjPlatform;
   profileUrl: string;
@@ -43,7 +43,7 @@ export interface PublicProfileAward {
 export interface PublicProfileAwards {
   fetchedAt: null | string;
   items: PublicProfileAward[];
-  syncStatus: "empty" | "failed" | "ready" | "refreshing";
+  syncStatus: RefreshSyncStatus;
 }
 
 export const memberStatusConfig = {
@@ -81,15 +81,6 @@ const awardLevelClassNames = {
   silver:
     "!border-[#cbd5e1] !bg-[#e5e7eb] !text-[#334155] dark:!border-[#94a3b8] dark:!bg-[#475569] dark:!text-[#f8fafc]",
 } as const;
-
-export const isMemberStatus = (
-  status: null | string | undefined
-): status is MemberStatus => Boolean(status && status in memberStatusConfig);
-
-export const isStatsDisabledMemberStatus = (
-  status: null | string | undefined
-): status is "frozen" | "retired" =>
-  status === "frozen" || status === "retired";
 
 export const getMemberStatusLabel = (status: MemberStatus) =>
   memberStatusLabels[status];

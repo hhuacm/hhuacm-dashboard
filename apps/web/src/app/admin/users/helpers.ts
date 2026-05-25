@@ -1,7 +1,9 @@
 import {
+  defaultMemberStatus,
+  isMemberStatus,
+  isOjPlatform,
   type MemberStatus,
   type OjPlatform,
-  ojPlatforms,
 } from "@hhuacm-dashboard/domain";
 import type { Key } from "react";
 
@@ -258,19 +260,16 @@ export const getAdminUsernameLabel = (user: { username: string }) => {
   return "未设置";
 };
 
-export const isMemberStatus = (status: string): status is MemberStatus =>
-  status in memberStatusConfig;
-
 export const isSortColumn = (key: Key): key is SortColumn =>
   typeof key === "string" &&
   sortableColumns.includes(key as (typeof sortableColumns)[number]);
 
 export const isMemberStatusFilterValue = (
   value: string
-): value is MemberStatus => value in memberStatusConfig;
+): value is MemberStatus => isMemberStatus(value);
 
 export const isOjPlatformFilterValue = (value: string): value is OjPlatform =>
-  ojPlatforms.includes(value as OjPlatform);
+  isOjPlatform(value);
 
 export const hasFilters = (filters: AdminUsersFilters) =>
   filters.grades.length > 0 ||
@@ -325,7 +324,7 @@ export const buildAdminProfileFormValues = (
   profile: AdminUserProfile | undefined
 ): AdminProfileFormValues => ({
   ...buildProfileFormValues(profile),
-  memberStatus: profile?.memberStatus ?? "selection",
+  memberStatus: profile?.memberStatus ?? defaultMemberStatus,
 });
 
 export const getChangedAdminProfileValues = (

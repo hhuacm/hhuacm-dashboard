@@ -1,8 +1,21 @@
+import {
+  currentMemberStatuses,
+  defaultMemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { sql } from "drizzle-orm";
 import { sqliteView, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
 import { userProfile } from "./profile";
+
+const toSqlStringLiteral = (value: string) =>
+  sql.raw(`'${value.replaceAll("'", "''")}'`);
+
+const defaultMemberStatusSql = toSqlStringLiteral(defaultMemberStatus);
+const currentMemberStatusesSql = sql.join(
+  currentMemberStatuses.map(toSqlStringLiteral),
+  sql`, `
+);
 
 export const currentMember = sqliteView("current_member", {
   grade: text("grade"),
@@ -21,5 +34,5 @@ export const currentMember = sqliteView("current_member", {
     ${userProfile.major} as major
   from ${user}
   left join ${userProfile} on ${userProfile.userId} = ${user.id}
-  where coalesce(${userProfile.memberStatus}, 'selection') in ('selection', 'active')
+  where coalesce(${userProfile.memberStatus}, ${defaultMemberStatusSql}) in (${currentMemberStatusesSql})
 `);

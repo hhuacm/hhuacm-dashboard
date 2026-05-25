@@ -2,6 +2,7 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import {
   defaultMemberStatus,
+  isStatsDisabledMemberStatus,
   type MemberStatus,
   type OjPlatform,
 } from "@hhuacm-dashboard/domain";
@@ -13,7 +14,6 @@ import { getCodeforcesStatsForProfile } from "./codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "./codeforces/types";
 import type { PublicLuoguStats } from "./luogu/profile-stats";
 import { getLuoguStatsForProfile } from "./luogu/profile-stats";
-import { isStatsDisabledMemberStatus } from "./member-status";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,

@@ -14,7 +14,9 @@ import {
   TextField,
 } from "@heroui/react";
 import {
+  defaultMemberStatus,
   getGradeOptionsWithCurrentValue,
+  isMemberStatus,
   memberStatuses,
   memberStatusLabels,
   type OjPlatform,
@@ -47,7 +49,6 @@ import {
   getChangedAdminProfileValues,
   getOjAccountByPlatform,
   hasAdminProfileUpdateValues,
-  isMemberStatus,
 } from "../helpers";
 
 interface AdminUserEditDialogProps {
@@ -100,12 +101,12 @@ function AdminUserBasicInfoEditor({
   const queryClient = useQueryClient();
   const [formValues, setFormValues] = useState<AdminProfileFormValues>({
     ...emptyProfileFormValues,
-    memberStatus: "selection",
+    memberStatus: defaultMemberStatus,
   });
   const [originalFormValues, setOriginalFormValues] =
     useState<AdminProfileFormValues>({
       ...emptyProfileFormValues,
-      memberStatus: "selection",
+      memberStatus: defaultMemberStatus,
     });
   const [message, setMessage] = useState<EditorMessage | null>(null);
 

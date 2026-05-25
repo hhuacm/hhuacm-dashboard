@@ -19,10 +19,22 @@ import {
   userAward,
   userAwardSync,
 } from "@hhuacm-dashboard/db/schema/user-award";
+import {
+  currentMemberStatuses,
+  defaultMemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
 import type { Context } from "../context";
+
+const toSqlStringLiteral = (value: string) =>
+  `'${value.replaceAll("'", "''")}'`;
+
+const defaultMemberStatusSql = toSqlStringLiteral(defaultMemberStatus);
+const currentMemberStatusesSql = currentMemberStatuses
+  .map(toSqlStringLiteral)
+  .join(", ");
 
 const createTableStatements = [
   `
@@ -63,7 +75,7 @@ create table user_profile (
   grade text,
   student_id text,
   major text,
-  member_status text default 'selection' not null
+  member_status text default ${defaultMemberStatusSql} not null
 )
 `,
   `
@@ -77,7 +89,7 @@ select
   user_profile.major as major
 from user
 left join user_profile on user_profile.user_id = user.id
-where coalesce(user_profile.member_status, 'selection') in ('selection', 'active')
+where coalesce(user_profile.member_status, ${defaultMemberStatusSql}) in (${currentMemberStatusesSql})
 `,
   `
 create table user_oj_account (

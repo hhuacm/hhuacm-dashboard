@@ -15,6 +15,7 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import { isOjPlatform, type OjPlatform } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
@@ -23,12 +24,7 @@ import { type Key, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
-import {
-  getOjPlatformConfig,
-  isOjPlatform,
-  type OjPlatform,
-  ojPlatformConfigs,
-} from "@/utils/oj-platforms";
+import { getOjPlatformConfig, ojPlatformConfigs } from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
 
 interface OjAccount {

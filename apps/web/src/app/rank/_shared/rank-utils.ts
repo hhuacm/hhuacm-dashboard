@@ -1,3 +1,5 @@
+import type { RefreshSyncStatus } from "@hhuacm-dashboard/domain";
+
 export const emptyText = "—";
 
 const minuteSeconds = 60;
@@ -12,6 +14,8 @@ const rankTableMinWidth = 720;
 export const rankTableColumnClassName =
   "whitespace-nowrap text-center font-bold";
 export const rankTableCellClassName = "text-center";
+
+export type RankSyncStatus = RefreshSyncStatus | "missing-account";
 
 export const statusConfig = {
   empty: {
@@ -34,7 +38,10 @@ export const statusConfig = {
     className: "bg-accent-soft text-accent",
     label: "刷新中",
   },
-} as const;
+} as const satisfies Record<
+  RankSyncStatus,
+  { className: string; label: string }
+>;
 
 export type SortDirection = "ascending" | "descending";
 
