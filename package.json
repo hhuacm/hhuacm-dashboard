@@ -41,7 +41,9 @@
     "db:local": "turbo -F @hhuacm-dashboard/db db:local",
     "check": "bun run check-types && bun x ultracite check",
     "fix": "ultracite fix",
-    "import:ranklist-users": "bun run --cwd packages/auth import:ranklist-users"
+    "import:ranklist-users": "bun run --cwd packages/auth import:ranklist-users",
+    "system:grant-admin": "bun run --cwd packages/api system:grant-admin",
+    "system:revoke-admin": "bun run --cwd packages/api system:revoke-admin"
   },
   "devDependencies": {
     "@biomejs/biome": "latest",

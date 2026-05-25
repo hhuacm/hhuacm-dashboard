@@ -74,6 +74,7 @@
         "@hhuacm-dashboard/db": "workspace:*",
         "@hhuacm-dashboard/domain": "workspace:*",
         "@trpc/server": "catalog:",
+        "dotenv": "catalog:",
         "drizzle-orm": "0.45",
         "zod": "catalog:",
       },

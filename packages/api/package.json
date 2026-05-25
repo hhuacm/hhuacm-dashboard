@@ -10,13 +10,16 @@
     }
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "system:grant-admin": "bun src/system/cli/set-user-role.ts --role admin",
+    "system:revoke-admin": "bun src/system/cli/set-user-role.ts --role user"
   },
   "dependencies": {
     "@hhuacm-dashboard/auth": "workspace:*",
     "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
     "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
     "drizzle-orm": "0.45",
     "zod": "catalog:"
   },
