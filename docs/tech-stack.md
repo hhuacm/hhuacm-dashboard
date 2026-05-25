@@ -18,6 +18,12 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **Monorepo tooling:** Bun workspaces and Turborepo
 - **Code quality:** Ultracite/Biome and Lefthook
 
+## TypeScript Baseline
+
+Shared packages and the API/server workspaces use the shared TypeScript base config from `packages/config`. The project is written as modern ESM TypeScript with `strict`, `isolatedModules`, `verbatimModuleSyntax`, `moduleResolution: "bundler"`, and `noUncheckedIndexedAccess` enabled.
+
+The preferred style is to keep runtime facts in plain constants and derive types from them. Use `as const`, `satisfies`, `import type`, Zod schemas, and domain guards to keep boundaries explicit while letting local implementation details rely on inference. Avoid TypeScript-only runtime constructs or deep generic type machinery unless they clearly make the surrounding business flow easier to read.
+
 ## Architecture
 
 The repository is split into applications and shared packages:
@@ -175,4 +181,4 @@ export function ExampleForm() {
 
 When adding or changing UI, use the HeroUI MCP or official documentation for V3 component APIs and BEM class names. Keep custom styling on top of HeroUI semantic tokens such as `background`, `foreground`, `surface`, `accent`, `success`, `warning`, `danger`, `field-*`, `border`, and `focus`.
 
-HeroUI V3 currently does not provide a Dialog/Modal component in this project, so login and registration are implemented as dedicated `/login` and `/register` pages using `Card + Form` composition.
+Dialogs and destructive confirmations use HeroUI V3 components such as `Modal` and `AlertDialog`. Login and registration remain dedicated `/login` and `/register` pages because they are primary entry flows rather than transient dialogs.
