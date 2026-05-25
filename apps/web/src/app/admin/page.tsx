@@ -107,12 +107,12 @@ export default function AdminPage() {
               </Button>
               <Button
                 className="justify-start"
-                onPress={() => router.push("/admin/users/export" as Route)}
+                onPress={() => router.push("/admin/export" as Route)}
                 size="lg"
                 variant="outline"
               >
                 <Download className="size-4" />
-                导出用户
+                系统导出
               </Button>
               <Button
                 className="justify-start"
