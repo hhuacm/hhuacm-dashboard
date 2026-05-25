@@ -1,10 +1,14 @@
+import type { refreshRequestKinds } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, type InferSelectModel } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import type { RefreshRequestKind } from "./request-types";
 
 type Database = Context["db"];
+type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+export type RefreshRequestKind = (typeof refreshRequestKinds)[number];
+export type RefreshQueueDatabase = Database | Transaction;
 
 const refreshRequestFields = {
   createdAt: refreshRequest.createdAt,
@@ -17,8 +21,8 @@ export type RefreshRequest = Pick<
   keyof typeof refreshRequestFields
 >;
 
-export const createRefreshRequest = async (
-  db: Database,
+export const enqueueRefreshRequest = async (
+  db: RefreshQueueDatabase,
   input: {
     kind: RefreshRequestKind;
     targetId: string;
@@ -35,22 +39,7 @@ export const createRefreshRequest = async (
     })
     .returning(refreshRequestFields);
 
-  if (createdRequest) {
-    return createdRequest;
-  }
-
-  const [existingRequest] = await db
-    .select(refreshRequestFields)
-    .from(refreshRequest)
-    .where(
-      and(
-        eq(refreshRequest.kind, input.kind),
-        eq(refreshRequest.targetId, input.targetId)
-      )
-    )
-    .limit(1);
-
-  return existingRequest ?? null;
+  return Boolean(createdRequest);
 };
 
 export const getNextRefreshRequest = async (db: Database) => {
@@ -64,7 +53,7 @@ export const getNextRefreshRequest = async (db: Database) => {
 };
 
 export const deleteRefreshRequest = async (
-  db: Database,
+  db: RefreshQueueDatabase,
   input: {
     kind: RefreshRequestKind;
     targetId: string;

@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { requestLuoguProblemDetailsRefreshes } from "../refresh/requests";
+import { enqueueLuoguProblemDetailsJobs } from "../refresh/jobs/luogu-problem-details";
 import {
   attachAcceptedStatus,
   getCurrentLuoguCompletionSource,
@@ -74,7 +74,7 @@ const requestMissingProblemDetailsRefreshes = async (
     .filter((problem) => problem.title === null || problem.difficulty === null)
     .map((problem) => problem.pid);
 
-  await requestLuoguProblemDetailsRefreshes(db, missingDetailPids);
+  await enqueueLuoguProblemDetailsJobs(db, missingDetailPids);
 };
 
 export const listProblemSets = async (

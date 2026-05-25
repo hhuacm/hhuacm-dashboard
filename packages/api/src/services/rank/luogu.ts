@@ -6,8 +6,8 @@ import { asc, desc, eq, sql } from "drizzle-orm";
 import type { Context } from "../../context";
 import { getLuoguRankRefreshActivity } from "../refresh/activity";
 import { enqueueRefreshIfDue } from "../refresh/ensure";
+import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
 import { isLuoguStatsCacheFresh } from "../refresh/policy";
-import { requestLuoguAccountStatsRefresh } from "../refresh/requests";
 import { getRefreshSyncStatus } from "../refresh/sync-status";
 
 type Database = Context["db"];
@@ -26,8 +26,9 @@ const ensureLuoguRankStatsRefreshRequests = async (
       fetchedAt: row.fetchedAt,
       isFresh: isLuoguStatsCacheFresh,
       now,
-      requestRefresh: async () =>
-        await requestLuoguAccountStatsRefresh(db, row.accountId),
+      requestRefresh: async () => {
+        await luoguAccountStatsJob.enqueue(db, row.accountId);
+      },
     });
   }
 };

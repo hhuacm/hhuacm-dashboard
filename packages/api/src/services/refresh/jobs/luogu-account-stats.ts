@@ -9,9 +9,7 @@ import {
   syncLuoguAccountStats,
 } from "../../luogu/sync";
 import { refreshDefaults } from "../policy";
-import type { RefreshRequestDefinition } from "../registry";
-import { luoguAccountStatsRequestKind } from "../request-types";
-import { requestLuoguAccountStatsRefresh } from "../requests";
+import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 type Database = Context["db"];
 
@@ -23,7 +21,7 @@ const luoguAccountFields = {
 
 const handleLuoguAccountStatsRequest = async (
   db: Database,
-  request: Parameters<RefreshRequestDefinition["handle"]>[1]
+  request: Parameters<RefreshJobDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select(luoguAccountFields)
@@ -69,14 +67,14 @@ const enqueueDueLuoguAccountStatsTargets = async (db: Database, now: Date) => {
     );
 
   for (const account of dueAccounts) {
-    await requestLuoguAccountStatsRefresh(db, account.id);
+    await luoguAccountStatsJob.enqueue(db, account.id);
   }
 
   return dueAccounts.length;
 };
 
-export const luoguAccountStatsRefreshRequestDefinition = {
+export const luoguAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueLuoguAccountStatsTargets,
   handle: handleLuoguAccountStatsRequest,
-  kind: luoguAccountStatsRequestKind,
-} as const satisfies RefreshRequestDefinition;
+  kind: "luogu.accountStats",
+});

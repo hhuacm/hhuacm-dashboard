@@ -8,9 +8,9 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
 import type { Context } from "../../context";
-import type { RefreshRequestDefinition } from "./registry";
-import { createRefreshRequest } from "./request-store";
-import { codeforcesAccountStatsRequestKind } from "./request-types";
+import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import type { RefreshJobDefinition } from "./jobs/definition";
+import { enqueueRefreshRequest } from "./request-store";
 import { runRefreshWorkerOnce } from "./worker";
 
 const createRefreshRequestTableSql = `
@@ -52,8 +52,8 @@ afterEach(async () => {
 });
 
 const createTestRequest = (db: Context["db"]) =>
-  createRefreshRequest(db, {
-    kind: codeforcesAccountStatsRequestKind,
+  enqueueRefreshRequest(db, {
+    kind: codeforcesAccountStatsJob.kind,
     targetId: "account-1",
   });
 
@@ -69,9 +69,11 @@ describe("refresh worker", () => {
           handledTargetIds.push(request.targetId);
           return Promise.resolve(undefined);
         },
-        kind: codeforcesAccountStatsRequestKind,
+        clear: codeforcesAccountStatsJob.clear,
+        enqueue: codeforcesAccountStatsJob.enqueue,
+        kind: codeforcesAccountStatsJob.kind,
       },
-    ] satisfies RefreshRequestDefinition[];
+    ] satisfies RefreshJobDefinition[];
 
     const result = await runRefreshWorkerOnce(db, definitions);
     const remainingRequests = await db.select().from(refreshRequest);
@@ -87,9 +89,11 @@ describe("refresh worker", () => {
     const definitions = [
       {
         handle: () => Promise.reject(new Error("network failed")),
-        kind: codeforcesAccountStatsRequestKind,
+        clear: codeforcesAccountStatsJob.clear,
+        enqueue: codeforcesAccountStatsJob.enqueue,
+        kind: codeforcesAccountStatsJob.kind,
       },
-    ] satisfies RefreshRequestDefinition[];
+    ] satisfies RefreshJobDefinition[];
 
     await expect(runRefreshWorkerOnce(db, definitions)).rejects.toThrow(
       "network failed"
@@ -111,12 +115,12 @@ describe("refresh worker", () => {
   it("rejects unsupported request kinds", async () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
-    const request = await createRefreshRequest(db, {
-      kind: codeforcesAccountStatsRequestKind,
+    const created = await enqueueRefreshRequest(db, {
+      kind: codeforcesAccountStatsJob.kind,
       targetId: "account-1",
     });
 
-    if (!request) {
+    if (!created) {
       throw new Error("Expected created request");
     }
 

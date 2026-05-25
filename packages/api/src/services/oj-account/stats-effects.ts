@@ -5,10 +5,9 @@ import { eq } from "drizzle-orm";
 import type { Context } from "../../context";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
-import {
-  clearOjAccountRefresh,
-  requestOjAccountRefresh,
-} from "../refresh/requests";
+import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
+import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
 import { listInternalOjAccountsByUserId } from "./queries";
 
 type Database = Context["db"];
@@ -24,7 +23,7 @@ export const clearCodeforcesStatsIfNeeded = async (
 ) => {
   if (account.platform === "codeforces") {
     await deleteCodeforcesStats(db, account.id);
-    await clearOjAccountRefresh(db, account);
+    await codeforcesAccountStatsJob.clear(db, account.id);
   }
 };
 const clearLuoguStatsIfNeeded = async (
@@ -33,7 +32,8 @@ const clearLuoguStatsIfNeeded = async (
 ) => {
   if (account.platform === "luogu") {
     await deleteLuoguStats(db, account.id);
-    await clearOjAccountRefresh(db, account);
+    await luoguAccountStatsJob.clear(db, account.id);
+    await userAwardsFromLuoguJob.clear(db, account.id);
   }
 };
 
@@ -79,7 +79,15 @@ export const requestOjAccountRefreshEffectsIfNeeded = async (
     return;
   }
 
-  await requestOjAccountRefresh(db, account);
+  if (account.platform === "codeforces") {
+    await codeforcesAccountStatsJob.enqueue(db, account.id);
+    return;
+  }
+
+  if (account.platform === "luogu") {
+    await luoguAccountStatsJob.enqueue(db, account.id);
+    await userAwardsFromLuoguJob.enqueue(db, account.id);
+  }
 };
 
 export const replaceOjAccountStatsEffectsIfNeeded = async (

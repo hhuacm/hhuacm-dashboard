@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { buildOjProfileUrl } from "../oj-profile-url";
-import { requestLuoguProfileUrlRefresh } from "../refresh/requests";
+import { luoguProfileUrlJob } from "../refresh/jobs/luogu-profile-url";
 import {
   assertNoHandleOwner,
   getExistingCurrentUserAccountMessage,
@@ -43,7 +43,7 @@ const requestOjAccountProfileUrlRefreshIfNeeded = async (
   }
 ) => {
   if (account.platform === "luogu") {
-    await requestLuoguProfileUrlRefresh(db, account.id);
+    await luoguProfileUrlJob.enqueue(db, account.id);
   }
 };
 

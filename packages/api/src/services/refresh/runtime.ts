@@ -1,9 +1,7 @@
 import type { Context } from "../../context";
+import { refreshJobDefinitions } from "./jobs";
+import type { RefreshJobDefinition } from "./jobs/definition";
 import { refreshDefaults } from "./policy";
-import {
-  type RefreshRequestDefinition,
-  refreshRequestDefinitions,
-} from "./registry";
 import { runRefreshWorkerOnce } from "./worker";
 
 type Database = Context["db"];
@@ -19,7 +17,7 @@ const sleep = (ms: number) =>
 
 export const enqueueDueRefreshTargets = async (
   db: Database,
-  definitions: RefreshRequestDefinition[] = refreshRequestDefinitions,
+  definitions: readonly RefreshJobDefinition[] = refreshJobDefinitions,
   now = new Date()
 ) => {
   let enqueuedCount = 0;

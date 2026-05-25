@@ -8,7 +8,7 @@ import type { LuoguUserSearchResult } from "../../../external/online-judge-sourc
 import { createServiceTestDb } from "../../test-db";
 import {
   handleLuoguProfileUrlRequest,
-  luoguProfileUrlRefreshRequestDefinition,
+  luoguProfileUrlJob,
 } from "./luogu-profile-url";
 
 const createUser = async (
@@ -78,7 +78,7 @@ describe("Luogu profile URL refresh job", () => {
       db,
       {
         createdAt: new Date(),
-        kind: "luogu.profileUrl",
+        kind: luoguProfileUrlJob.kind,
         targetId: account.id,
       },
       async ({ keyword }) =>
@@ -111,11 +111,7 @@ describe("Luogu profile URL refresh job", () => {
       userId: "present-url-user",
     });
 
-    const count =
-      await luoguProfileUrlRefreshRequestDefinition.enqueueDueTargets?.(
-        db,
-        new Date()
-      );
+    const count = await luoguProfileUrlJob.enqueueDueTargets?.(db, new Date());
     const requests = await db.select().from(refreshRequest);
 
     expect(count).toBe(1);
@@ -133,7 +129,7 @@ describe("Luogu profile URL refresh job", () => {
     await expect(
       handleLuoguProfileUrlRequest(db, {
         createdAt: new Date(),
-        kind: "luogu.profileUrl",
+        kind: luoguProfileUrlJob.kind,
         targetId: "missing-account",
       })
     ).rejects.toThrow("Luogu account does not exist: missing-account");

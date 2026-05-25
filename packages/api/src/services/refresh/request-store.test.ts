@@ -9,15 +9,13 @@ import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 
 import type { Context } from "../../context";
+import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
 import {
-  createRefreshRequest,
   deleteRefreshRequest,
+  enqueueRefreshRequest,
   getNextRefreshRequest,
 } from "./request-store";
-import {
-  codeforcesAccountStatsRequestKind,
-  luoguAccountStatsRequestKind,
-} from "./request-types";
 
 const createRefreshRequestTableSql = `
 create table refresh_request (
@@ -60,8 +58,8 @@ afterEach(async () => {
 });
 
 const createTestRequest = (db: Context["db"], targetId = "account-1") =>
-  createRefreshRequest(db, {
-    kind: codeforcesAccountStatsRequestKind,
+  enqueueRefreshRequest(db, {
+    kind: codeforcesAccountStatsJob.kind,
     targetId,
   });
 
@@ -77,14 +75,15 @@ describe("refresh request store", () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
 
-    const firstRequest = await createTestRequest(db);
-    const secondRequest = await createRefreshRequest(db, {
-      kind: codeforcesAccountStatsRequestKind,
+    const firstRequestCreated = await createTestRequest(db);
+    const secondRequestCreated = await enqueueRefreshRequest(db, {
+      kind: codeforcesAccountStatsJob.kind,
       targetId: "account-1",
     });
     const requests = await listRequests(db, "account-1");
 
-    expect(secondRequest).toEqual(firstRequest);
+    expect(firstRequestCreated).toBe(true);
+    expect(secondRequestCreated).toBe(false);
     expect(requests).toHaveLength(1);
   });
 
@@ -93,8 +92,8 @@ describe("refresh request store", () => {
     testDirectory = directory;
 
     await createTestRequest(db);
-    await createRefreshRequest(db, {
-      kind: luoguAccountStatsRequestKind,
+    await enqueueRefreshRequest(db, {
+      kind: luoguAccountStatsJob.kind,
       targetId: "account-1",
     });
     const requests = await listRequests(db, "account-1");
@@ -109,12 +108,12 @@ describe("refresh request store", () => {
     const { db, directory } = await createTestDb();
     testDirectory = directory;
 
-    await createRefreshRequest(db, {
-      kind: codeforcesAccountStatsRequestKind,
+    await enqueueRefreshRequest(db, {
+      kind: codeforcesAccountStatsJob.kind,
       targetId: "first",
     });
-    await createRefreshRequest(db, {
-      kind: codeforcesAccountStatsRequestKind,
+    await enqueueRefreshRequest(db, {
+      kind: codeforcesAccountStatsJob.kind,
       targetId: "second",
     });
 
@@ -132,7 +131,7 @@ describe("refresh request store", () => {
     await createTestRequest(db, "account-2");
 
     await deleteRefreshRequest(db, {
-      kind: codeforcesAccountStatsRequestKind,
+      kind: codeforcesAccountStatsJob.kind,
       targetId: "account-1",
     });
 

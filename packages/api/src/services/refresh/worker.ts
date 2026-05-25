@@ -1,16 +1,13 @@
 import type { Context } from "../../context";
-import {
-  findRefreshRequestDefinition,
-  type RefreshRequestDefinition,
-  refreshRequestDefinitions,
-} from "./registry";
+import { findRefreshJobDefinition, refreshJobDefinitions } from "./jobs";
+import type { RefreshJobDefinition } from "./jobs/definition";
 import { deleteRefreshRequest, getNextRefreshRequest } from "./request-store";
 
 type Database = Context["db"];
 
 export const runRefreshWorkerOnce = async (
   db: Database,
-  definitions: RefreshRequestDefinition[] = refreshRequestDefinitions
+  definitions: readonly RefreshJobDefinition[] = refreshJobDefinitions
 ) => {
   const request = await getNextRefreshRequest(db);
 
@@ -19,7 +16,7 @@ export const runRefreshWorkerOnce = async (
   }
 
   try {
-    const definition = findRefreshRequestDefinition(definitions, request.kind);
+    const definition = findRefreshJobDefinition(definitions, request.kind);
     await definition.handle(db, request);
   } finally {
     await deleteRefreshRequest(db, request);

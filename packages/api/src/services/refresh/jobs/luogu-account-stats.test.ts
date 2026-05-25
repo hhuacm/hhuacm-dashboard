@@ -6,7 +6,7 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../test-db";
-import { luoguAccountStatsRefreshRequestDefinition } from "./luogu-account-stats";
+import { luoguAccountStatsJob } from "./luogu-account-stats";
 
 describe("Luogu account stats refresh request", () => {
   const createAccount = async (
@@ -51,11 +51,10 @@ describe("Luogu account stats refresh request", () => {
     await createAccount(db, { id: "frozen-user", memberStatus: "frozen" });
     await createAccount(db, { id: "missing-profile-user" });
 
-    const enqueuedCount =
-      await luoguAccountStatsRefreshRequestDefinition.enqueueDueTargets(
-        db,
-        new Date()
-      );
+    const enqueuedCount = await luoguAccountStatsJob.enqueueDueTargets?.(
+      db,
+      new Date()
+    );
     const requests = await db.select().from(refreshRequest);
     const targetIds = requests.map((request) => request.targetId);
 

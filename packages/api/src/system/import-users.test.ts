@@ -5,12 +5,10 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { verifyPassword } from "better-auth/crypto";
 import { asc, eq } from "drizzle-orm";
-import {
-  codeforcesAccountStatsRequestKind,
-  luoguAccountStatsRequestKind,
-  luoguProfileUrlRequestKind,
-  userAwardsFromLuoguRequestKind,
-} from "../services/refresh/request-types";
+import { codeforcesAccountStatsJob } from "../services/refresh/jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "../services/refresh/jobs/luogu-account-stats";
+import { luoguProfileUrlJob } from "../services/refresh/jobs/luogu-profile-url";
+import { userAwardsFromLuoguJob } from "../services/refresh/jobs/user-awards-from-luogu";
 import { createServiceTestDb } from "../services/test-db";
 import {
   importUsersFromSystemSeedFile,
@@ -245,23 +243,23 @@ describe("system import users", () => {
     expect(requests).toEqual(
       expect.arrayContaining([
         {
-          kind: codeforcesAccountStatsRequestKind,
+          kind: codeforcesAccountStatsJob.kind,
           targetId: accountByHandle.get("selectionCf")?.id,
         },
         {
-          kind: luoguAccountStatsRequestKind,
+          kind: luoguAccountStatsJob.kind,
           targetId: accountByHandle.get("activeLuogu")?.id,
         },
         {
-          kind: luoguProfileUrlRequestKind,
+          kind: luoguProfileUrlJob.kind,
           targetId: accountByHandle.get("activeLuogu")?.id,
         },
         {
-          kind: luoguProfileUrlRequestKind,
+          kind: luoguProfileUrlJob.kind,
           targetId: accountByHandle.get("frozenLuogu")?.id,
         },
         {
-          kind: userAwardsFromLuoguRequestKind,
+          kind: userAwardsFromLuoguJob.kind,
           targetId: accountByHandle.get("activeLuogu")?.id,
         },
       ])
@@ -275,7 +273,7 @@ describe("system import users", () => {
       requests.some(
         (request) =>
           request.targetId === accountByHandle.get("frozenLuogu")?.id &&
-          request.kind !== luoguProfileUrlRequestKind
+          request.kind !== luoguProfileUrlJob.kind
       )
     ).toBe(false);
   });

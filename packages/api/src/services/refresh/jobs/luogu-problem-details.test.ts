@@ -9,7 +9,7 @@ import type { LuoguProblemPageData } from "../../../external/online-judge-source
 import { createServiceTestDb } from "../../test-db";
 import {
   handleLuoguProblemDetailsRequest,
-  luoguProblemDetailsRefreshRequestDefinition,
+  luoguProblemDetailsJob,
 } from "./luogu-problem-details";
 
 const createProblemPage = (
@@ -23,9 +23,9 @@ describe("Luogu problem details refresh request", () => {
     const db = await createServiceTestDb();
 
     await expect(
-      luoguProblemDetailsRefreshRequestDefinition.handle(db, {
+      luoguProblemDetailsJob.handle(db, {
         createdAt: new Date(),
-        kind: "luogu.problemDetails",
+        kind: luoguProblemDetailsJob.kind,
         targetId: "P1563",
       })
     ).resolves.toBeUndefined();
@@ -49,7 +49,7 @@ describe("Luogu problem details refresh request", () => {
         db,
         {
           createdAt: new Date(),
-          kind: "luogu.problemDetails",
+          kind: luoguProblemDetailsJob.kind,
           targetId: "P1563",
         },
         () => Promise.reject(new Error("network failed"))
@@ -75,7 +75,7 @@ describe("Luogu problem details refresh request", () => {
         db,
         {
           createdAt: new Date(),
-          kind: "luogu.problemDetails",
+          kind: luoguProblemDetailsJob.kind,
           targetId: "P1563",
         },
         async () =>
@@ -120,10 +120,7 @@ describe("Luogu problem details refresh request", () => {
     ]);
 
     await expect(
-      luoguProblemDetailsRefreshRequestDefinition.enqueueDueTargets?.(
-        db,
-        new Date()
-      )
+      luoguProblemDetailsJob.enqueueDueTargets?.(db, new Date())
     ).resolves.toBe(2);
 
     const requests = await db

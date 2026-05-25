@@ -4,16 +4,14 @@ import {
   getLuoguAccountStatsRefreshActivity,
   getUserAwardsFromLuoguRefreshActivity,
 } from "./activity";
+import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
+import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
 import {
   isCodeforcesStatsCacheFresh,
   isLuoguStatsCacheFresh,
   isUserAwardsCacheFresh,
 } from "./policy";
-import {
-  requestCodeforcesAccountStatsRefresh,
-  requestLuoguAccountStatsRefresh,
-  requestUserAwardsFromLuoguRefresh,
-} from "./requests";
 
 type Database = Context["db"];
 
@@ -95,8 +93,9 @@ export const ensureCodeforcesAccountStatsRefresh = async (
       await getCodeforcesAccountStatsRefreshActivity(db, accountId),
     isFresh: isCodeforcesStatsCacheFresh,
     now: input.now,
-    requestRefresh: async (accountId) =>
-      await requestCodeforcesAccountStatsRefresh(db, accountId),
+    requestRefresh: async (accountId) => {
+      await codeforcesAccountStatsJob.enqueue(db, accountId);
+    },
     targetId: input.accountId,
   });
 
@@ -114,8 +113,9 @@ export const ensureLuoguAccountStatsRefresh = async (
       await getLuoguAccountStatsRefreshActivity(db, accountId),
     isFresh: isLuoguStatsCacheFresh,
     now: input.now,
-    requestRefresh: async (accountId) =>
-      await requestLuoguAccountStatsRefresh(db, accountId),
+    requestRefresh: async (accountId) => {
+      await luoguAccountStatsJob.enqueue(db, accountId);
+    },
     targetId: input.accountId,
   });
 
@@ -135,7 +135,8 @@ export const ensureUserAwardsFromLuoguRefresh = async (
       await getUserAwardsFromLuoguRefreshActivity(db, accountId),
     isFresh: isUserAwardsCacheFresh,
     now: input.now,
-    requestRefresh: async (accountId) =>
-      await requestUserAwardsFromLuoguRefresh(db, accountId),
+    requestRefresh: async (accountId) => {
+      await userAwardsFromLuoguJob.enqueue(db, accountId);
+    },
     targetId: input.accountId,
   });

@@ -9,9 +9,7 @@ import {
   syncCodeforcesAccountStats,
 } from "../../codeforces/sync";
 import { refreshDefaults } from "../policy";
-import type { RefreshRequestDefinition } from "../registry";
-import { codeforcesAccountStatsRequestKind } from "../request-types";
-import { requestCodeforcesAccountStatsRefresh } from "../requests";
+import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 type Database = Context["db"];
 
@@ -22,7 +20,7 @@ const codeforcesAccountFields = {
 
 const handleCodeforcesAccountStatsRequest = async (
   db: Database,
-  request: Parameters<RefreshRequestDefinition["handle"]>[1]
+  request: Parameters<RefreshJobDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select(codeforcesAccountFields)
@@ -73,14 +71,14 @@ const enqueueDueCodeforcesAccountStatsTargets = async (
     );
 
   for (const account of dueAccounts) {
-    await requestCodeforcesAccountStatsRefresh(db, account.id);
+    await codeforcesAccountStatsJob.enqueue(db, account.id);
   }
 
   return dueAccounts.length;
 };
 
-export const codeforcesAccountStatsRefreshRequestDefinition = {
+export const codeforcesAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueCodeforcesAccountStatsTargets,
   handle: handleCodeforcesAccountStatsRequest,
-  kind: codeforcesAccountStatsRequestKind,
-} as const satisfies RefreshRequestDefinition;
+  kind: "codeforces.accountStats",
+});

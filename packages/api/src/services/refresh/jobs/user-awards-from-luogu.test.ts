@@ -10,7 +10,7 @@ import {
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../test-db";
-import { userAwardsFromLuoguRefreshRequestDefinition } from "./user-awards-from-luogu";
+import { userAwardsFromLuoguJob } from "./user-awards-from-luogu";
 
 describe("user awards from Luogu refresh request", () => {
   const createAccount = async (
@@ -73,11 +73,10 @@ describe("user awards from Luogu refresh request", () => {
       },
     ]);
 
-    const enqueuedCount =
-      await userAwardsFromLuoguRefreshRequestDefinition.enqueueDueTargets(
-        db,
-        new Date()
-      );
+    const enqueuedCount = await userAwardsFromLuoguJob.enqueueDueTargets?.(
+      db,
+      new Date()
+    );
     const requests = await db.select().from(refreshRequest);
     const targetIds = requests.map((request) => request.targetId);
 
@@ -107,9 +106,9 @@ describe("user awards from Luogu refresh request", () => {
       year: 2020,
     });
 
-    await userAwardsFromLuoguRefreshRequestDefinition.handle(db, {
+    await userAwardsFromLuoguJob.handle(db, {
       createdAt: new Date(),
-      kind: "user.awardsFromLuogu",
+      kind: userAwardsFromLuoguJob.kind,
       targetId: "account-retired-user",
     });
 
@@ -138,9 +137,9 @@ describe("user awards from Luogu refresh request", () => {
       year: 2020,
     });
 
-    await userAwardsFromLuoguRefreshRequestDefinition.handle(db, {
+    await userAwardsFromLuoguJob.handle(db, {
       createdAt: new Date(),
-      kind: "user.awardsFromLuogu",
+      kind: userAwardsFromLuoguJob.kind,
       targetId: "account-active-user",
     });
 

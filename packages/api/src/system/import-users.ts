@@ -2,18 +2,14 @@ import { randomUUID } from "node:crypto";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { defaultMemberStatus, type OjPlatform } from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
 
 import type { Context } from "../context";
-import {
-  codeforcesAccountStatsRequestKind,
-  luoguAccountStatsRequestKind,
-  luoguProfileUrlRequestKind,
-  type RefreshRequestKind,
-  userAwardsFromLuoguRequestKind,
-} from "../services/refresh/request-types";
+import { codeforcesAccountStatsJob } from "../services/refresh/jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "../services/refresh/jobs/luogu-account-stats";
+import { luoguProfileUrlJob } from "../services/refresh/jobs/luogu-profile-url";
+import { userAwardsFromLuoguJob } from "../services/refresh/jobs/user-awards-from-luogu";
 import { parseSystemSeedFile, type SystemSeedUser } from "./seed-format";
 
 type Database = Context["db"];
@@ -132,28 +128,10 @@ const isCurrentMemberSeedUser = (seedUser: SystemSeedUser) => {
   return memberStatus === "selection" || memberStatus === "active";
 };
 
-const getRefreshRequestKindsForPlatform = (input: {
-  isCurrentMember: boolean;
-  platform: OjPlatform;
-}): RefreshRequestKind[] => {
-  if (input.platform === "codeforces" && input.isCurrentMember) {
-    return [codeforcesAccountStatsRequestKind];
-  }
+const countCreatedRefreshRequest = async (created: Promise<boolean>) =>
+  (await created) ? 1 : 0;
 
-  if (input.platform === "luogu") {
-    const kinds: RefreshRequestKind[] = [luoguProfileUrlRequestKind];
-
-    if (input.isCurrentMember) {
-      kinds.push(luoguAccountStatsRequestKind, userAwardsFromLuoguRequestKind);
-    }
-
-    return kinds;
-  }
-
-  return [];
-};
-
-const createRefreshRequestsForAccount = async (
+const enqueueImportedOjAccountRefreshJobs = async (
   db: UserImportDatabase,
   input: {
     accountId: string;
@@ -163,23 +141,24 @@ const createRefreshRequestsForAccount = async (
 ) => {
   let count = 0;
 
-  for (const kind of getRefreshRequestKindsForPlatform(input)) {
-    const [createdRequest] = await db
-      .insert(refreshRequest)
-      .values({
-        kind,
-        targetId: input.accountId,
-      })
-      .onConflictDoNothing({
-        target: [refreshRequest.kind, refreshRequest.targetId],
-      })
-      .returning({
-        kind: refreshRequest.kind,
-        targetId: refreshRequest.targetId,
-      });
+  if (input.platform === "codeforces" && input.isCurrentMember) {
+    count += await countCreatedRefreshRequest(
+      codeforcesAccountStatsJob.enqueue(db, input.accountId)
+    );
+  }
 
-    if (createdRequest) {
-      count += 1;
+  if (input.platform === "luogu") {
+    count += await countCreatedRefreshRequest(
+      luoguProfileUrlJob.enqueue(db, input.accountId)
+    );
+
+    if (input.isCurrentMember) {
+      count += await countCreatedRefreshRequest(
+        luoguAccountStatsJob.enqueue(db, input.accountId)
+      );
+      count += await countCreatedRefreshRequest(
+        userAwardsFromLuoguJob.enqueue(db, input.accountId)
+      );
     }
   }
 
@@ -239,7 +218,7 @@ const createImportedUser = async (
       continue;
     }
 
-    refreshRequestCount += await createRefreshRequestsForAccount(db, {
+    refreshRequestCount += await enqueueImportedOjAccountRefreshJobs(db, {
       accountId: createdOjAccount.id,
       isCurrentMember: shouldRefreshAccounts,
       platform: createdOjAccount.platform,

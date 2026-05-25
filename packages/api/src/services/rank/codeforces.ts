@@ -6,8 +6,8 @@ import { asc, eq, sql } from "drizzle-orm";
 import type { Context } from "../../context";
 import { getCodeforcesRankRefreshActivity } from "../refresh/activity";
 import { enqueueRefreshIfDue } from "../refresh/ensure";
+import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
 import { isCodeforcesStatsCacheFresh } from "../refresh/policy";
-import { requestCodeforcesAccountStatsRefresh } from "../refresh/requests";
 import { getRefreshSyncStatus } from "../refresh/sync-status";
 
 type Database = Context["db"];
@@ -26,8 +26,9 @@ const ensureCodeforcesRankStatsRefreshRequests = async (
       fetchedAt: row.fetchedAt,
       isFresh: isCodeforcesStatsCacheFresh,
       now,
-      requestRefresh: async () =>
-        await requestCodeforcesAccountStatsRefresh(db, row.accountId),
+      requestRefresh: async () => {
+        await codeforcesAccountStatsJob.enqueue(db, row.accountId);
+      },
     });
   }
 };

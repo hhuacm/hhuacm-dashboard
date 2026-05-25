@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import { requestLuoguProblemDetailsRefreshes } from "../refresh/requests";
+import { enqueueLuoguProblemDetailsJobs } from "../refresh/jobs/luogu-problem-details";
 import {
   normalizeProblemPids,
   replaceProblemSetProblems,
@@ -59,7 +59,7 @@ export const createProblemSet = async (
     return createdProblemSet;
   });
 
-  await requestLuoguProblemDetailsRefreshes(db, pids);
+  await enqueueLuoguProblemDetailsJobs(db, pids);
 
   return await getProblemSet(db, {
     currentUserId: null,
@@ -104,7 +104,7 @@ export const updateProblemSet = async (
   });
 
   if (pids !== null) {
-    await requestLuoguProblemDetailsRefreshes(db, pids);
+    await enqueueLuoguProblemDetailsJobs(db, pids);
   }
 
   return await getProblemSet(db, {

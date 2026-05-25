@@ -9,9 +9,7 @@ import {
   syncUserAwardsFromLuogu,
 } from "../../profile-awards";
 import { refreshDefaults } from "../policy";
-import type { RefreshRequestDefinition } from "../registry";
-import { userAwardsFromLuoguRequestKind } from "../request-types";
-import { requestUserAwardsFromLuoguRefresh } from "../requests";
+import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 type Database = Context["db"];
 
@@ -26,7 +24,7 @@ const luoguAccountFields = {
 
 const handleUserAwardsFromLuoguRequest = async (
   db: Database,
-  request: Parameters<RefreshRequestDefinition["handle"]>[1]
+  request: Parameters<RefreshJobDefinition["handle"]>[1]
 ) => {
   const [account] = await db
     .select(luoguAccountFields)
@@ -78,14 +76,14 @@ const enqueueDueUserAwardsFromLuoguTargets = async (
     );
 
   for (const account of dueAccounts) {
-    await requestUserAwardsFromLuoguRefresh(db, account.id);
+    await userAwardsFromLuoguJob.enqueue(db, account.id);
   }
 
   return dueAccounts.length;
 };
 
-export const userAwardsFromLuoguRefreshRequestDefinition = {
+export const userAwardsFromLuoguJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueUserAwardsFromLuoguTargets,
   handle: handleUserAwardsFromLuoguRequest,
-  kind: userAwardsFromLuoguRequestKind,
-} as const satisfies RefreshRequestDefinition;
+  kind: "user.awardsFromLuogu",
+});

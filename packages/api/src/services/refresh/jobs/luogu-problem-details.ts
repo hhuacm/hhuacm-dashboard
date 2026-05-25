@@ -6,9 +6,7 @@ import {
   enrichProblemSetProblemsByPid,
   type LuoguProblemLoader,
 } from "../../luogu/problem-details";
-import type { RefreshRequestDefinition } from "../registry";
-import { luoguProblemDetailsRequestKind } from "../request-types";
-import { requestLuoguProblemDetailsRefreshes } from "../requests";
+import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 type Database = Context["db"];
 
@@ -18,10 +16,25 @@ const missingProblemDetailsFields = {
 
 export const handleLuoguProblemDetailsRequest = async (
   db: Database,
-  request: Parameters<RefreshRequestDefinition["handle"]>[1],
+  request: Parameters<RefreshJobDefinition["handle"]>[1],
   loadProblem?: LuoguProblemLoader
 ) => {
   await enrichProblemSetProblemsByPid(db, request.targetId, loadProblem);
+};
+
+export const enqueueLuoguProblemDetailsJobs = async (
+  db: Database,
+  pids: string[]
+) => {
+  let count = 0;
+
+  for (const pid of new Set(pids)) {
+    if (await luoguProblemDetailsJob.enqueue(db, pid)) {
+      count += 1;
+    }
+  }
+
+  return count;
 };
 
 const enqueueMissingLuoguProblemDetailsTargets = async (
@@ -35,7 +48,7 @@ const enqueueMissingLuoguProblemDetailsTargets = async (
       or(isNull(problemSetProblem.title), isNull(problemSetProblem.difficulty))
     );
 
-  await requestLuoguProblemDetailsRefreshes(
+  await enqueueLuoguProblemDetailsJobs(
     db,
     problems.map((problem) => problem.pid)
   );
@@ -43,8 +56,8 @@ const enqueueMissingLuoguProblemDetailsTargets = async (
   return problems.length;
 };
 
-export const luoguProblemDetailsRefreshRequestDefinition = {
+export const luoguProblemDetailsJob = defineRefreshJob({
   enqueueDueTargets: enqueueMissingLuoguProblemDetailsTargets,
   handle: handleLuoguProblemDetailsRequest,
-  kind: luoguProblemDetailsRequestKind,
-} as const satisfies RefreshRequestDefinition;
+  kind: "luogu.problemDetails",
+});

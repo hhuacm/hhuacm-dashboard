@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import type { Context } from "../../context";
-import type { RefreshRequestDefinition } from "./registry";
-import { codeforcesAccountStatsRequestKind } from "./request-types";
+import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import type { RefreshJobDefinition } from "./jobs/definition";
 import { enqueueDueRefreshTargets } from "./runtime";
 
 const fakeDb = null as unknown as Context["db"];
@@ -13,10 +13,12 @@ describe("refresh runtime", () => {
       {
         enqueueDueTargets: async (_db, now) =>
           now.toISOString() === "2026-01-01T00:00:00.000Z" ? 2 : 0,
+        clear: codeforcesAccountStatsJob.clear,
+        enqueue: codeforcesAccountStatsJob.enqueue,
         handle: () => Promise.resolve(undefined),
-        kind: codeforcesAccountStatsRequestKind,
+        kind: codeforcesAccountStatsJob.kind,
       },
-    ] satisfies RefreshRequestDefinition[];
+    ] satisfies RefreshJobDefinition[];
 
     await expect(
       enqueueDueRefreshTargets(
@@ -30,10 +32,12 @@ describe("refresh runtime", () => {
   it("skips event-driven definitions without due scans", async () => {
     const definitions = [
       {
+        clear: codeforcesAccountStatsJob.clear,
+        enqueue: codeforcesAccountStatsJob.enqueue,
         handle: () => Promise.resolve(undefined),
-        kind: codeforcesAccountStatsRequestKind,
+        kind: codeforcesAccountStatsJob.kind,
       },
-    ] satisfies RefreshRequestDefinition[];
+    ] satisfies RefreshJobDefinition[];
 
     await expect(enqueueDueRefreshTargets(fakeDb, definitions)).resolves.toBe(
       0

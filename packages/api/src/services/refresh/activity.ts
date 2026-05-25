@@ -2,12 +2,10 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import type { Context } from "../../context";
-import {
-  codeforcesAccountStatsRequestKind,
-  luoguAccountStatsRequestKind,
-  type RefreshRequestKind,
-  userAwardsFromLuoguRequestKind,
-} from "./request-types";
+import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
+import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
+import type { RefreshRequestKind } from "./request-store";
 
 type Database = Context["db"];
 
@@ -74,7 +72,7 @@ export const getCodeforcesAccountStatsRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: codeforcesAccountStatsRequestKind,
+    kind: codeforcesAccountStatsJob.kind,
     targetId: accountId,
   });
 
@@ -83,7 +81,7 @@ export const getLuoguAccountStatsRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: luoguAccountStatsRequestKind,
+    kind: luoguAccountStatsJob.kind,
     targetId: accountId,
   });
 
@@ -92,7 +90,7 @@ export const getUserAwardsFromLuoguRefreshActivity = (
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: userAwardsFromLuoguRequestKind,
+    kind: userAwardsFromLuoguJob.kind,
     targetId: accountId,
   });
 
@@ -101,13 +99,13 @@ const getRefreshingCodeforcesAccountIds = (
   accountIds: string[]
 ) =>
   getRefreshingTargetIds(db, {
-    kind: codeforcesAccountStatsRequestKind,
+    kind: codeforcesAccountStatsJob.kind,
     targetIds: accountIds,
   });
 
 const getRefreshingLuoguAccountIds = (db: Database, accountIds: string[]) =>
   getRefreshingTargetIds(db, {
-    kind: luoguAccountStatsRequestKind,
+    kind: luoguAccountStatsJob.kind,
     targetIds: accountIds,
   });
 

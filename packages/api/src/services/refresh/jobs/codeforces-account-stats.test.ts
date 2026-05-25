@@ -6,7 +6,7 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../test-db";
-import { codeforcesAccountStatsRefreshRequestDefinition } from "./codeforces-account-stats";
+import { codeforcesAccountStatsJob } from "./codeforces-account-stats";
 
 describe("Codeforces account stats refresh request", () => {
   const createAccount = async (
@@ -51,11 +51,10 @@ describe("Codeforces account stats refresh request", () => {
     await createAccount(db, { id: "frozen-user", memberStatus: "frozen" });
     await createAccount(db, { id: "missing-profile-user" });
 
-    const enqueuedCount =
-      await codeforcesAccountStatsRefreshRequestDefinition.enqueueDueTargets(
-        db,
-        new Date()
-      );
+    const enqueuedCount = await codeforcesAccountStatsJob.enqueueDueTargets?.(
+      db,
+      new Date()
+    );
     const requests = await db.select().from(refreshRequest);
     const targetIds = requests.map((request) => request.targetId);
 

@@ -4,9 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { Context } from "../../../context";
 import { refreshLuoguProfileUrl } from "../../luogu/profile-url";
 import type { LuoguUserSearchLoader } from "../../oj-profile-url";
-import type { RefreshRequestDefinition } from "../registry";
-import { luoguProfileUrlRequestKind } from "../request-types";
-import { requestLuoguProfileUrlRefresh } from "../requests";
+import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 type Database = Context["db"];
 
@@ -17,7 +15,7 @@ const luoguProfileUrlAccountFields = {
 
 export const handleLuoguProfileUrlRequest = async (
   db: Database,
-  request: Parameters<RefreshRequestDefinition["handle"]>[1],
+  request: Parameters<RefreshJobDefinition["handle"]>[1],
   searchUsers?: LuoguUserSearchLoader
 ) => {
   const [account] = await db
@@ -50,14 +48,14 @@ const enqueueMissingLuoguProfileUrlTargets = async (
     );
 
   for (const account of accounts) {
-    await requestLuoguProfileUrlRefresh(db, account.id);
+    await luoguProfileUrlJob.enqueue(db, account.id);
   }
 
   return accounts.length;
 };
 
-export const luoguProfileUrlRefreshRequestDefinition = {
+export const luoguProfileUrlJob = defineRefreshJob({
   enqueueDueTargets: enqueueMissingLuoguProfileUrlTargets,
   handle: handleLuoguProfileUrlRequest,
-  kind: luoguProfileUrlRequestKind,
-} as const satisfies RefreshRequestDefinition;
+  kind: "luogu.profileUrl",
+});
