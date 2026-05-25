@@ -14,7 +14,7 @@ This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo a
 - **Styling:** Tailwind CSS v4 with app-level theme CSS in `apps/web`
 - **UI primitives:** HeroUI V3 components imported from `@heroui/react`
 - **Client data fetching:** TanStack Query with tRPC
-- **Forms and validation:** TanStack Form and Zod
+- **Forms and validation:** React Hook Form and Zod
 - **Monorepo tooling:** Bun workspaces and Turborepo
 - **Code quality:** Ultracite/Biome and Lefthook
 
@@ -32,6 +32,7 @@ hhuacm-dashboard/
     |-- auth/        # Better Auth configuration
     |-- config/      # Shared TypeScript configuration
     |-- db/          # Drizzle database client and schema
+    |-- domain/      # Shared domain constants, labels, and pure business rules
     |-- env/         # Runtime environment validation
 ```
 
@@ -42,6 +43,8 @@ Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router
 ```
 
 Authentication uses Better Auth HTTP endpoints mounted under `Hono /api/auth/*`. The frontend also calls the `health` tRPC procedure to verify the web app and API server are connected.
+
+Some read procedures use a read-through refresh pattern: they return cached data immediately and enqueue background refresh requests when cached OJ data or problem metadata is missing or stale. This keeps pages responsive while making the side effect explicit in the service layer.
 
 ## Local Services
 
