@@ -1,45 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
+import { eq } from "drizzle-orm";
 
 import { createServiceTestDb } from "../test-db";
 import { addOjAccount } from "./commands";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  globalThis.fetch = ((input) => {
-    const url = new URL(input.toString());
-    const keyword = url.searchParams.get("keyword") ?? "";
-
-    return Promise.resolve(
-      Response.json({
-        users: [
-          {
-            avatar: "",
-            background: "",
-            badge: null,
-            ccfLevel: 0,
-            color: "Blue",
-            isAdmin: false,
-            isBanned: false,
-            name: keyword,
-            slogan: "",
-            uid: 97_238,
-            xcpcLevel: 0,
-          },
-        ],
-      })
-    );
-  }) as typeof fetch;
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
 
 describe("addOjAccount", () => {
   const createUser = async (
@@ -64,7 +32,7 @@ describe("addOjAccount", () => {
     }
   };
 
-  it("enqueues OJ refreshes only for current members", async () => {
+  it("enqueues Luogu URL refreshes and current-member stats refreshes", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "active-user", memberStatus: "active" });
@@ -97,13 +65,28 @@ describe("addOjAccount", () => {
     });
 
     const refreshRequests = await db.select().from(refreshRequest);
+    const luoguAccounts = await db
+      .select({
+        handle: userOjAccount.handle,
+        profileUrl: userOjAccount.profileUrl,
+      })
+      .from(userOjAccount)
+      .where(eq(userOjAccount.platform, "luogu"));
 
-    expect(refreshRequests).toHaveLength(3);
+    expect(refreshRequests).toHaveLength(5);
     expect(refreshRequests.map((request) => request.kind).sort()).toEqual([
       "codeforces.accountStats",
       "luogu.accountStats",
+      "luogu.profileUrl",
+      "luogu.profileUrl",
       "user.awardsFromLuogu",
     ]);
+    expect(luoguAccounts).toEqual(
+      expect.arrayContaining([
+        { handle: "activeLuogu", profileUrl: "" },
+        { handle: "retiredLuogu", profileUrl: "" },
+      ])
+    );
   });
 
   it("treats handle case as significant when checking ownership", async () => {

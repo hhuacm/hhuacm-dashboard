@@ -2,6 +2,7 @@ import type { Context } from "../../context";
 import { codeforcesAccountStatsRefreshRequestDefinition } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsRefreshRequestDefinition } from "./jobs/luogu-account-stats";
 import { luoguProblemDetailsRefreshRequestDefinition } from "./jobs/luogu-problem-details";
+import { luoguProfileUrlRefreshRequestDefinition } from "./jobs/luogu-profile-url";
 import { userAwardsFromLuoguRefreshRequestDefinition } from "./jobs/user-awards-from-luogu";
 import type { RefreshRequest } from "./request-store";
 
@@ -15,6 +16,7 @@ export interface RefreshRequestDefinition {
 
 export const refreshRequestDefinitions = [
   codeforcesAccountStatsRefreshRequestDefinition,
+  luoguProfileUrlRefreshRequestDefinition,
   luoguAccountStatsRefreshRequestDefinition,
   luoguProblemDetailsRefreshRequestDefinition,
   userAwardsFromLuoguRefreshRequestDefinition,

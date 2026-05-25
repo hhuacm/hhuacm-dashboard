@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
 import { buildOjProfileUrl } from "../oj-profile-url";
+import { requestLuoguProfileUrlRefresh } from "../refresh/requests";
 import {
   assertNoHandleOwner,
   getExistingCurrentUserAccountMessage,
@@ -34,8 +35,20 @@ interface OjAccountDeleteInput {
   userId: string;
 }
 
+const requestOjAccountProfileUrlRefreshIfNeeded = async (
+  db: Database,
+  account: {
+    id: string;
+    platform: OjPlatform;
+  }
+) => {
+  if (account.platform === "luogu") {
+    await requestLuoguProfileUrlRefresh(db, account.id);
+  }
+};
+
 const createOjAccount = async (db: Database, input: OjAccountInput) => {
-  const profileUrl = await buildOjProfileUrl(input.platform, input.handle);
+  const profileUrl = buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .insert(userOjAccount)
     .values({
@@ -50,12 +63,13 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
+  await requestOjAccountProfileUrlRefreshIfNeeded(db, account);
   await requestOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
 const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
-  const profileUrl = await buildOjProfileUrl(input.platform, input.handle);
+  const profileUrl = buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .update(userOjAccount)
     .set({
@@ -74,6 +88,7 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
 
+  await requestOjAccountProfileUrlRefreshIfNeeded(db, account);
   await replaceOjAccountStatsEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);

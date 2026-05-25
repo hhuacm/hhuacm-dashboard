@@ -6,6 +6,8 @@ export const codeforcesAccountStatsRequestKind =
   "codeforces.accountStats" satisfies RefreshRequestKind;
 export const luoguAccountStatsRequestKind =
   "luogu.accountStats" satisfies RefreshRequestKind;
+export const luoguProfileUrlRequestKind =
+  "luogu.profileUrl" satisfies RefreshRequestKind;
 export const luoguProblemDetailsRequestKind =
   "luogu.problemDetails" satisfies RefreshRequestKind;
 export const userAwardsFromLuoguRequestKind =

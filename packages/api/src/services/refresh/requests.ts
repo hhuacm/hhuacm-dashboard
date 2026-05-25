@@ -6,6 +6,7 @@ import {
   codeforcesAccountStatsRequestKind,
   luoguAccountStatsRequestKind,
   luoguProblemDetailsRequestKind,
+  luoguProfileUrlRequestKind,
   userAwardsFromLuoguRequestKind,
 } from "./request-types";
 
@@ -32,6 +33,16 @@ export const requestLuoguAccountStatsRefresh = async (
 ) => {
   await createRefreshRequest(db, {
     kind: luoguAccountStatsRequestKind,
+    targetId: accountId,
+  });
+};
+
+export const requestLuoguProfileUrlRefresh = async (
+  db: Database,
+  accountId: string
+) => {
+  await createRefreshRequest(db, {
+    kind: luoguProfileUrlRequestKind,
     targetId: accountId,
   });
 };

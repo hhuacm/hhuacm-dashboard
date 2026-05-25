@@ -10,6 +10,7 @@ import type { Context } from "../context";
 import {
   codeforcesAccountStatsRequestKind,
   luoguAccountStatsRequestKind,
+  luoguProfileUrlRequestKind,
   type RefreshRequestKind,
   userAwardsFromLuoguRequestKind,
 } from "../services/refresh/request-types";
@@ -131,15 +132,22 @@ const isCurrentMemberSeedUser = (seedUser: SystemSeedUser) => {
   return memberStatus === "selection" || memberStatus === "active";
 };
 
-const getRefreshRequestKindsForPlatform = (
-  platform: OjPlatform
-): RefreshRequestKind[] => {
-  if (platform === "codeforces") {
+const getRefreshRequestKindsForPlatform = (input: {
+  isCurrentMember: boolean;
+  platform: OjPlatform;
+}): RefreshRequestKind[] => {
+  if (input.platform === "codeforces" && input.isCurrentMember) {
     return [codeforcesAccountStatsRequestKind];
   }
 
-  if (platform === "luogu") {
-    return [luoguAccountStatsRequestKind, userAwardsFromLuoguRequestKind];
+  if (input.platform === "luogu") {
+    const kinds: RefreshRequestKind[] = [luoguProfileUrlRequestKind];
+
+    if (input.isCurrentMember) {
+      kinds.push(luoguAccountStatsRequestKind, userAwardsFromLuoguRequestKind);
+    }
+
+    return kinds;
   }
 
   return [];
@@ -149,12 +157,13 @@ const createRefreshRequestsForAccount = async (
   db: UserImportDatabase,
   input: {
     accountId: string;
+    isCurrentMember: boolean;
     platform: OjPlatform;
   }
 ) => {
   let count = 0;
 
-  for (const kind of getRefreshRequestKindsForPlatform(input.platform)) {
+  for (const kind of getRefreshRequestKindsForPlatform(input)) {
     const [createdRequest] = await db
       .insert(refreshRequest)
       .values({
@@ -226,12 +235,13 @@ const createImportedUser = async (
         platform: userOjAccount.platform,
       });
 
-    if (!(createdOjAccount && shouldRefreshAccounts)) {
+    if (!createdOjAccount) {
       continue;
     }
 
     refreshRequestCount += await createRefreshRequestsForAccount(db, {
       accountId: createdOjAccount.id,
+      isCurrentMember: shouldRefreshAccounts,
       platform: createdOjAccount.platform,
     });
   }

@@ -8,6 +8,7 @@ import { asc, eq } from "drizzle-orm";
 import {
   codeforcesAccountStatsRequestKind,
   luoguAccountStatsRequestKind,
+  luoguProfileUrlRequestKind,
   userAwardsFromLuoguRequestKind,
 } from "../services/refresh/request-types";
 import { createServiceTestDb } from "../services/test-db";
@@ -157,7 +158,7 @@ describe("system import users", () => {
     });
   });
 
-  it("imports OJ accounts offline and requests refreshes for current members", async () => {
+  it("imports OJ accounts offline and requests Luogu URL refreshes", async () => {
     const db = await createServiceTestDb();
 
     const result = await importUsersFromSystemSeedFile(
@@ -236,7 +237,7 @@ describe("system import users", () => {
 
     expect(result).toMatchObject({
       ojAccountCount: 4,
-      refreshRequestCount: 3,
+      refreshRequestCount: 5,
     });
     expect(accounts.map((currentAccount) => currentAccount.profileUrl)).toEqual(
       ["", "", "", ""]
@@ -252,6 +253,14 @@ describe("system import users", () => {
           targetId: accountByHandle.get("activeLuogu")?.id,
         },
         {
+          kind: luoguProfileUrlRequestKind,
+          targetId: accountByHandle.get("activeLuogu")?.id,
+        },
+        {
+          kind: luoguProfileUrlRequestKind,
+          targetId: accountByHandle.get("frozenLuogu")?.id,
+        },
+        {
           kind: userAwardsFromLuoguRequestKind,
           targetId: accountByHandle.get("activeLuogu")?.id,
         },
@@ -264,7 +273,9 @@ describe("system import users", () => {
     ).toBe(false);
     expect(
       requests.some(
-        (request) => request.targetId === accountByHandle.get("frozenLuogu")?.id
+        (request) =>
+          request.targetId === accountByHandle.get("frozenLuogu")?.id &&
+          request.kind !== luoguProfileUrlRequestKind
       )
     ).toBe(false);
   });

@@ -3,14 +3,19 @@ import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import type { LuoguUserSearchResult } from "../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
 
+export type LuoguUserSearchLoader = typeof luoguSource.searchUsers;
+
 const selectMatchedLuoguUser = (
   result: LuoguUserSearchResult,
   handle: string
 ) => result.users.find((user) => user.name === handle);
 
-const buildLuoguProfileUrl = async (handle: string) => {
+export const buildLuoguProfileUrl = async (
+  handle: string,
+  searchUsers: LuoguUserSearchLoader = luoguSource.searchUsers
+) => {
   const matchedUser = selectMatchedLuoguUser(
-    await luoguSource.searchUsers({
+    await searchUsers({
       keyword: handle,
     }),
     handle
@@ -23,10 +28,7 @@ const buildLuoguProfileUrl = async (handle: string) => {
   return `https://www.luogu.com.cn/user/${matchedUser.uid}`;
 };
 
-export const buildOjProfileUrl = async (
-  platform: OjPlatform,
-  handle: string
-) => {
+export const buildOjProfileUrl = (platform: OjPlatform, handle: string) => {
   const encodedHandle = encodeURIComponent(handle);
 
   if (platform === "codeforces") {
@@ -38,7 +40,7 @@ export const buildOjProfileUrl = async (
   }
 
   if (platform === "luogu") {
-    return await buildLuoguProfileUrl(handle);
+    return "";
   }
 
   return "";
