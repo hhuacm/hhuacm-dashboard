@@ -118,7 +118,7 @@ create table problem_set (
 create table problem_set_problem (
   problem_set_id text not null references problem_set(id) on delete cascade,
   pid text not null,
-  title text not null,
+  title text,
   difficulty integer,
   sort_order integer not null,
   primary key (problem_set_id, pid)

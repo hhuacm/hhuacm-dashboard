@@ -8,7 +8,7 @@ type Database = Context["db"];
 export type LuoguProblemLoader = typeof luoguSource.problem;
 
 interface LuoguProblemDetails {
-  difficulty: null | number;
+  difficulty: number;
   pid: string;
   title: string;
 }

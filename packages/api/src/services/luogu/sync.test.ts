@@ -82,7 +82,7 @@ describe("Luogu sync", () => {
           { difficulty: 1, name: "A+B Problem", pid: "P1001", type: "P" },
           { difficulty: 7, name: "Hard Problem", pid: "P9999", type: "P" },
           {
-            difficulty: null,
+            difficulty: 0,
             name: "Unrated Problem",
             pid: "P0000",
             type: "P",
@@ -100,7 +100,7 @@ describe("Luogu sync", () => {
 
     expect(stats?.acceptedProblemCount).toBe(4);
     expect(stats?.acceptedWeightedScore).toBe(8);
-    expect(stats?.averageAcceptedDifficulty).toBe(4);
+    expect(stats?.averageAcceptedDifficulty).toBeCloseTo(8 / 3);
     expect(stats?.fetchedAt?.toISOString()).toBe(now.toISOString());
     expect(stats?.lastError).toBeNull();
     expect(problems).toHaveLength(3);

@@ -105,10 +105,8 @@ describe("problem sets", () => {
 
     expect(created.title).toBe("基础题单");
     expect(problems.map((problem) => problem.pid)).toEqual(["P1563", "P1328"]);
-    expect(problems.map((problem) => problem.title)).toEqual([
-      "P1563",
-      "P1328",
-    ]);
+    expect(problems.map((problem) => problem.title)).toEqual([null, null]);
+    expect(problems.map((problem) => problem.difficulty)).toEqual([null, null]);
     expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
       [
         ["luogu.problemDetails", "P1328"],
@@ -165,6 +163,33 @@ describe("problem sets", () => {
         title: "P1563",
       },
     ]);
+  });
+
+  it("enqueues missing problem detail refreshes when reading a problem set", async () => {
+    const db = await createServiceTestDb();
+    const created = await createProblemSet(db, {
+      descriptionMarkdown: "",
+      pids: ["P1563", "P1328"],
+      title: "基础题单",
+    });
+    await db
+      .update(problemSetProblem)
+      .set({
+        difficulty: 2,
+        title: "玩具谜题",
+      })
+      .where(eq(problemSetProblem.pid, "P1563"));
+    await db.delete(refreshRequest);
+
+    await getProblemSet(db, {
+      currentUserId: null,
+      id: created.id,
+    });
+    const requests = await db.select().from(refreshRequest);
+
+    expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
+      [["luogu.problemDetails", "P1328"]]
+    );
   });
 
   it("returns accepted status from cached Luogu accepted problems", async () => {
@@ -264,7 +289,9 @@ describe("problem sets", () => {
     expect(updated.title).toBe("新标题");
     expect(updated.descriptionMarkdown).toBe("新说明");
     expect(problems.map((problem) => problem.pid)).toEqual(["P1563"]);
-    expect(requests).toHaveLength(0);
+    expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
+      [["luogu.problemDetails", "P1563"]]
+    );
   });
 
   it("replaces problems and preserves existing details for reused PIDs", async () => {

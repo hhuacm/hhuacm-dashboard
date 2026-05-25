@@ -91,7 +91,7 @@ export const replaceProblemSetProblems = async (
         pid,
         problemSetId: input.problemSetId,
         sortOrder,
-        title: existingProblem?.title ?? pid,
+        title: existingProblem?.title ?? null,
       };
     })
   );

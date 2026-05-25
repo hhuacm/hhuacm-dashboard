@@ -29,7 +29,7 @@ export const problemSetProblem = sqliteTable(
       .notNull()
       .references(() => problemSet.id, { onDelete: "cascade" }),
     pid: text("pid").notNull(),
-    title: text("title").notNull(),
+    title: text("title"),
     difficulty: integer("difficulty"),
     sortOrder: integer("sort_order").notNull(),
   },

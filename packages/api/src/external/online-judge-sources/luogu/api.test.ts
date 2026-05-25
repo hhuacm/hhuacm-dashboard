@@ -286,6 +286,30 @@ describe("luoguSource", () => {
     });
   });
 
+  it("rejects practice problem summaries without numeric difficulty", async () => {
+    mockFetchResponses([
+      createCdnRedirectResponse("C3VK=invalid-practice"),
+      Response.json({
+        data: {
+          ...practiceData,
+          passed: [
+            {
+              difficulty: null,
+              name: "A+B Problem",
+              pid: "P1001",
+              type: "P",
+            },
+          ],
+        },
+        status: 200,
+      }),
+    ]);
+
+    await expect(luoguSource.practice({ uid: 97_238 })).rejects.toThrow(
+      "Luogu user practice returned invalid JSON"
+    );
+  });
+
   it("loads user page data with public prizes", async () => {
     const requests = mockFetchResponses([
       createUserRedirectResponse("C3VK=user"),
@@ -323,6 +347,27 @@ describe("luoguSource", () => {
       cookie: "C3VK=problem",
       "x-lentille-request": "content-only",
     });
+  });
+
+  it("rejects problem page data without numeric difficulty", async () => {
+    mockFetchResponses([
+      createCdnRedirectResponse("C3VK=invalid-problem"),
+      Response.json({
+        data: {
+          problem: {
+            difficulty: null,
+            name: "A+B Problem",
+            pid: "P1001",
+            type: "P",
+          },
+        },
+        status: 200,
+      }),
+    ]);
+
+    await expect(luoguSource.problem({ pid: "P1001" })).rejects.toThrow(
+      "Luogu problem returned invalid JSON"
+    );
   });
 
   it("throws when user page response has invalid JSON shape", async () => {

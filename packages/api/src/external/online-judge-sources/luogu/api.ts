@@ -37,14 +37,14 @@ const luoguUserSearchResultSchema = z.looseObject({
 export type LuoguUserSearchResult = z.infer<typeof luoguUserSearchResultSchema>;
 
 const luoguProblemSummarySchema = z.looseObject({
-  difficulty: z.number().nullable(),
+  difficulty: z.number(),
   name: z.string(),
   pid: z.string(),
   type: z.string(),
 });
 
 const luoguLegacyProblemSchema = z.looseObject({
-  difficulty: z.number().nullable(),
+  difficulty: z.number(),
   name: z.string(),
   pid: z.string(),
   type: z.string(),

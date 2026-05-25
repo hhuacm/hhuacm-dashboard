@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, eq } from "drizzle-orm";
 
 import type { Context } from "../../context";
+import { requestLuoguProblemDetailsRefreshes } from "../refresh/requests";
 import {
   attachAcceptedStatus,
   getCurrentLuoguCompletionSource,
@@ -56,6 +57,25 @@ const getProblemSetProblems = (db: Database, problemSetId: string) =>
     .from(problemSetProblem)
     .where(eq(problemSetProblem.problemSetId, problemSetId))
     .orderBy(asc(problemSetProblem.sortOrder));
+
+const toPublicProblemSetProblem = (
+  problem: Awaited<ReturnType<typeof getProblemSetProblems>>[number]
+) => ({
+  difficulty: problem.difficulty,
+  pid: problem.pid,
+  title: problem.title ?? problem.pid,
+});
+
+const requestMissingProblemDetailsRefreshes = async (
+  db: Database,
+  problems: Awaited<ReturnType<typeof getProblemSetProblems>>
+) => {
+  const missingDetailPids = problems
+    .filter((problem) => problem.title === null || problem.difficulty === null)
+    .map((problem) => problem.pid);
+
+  await requestLuoguProblemDetailsRefreshes(db, missingDetailPids);
+};
 
 export const listProblemSets = async (
   db: Database,
@@ -133,9 +153,10 @@ export const getProblemSet = async (
 ) => {
   const item = await getProblemSetOrThrow(db, input.id);
   const problems = await getProblemSetProblems(db, input.id);
+  await requestMissingProblemDetailsRefreshes(db, problems);
   const publicProblems = await attachAcceptedStatus(db, {
     currentUserId: input.currentUserId,
-    problems,
+    problems: problems.map(toPublicProblemSetProblem),
   });
 
   return {

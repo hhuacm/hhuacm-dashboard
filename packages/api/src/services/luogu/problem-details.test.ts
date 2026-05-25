@@ -30,7 +30,7 @@ const createProblemSetWithPid = async (
     pid: input.pid,
     problemSetId: input.id,
     sortOrder: 0,
-    title: input.pid,
+    title: null,
   });
 };
 
@@ -66,6 +66,23 @@ describe("Luogu problem details", () => {
       difficulty: 7,
       pid: "CF1027G",
       title: "X-mouse in the Campus",
+    });
+  });
+
+  it("keeps unrated problem details as difficulty 0", async () => {
+    await expect(
+      findLuoguProblemDetails("P1001", async () =>
+        createProblemPage({
+          difficulty: 0,
+          name: "A+B Problem",
+          pid: "P1001",
+          type: "P",
+        })
+      )
+    ).resolves.toEqual({
+      difficulty: 0,
+      pid: "P1001",
+      title: "A+B Problem",
     });
   });
 
