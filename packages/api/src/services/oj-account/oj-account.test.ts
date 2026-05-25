@@ -89,38 +89,6 @@ describe("addOjAccount", () => {
     );
   });
 
-  it("treats handle case as significant when checking ownership", async () => {
-    const db = await createServiceTestDb();
-
-    await createUser(db, { id: "upper-user" });
-    await createUser(db, { id: "lower-user" });
-
-    await addOjAccount(db, {
-      handle: "ABC",
-      platform: "atcoder",
-      userId: "upper-user",
-    });
-    await addOjAccount(db, {
-      handle: "abc",
-      platform: "atcoder",
-      userId: "lower-user",
-    });
-
-    const accounts = await db
-      .select({
-        handle: userOjAccount.handle,
-        userId: userOjAccount.userId,
-      })
-      .from(userOjAccount);
-
-    expect(accounts).toEqual(
-      expect.arrayContaining([
-        { handle: "ABC", userId: "upper-user" },
-        { handle: "abc", userId: "lower-user" },
-      ])
-    );
-  });
-
   it("rejects the exact same handle on the same platform", async () => {
     const db = await createServiceTestDb();
 

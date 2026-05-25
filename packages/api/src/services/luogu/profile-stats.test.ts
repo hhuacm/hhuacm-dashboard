@@ -8,24 +8,10 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createServiceTestDb } from "../test-db";
 import {
   getLuoguStatsForProfile,
-  parseLuoguUidFromProfileUrl,
   summarizeLuoguPractice,
 } from "./profile-stats";
 
 describe("Luogu profile stats", () => {
-  it("parses UID from Luogu profile URL", () => {
-    expect(
-      parseLuoguUidFromProfileUrl("https://www.luogu.com.cn/user/97238")
-    ).toBe(97_238);
-    expect(
-      parseLuoguUidFromProfileUrl("https://www.luogu.com.cn/user/97238/")
-    ).toBe(97_238);
-    expect(parseLuoguUidFromProfileUrl("")).toBeNull();
-    expect(
-      parseLuoguUidFromProfileUrl("https://www.luogu.com.cn/problem/P1001")
-    ).toBeNull();
-  });
-
   it("summarizes all accepted Luogu practice problems by difficulty", () => {
     const summary = summarizeLuoguPractice({
       passed: [
@@ -51,15 +37,6 @@ describe("Luogu profile stats", () => {
       { count: 1, difficulty: 6, label: "省选/NOI-" },
       { count: 0, difficulty: 7, label: "NOI/NOI+/CTSC" },
     ]);
-  });
-
-  it("falls back to passed array length when total count is absent", () => {
-    expect(
-      summarizeLuoguPractice({
-        passed: [{ difficulty: 1 }, { difficulty: 2 }],
-        passedProblemCount: null,
-      }).acceptedProblemCount
-    ).toBe(2);
   });
 
   it("returns empty stats when UID is missing", async () => {

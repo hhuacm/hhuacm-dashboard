@@ -109,7 +109,7 @@ const createProblemSetSeed = async (
 };
 
 describe("system seed export", () => {
-  it("exports an empty system seed with a stable content hash", async () => {
+  it("ties the content hash to canonical seed data", async () => {
     const db = await createServiceTestDb();
 
     const firstExport = await exportSystemSeed(db);
@@ -126,6 +126,33 @@ describe("system seed export", () => {
     });
     expect(firstExport.hash).toBe(secondExport.hash);
     expect(firstExport.exportedAt).not.toBe("");
+
+    await createUser(db, {
+      grade: "2024级",
+      id: "stable-user",
+      realName: "Before",
+    });
+    const userExport = await exportSystemSeed(db);
+    const repeatedUserExport = await exportSystemSeed(db);
+
+    expect(userExport.hash).toBe(repeatedUserExport.hash);
+    expect(userExport.hash).not.toBe(firstExport.hash);
+
+    await db
+      .update(userProfile)
+      .set({ realName: "After" })
+      .where(eq(userProfile.userId, "stable-user"));
+    const afterProfileChange = await exportSystemSeed(db);
+
+    await createProblemSetSeed(db, {
+      id: "changed-set",
+      problems: [{ pid: "P1001" }],
+      title: "新增题单",
+    });
+    const afterProblemSetChange = await exportSystemSeed(db);
+
+    expect(afterProfileChange.hash).not.toBe(userExport.hash);
+    expect(afterProblemSetChange.hash).not.toBe(afterProfileChange.hash);
   });
 
   it("exports users as a minimal seed with stable ordering", async () => {
@@ -184,20 +211,6 @@ describe("system seed export", () => {
       email: "beta@example.com",
       username: "beta",
     });
-  });
-
-  it("keeps the export hash stable across exportedAt changes", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      grade: "2024级",
-      id: "stable-user",
-      realName: "Stable",
-    });
-
-    const firstExport = await exportSystemSeed(db);
-    const secondExport = await exportSystemSeed(db);
-
-    expect(firstExport.hash).toBe(secondExport.hash);
   });
 
   it("exports problem sets with PID order and without derived details", async () => {
@@ -271,30 +284,6 @@ describe("system seed export", () => {
     );
   });
 
-  it("changes the export hash when exported seed data changes", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      id: "changed-user",
-      realName: "Before",
-    });
-    const beforeChange = await exportSystemSeed(db);
-    await db
-      .update(userProfile)
-      .set({ realName: "After" })
-      .where(eq(userProfile.userId, "changed-user"));
-
-    const afterProfileChange = await exportSystemSeed(db);
-    await createProblemSetSeed(db, {
-      id: "changed-set",
-      problems: [{ pid: "P1001" }],
-      title: "新增题单",
-    });
-    const afterProblemSetChange = await exportSystemSeed(db);
-
-    expect(afterProfileChange.hash).not.toBe(beforeChange.hash);
-    expect(afterProblemSetChange.hash).not.toBe(afterProfileChange.hash);
-  });
-
   it("does not export authentication secrets", async () => {
     const db = await createServiceTestDb();
     await createUser(db, {
@@ -320,18 +309,22 @@ describe("system seed export", () => {
     const result = await exportSystemSeed(db);
     const serialized = JSON.stringify(result);
 
-    expect(serialized).not.toContain("password");
-    expect(serialized).not.toContain("session");
-    expect(serialized).not.toContain("accessToken");
-    expect(serialized).not.toContain("refreshToken");
-    expect(serialized).not.toContain("verification");
-    expect(serialized).not.toContain("secret-user-id");
-    expect(serialized).not.toContain(accountId);
-    expect(serialized).not.toContain("profileUrl");
-    expect(serialized).not.toContain("createdAt");
-    expect(serialized).not.toContain("updatedAt");
-    expect(serialized).not.toContain("acceptedProblemCount");
-    expect(serialized).not.toContain("codeforces.accountStats");
-    expect(serialized).not.toContain("refreshRequest");
+    for (const secret of [
+      "password",
+      "session",
+      "accessToken",
+      "refreshToken",
+      "verification",
+      "secret-user-id",
+      accountId,
+      "profileUrl",
+      "createdAt",
+      "updatedAt",
+      "acceptedProblemCount",
+      "codeforces.accountStats",
+      "refreshRequest",
+    ]) {
+      expect(serialized).not.toContain(secret);
+    }
   });
 });

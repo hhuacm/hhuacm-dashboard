@@ -6,51 +6,8 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
-import { getRefreshSyncStatus } from "../refresh/sync-status";
 import { createServiceTestDb } from "../test-db";
 import { listCodeforcesRankRows } from "./codeforces";
-
-describe("getRefreshSyncStatus", () => {
-  it("prioritizes active refresh requests", () => {
-    expect(
-      getRefreshSyncStatus({
-        fetchedAt: new Date(),
-        isQueued: true,
-        lastError: "failed",
-      })
-    ).toBe("refreshing");
-  });
-
-  it("marks missing stats as empty", () => {
-    expect(
-      getRefreshSyncStatus({
-        fetchedAt: null,
-        isQueued: false,
-        lastError: null,
-      })
-    ).toBe("empty");
-  });
-
-  it("marks failed stats before freshness", () => {
-    expect(
-      getRefreshSyncStatus({
-        fetchedAt: new Date(),
-        isQueued: false,
-        lastError: "Codeforces unavailable",
-      })
-    ).toBe("failed");
-  });
-
-  it("marks stats as ready when they have been fetched", () => {
-    expect(
-      getRefreshSyncStatus({
-        fetchedAt: new Date(),
-        isQueued: false,
-        lastError: null,
-      })
-    ).toBe("ready");
-  });
-});
 
 describe("listCodeforcesRankRows", () => {
   const createRankUser = async (

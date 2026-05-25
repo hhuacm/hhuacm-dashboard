@@ -115,7 +115,7 @@ describe("problem sets", () => {
     );
   });
 
-  it("rejects duplicate PIDs", async () => {
+  it("validates PIDs while accepting mixed Luogu-style identifiers", async () => {
     const db = await createServiceTestDb();
 
     await expect(
@@ -125,10 +125,6 @@ describe("problem sets", () => {
         title: "重复题单",
       })
     ).rejects.toThrow("Duplicate Luogu PID: P1563");
-  });
-
-  it("accepts multi-letter problem PIDs", async () => {
-    const db = await createServiceTestDb();
 
     const created = await createProblemSet(db, {
       descriptionMarkdown: "",
@@ -142,27 +138,65 @@ describe("problem sets", () => {
     ]);
   });
 
-  it("returns null accepted status without a Luogu account", async () => {
+  it("resolves problem accepted state from the viewer's Luogu account cache", async () => {
     const db = await createServiceTestDb();
     const created = await createProblemSet(db, {
       descriptionMarkdown: "",
-      pids: ["P1563"],
+      pids: ["P1563", "P1328"],
       title: "基础题单",
     });
 
-    const result = await getProblemSet(db, {
+    const anonymousResult = await getProblemSet(db, {
       currentUserId: null,
       id: created.id,
     });
 
-    expect(result.problems).toEqual([
-      {
-        accepted: null,
-        difficulty: null,
-        pid: "P1563",
-        title: "P1563",
-      },
+    expect(anonymousResult.problems.map((problem) => problem.accepted)).toEqual(
+      [null, null]
+    );
+
+    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
+    await createLuoguUser(db, { fetchedAt, id: "viewer" });
+    await createAcceptedProblem(db, {
+      accountId: "account-viewer",
+      pid: "P1563",
+    });
+
+    const result = await getProblemSet(db, {
+      currentUserId: "viewer",
+      id: created.id,
+    });
+
+    expect(result.problems.map((problem) => problem.accepted)).toEqual([
+      true,
+      false,
     ]);
+
+    await createLuoguUser(db, { id: "stale-viewer" });
+
+    const staleResult = await getProblemSet(db, {
+      currentUserId: "stale-viewer",
+      id: created.id,
+    });
+    const requests = await db
+      .select()
+      .from(refreshRequest)
+      .where(eq(refreshRequest.kind, "luogu.accountStats"));
+
+    expect(staleResult.problems.map((problem) => problem.accepted)).toEqual([
+      null,
+      null,
+    ]);
+    expect(requests.map((request) => request.targetId)).toContain(
+      "account-stale-viewer"
+    );
+
+    const [item] = await listProblemSets(db, {
+      currentUserId: "viewer",
+    });
+
+    expect(item?.problemCount).toBe(2);
+    expect(item?.completedProblemCount).toBe(1);
   });
 
   it("enqueues missing problem detail refreshes when reading a problem set", async () => {
@@ -190,83 +224,6 @@ describe("problem sets", () => {
     expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
       [["luogu.problemDetails", "P1328"]]
     );
-  });
-
-  it("returns accepted status from cached Luogu accepted problems", async () => {
-    const db = await createServiceTestDb();
-    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    await createLuoguUser(db, { fetchedAt, id: "viewer" });
-    const created = await createProblemSet(db, {
-      descriptionMarkdown: "",
-      pids: ["P1563", "P1328"],
-      title: "基础题单",
-    });
-    await db.insert(luoguAcceptedProblem).values({
-      accountId: "account-viewer",
-      difficulty: 2,
-      name: "玩具谜题",
-      pid: "P1563",
-      type: "P",
-    });
-
-    const result = await getProblemSet(db, {
-      currentUserId: "viewer",
-      id: created.id,
-    });
-
-    expect(result.problems.map((problem) => problem.accepted)).toEqual([
-      true,
-      false,
-    ]);
-  });
-
-  it("lists problem sets with cached completion counts", async () => {
-    const db = await createServiceTestDb();
-    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    await createLuoguUser(db, { fetchedAt, id: "viewer" });
-    await createProblemSet(db, {
-      descriptionMarkdown: "",
-      pids: ["P1563", "P1328"],
-      title: "基础题单",
-    });
-    await db.insert(luoguAcceptedProblem).values({
-      accountId: "account-viewer",
-      difficulty: 2,
-      name: "玩具谜题",
-      pid: "P1563",
-      type: "P",
-    });
-
-    const [item] = await listProblemSets(db, {
-      currentUserId: "viewer",
-    });
-
-    expect(item?.problemCount).toBe(2);
-    expect(item?.completedProblemCount).toBe(1);
-  });
-
-  it("enqueues Luogu account refresh when accepted cache is missing", async () => {
-    const db = await createServiceTestDb();
-    await createLuoguUser(db, { id: "viewer" });
-    const created = await createProblemSet(db, {
-      descriptionMarkdown: "",
-      pids: ["P1563"],
-      title: "基础题单",
-    });
-
-    const result = await getProblemSet(db, {
-      currentUserId: "viewer",
-      id: created.id,
-    });
-    const requests = await db
-      .select()
-      .from(refreshRequest)
-      .where(eq(refreshRequest.kind, "luogu.accountStats"));
-
-    expect(result.problems[0]?.accepted).toBeNull();
-    expect(requests.map((request) => request.targetId)).toEqual([
-      "account-viewer",
-    ]);
   });
 
   it("updates metadata without replacing problems", async () => {
@@ -333,58 +290,28 @@ describe("problem sets", () => {
       pids: ["P1563", "P1328"],
       title: "基础题单",
     });
-    await createLuoguUser(db, {
-      id: "selection-user",
-      memberStatus: "selection",
-      realName: "张三",
-    });
-    await createLuoguUser(db, {
-      id: "active-user",
-      memberStatus: "active",
-      username: "active-user",
-    });
-    await createLuoguUser(db, { id: "missing-profile-user" });
-    await createLuoguUser(db, {
-      id: "retired-user",
-      memberStatus: "retired",
-    });
-    await createLuoguUser(db, {
-      id: "frozen-user",
-      memberStatus: "frozen",
-    });
-    await createLuoguUser(db, {
-      id: "zero-user",
-      memberStatus: "selection",
-    });
+    for (const currentUser of [
+      { id: "selection-user", memberStatus: "selection", realName: "张三" },
+      { id: "active-user", memberStatus: "active" },
+      { id: "missing-profile-user" },
+      { id: "retired-user", memberStatus: "retired" },
+      { id: "frozen-user", memberStatus: "frozen" },
+      { id: "zero-user", memberStatus: "selection" },
+    ] as const) {
+      await createLuoguUser(db, currentUser);
+    }
 
-    await createAcceptedProblem(db, {
-      accountId: "account-selection-user",
-      pid: "P1563",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-selection-user",
-      pid: "P1328",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-selection-user",
-      pid: "P2615",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-active-user",
-      pid: "P1563",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-missing-profile-user",
-      pid: "P1328",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-retired-user",
-      pid: "P1563",
-    });
-    await createAcceptedProblem(db, {
-      accountId: "account-frozen-user",
-      pid: "P1563",
-    });
+    for (const acceptedProblem of [
+      { accountId: "account-selection-user", pid: "P1563" },
+      { accountId: "account-selection-user", pid: "P1328" },
+      { accountId: "account-selection-user", pid: "P2615" },
+      { accountId: "account-active-user", pid: "P1563" },
+      { accountId: "account-missing-profile-user", pid: "P1328" },
+      { accountId: "account-retired-user", pid: "P1563" },
+      { accountId: "account-frozen-user", pid: "P1563" },
+    ]) {
+      await createAcceptedProblem(db, acceptedProblem);
+    }
 
     const rows = await listProblemSetCompletions(db, created.id);
     const rowsByUserId = new Map(rows.map((row) => [row.userId, row]));

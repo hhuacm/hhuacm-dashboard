@@ -21,6 +21,25 @@ import {
   type SystemSeedUser,
 } from "./seed-format";
 
+type Database = Awaited<ReturnType<typeof createServiceTestDb>>;
+
+const codeforcesAccount = (handle: string) =>
+  ({ handle, platform: "codeforces" }) as const;
+
+const luoguAccount = (handle: string) =>
+  ({ handle, platform: "luogu" }) as const;
+
+const createSeedUser = (
+  username: string,
+  input: Partial<Omit<SystemSeedUser, "email" | "username">> & {
+    email?: string;
+  } = {}
+): SystemSeedUser => ({
+  email: input.email ?? `${username}@example.com`,
+  username,
+  ...input,
+});
+
 const createSeedFile = (users: SystemSeedUser[]) =>
   createSystemSeedFile({
     problemSets: [],
@@ -28,9 +47,7 @@ const createSeedFile = (users: SystemSeedUser[]) =>
     users,
   });
 
-const createExistingUser = async (
-  db: Awaited<ReturnType<typeof createServiceTestDb>>
-) => {
+const createExistingUser = async (db: Database) => {
   await db.insert(user).values({
     email: "existing@example.com",
     id: "existing-user",
@@ -39,7 +56,7 @@ const createExistingUser = async (
   });
 };
 
-const listUsers = async (db: Awaited<ReturnType<typeof createServiceTestDb>>) =>
+const listUsers = async (db: Database) =>
   await db
     .select({
       email: user.email,
@@ -73,12 +90,7 @@ describe("system import users", () => {
 
     await importUsersFromSystemSeedFile(
       db,
-      createSeedFile([
-        {
-          email: "alice@example.com",
-          username: "alice",
-        },
-      ])
+      createSeedFile([createSeedUser("alice")])
     );
 
     const [createdUser] = await listUsers(db);
@@ -120,8 +132,7 @@ describe("system import users", () => {
     const result = await importUsersFromSystemSeedFile(
       db,
       createSeedFile([
-        {
-          email: "admin@example.com",
+        createSeedUser("admin", {
           profile: {
             grade: "2024级",
             major: "计算机科学与技术",
@@ -130,8 +141,7 @@ describe("system import users", () => {
             studentId: "20240001",
           },
           role: "admin",
-          username: "admin",
-        },
+        }),
       ])
     );
     const [createdUser] = await listUsers(db);
@@ -162,55 +172,27 @@ describe("system import users", () => {
     const result = await importUsersFromSystemSeedFile(
       db,
       createSeedFile([
-        {
-          email: "selection@example.com",
-          ojAccounts: [
-            {
-              handle: "selectionCf",
-              platform: "codeforces",
-            },
-          ],
-          username: "selection-user",
-        },
-        {
-          email: "active@example.com",
-          ojAccounts: [
-            {
-              handle: "activeLuogu",
-              platform: "luogu",
-            },
-          ],
+        createSeedUser("selection-user", {
+          ojAccounts: [codeforcesAccount("selectionCf")],
+        }),
+        createSeedUser("active-user", {
+          ojAccounts: [luoguAccount("activeLuogu")],
           profile: {
             memberStatus: "active",
           },
-          username: "active-user",
-        },
-        {
-          email: "retired@example.com",
-          ojAccounts: [
-            {
-              handle: "retiredCf",
-              platform: "codeforces",
-            },
-          ],
+        }),
+        createSeedUser("retired-user", {
+          ojAccounts: [codeforcesAccount("retiredCf")],
           profile: {
             memberStatus: "retired",
           },
-          username: "retired-user",
-        },
-        {
-          email: "frozen@example.com",
-          ojAccounts: [
-            {
-              handle: "frozenLuogu",
-              platform: "luogu",
-            },
-          ],
+        }),
+        createSeedUser("frozen-user", {
+          ojAccounts: [luoguAccount("frozenLuogu")],
           profile: {
             memberStatus: "frozen",
           },
-          username: "frozen-user",
-        },
+        }),
       ])
     );
     const accounts = await db
@@ -285,126 +267,115 @@ describe("system import users", () => {
     await expect(
       importUsersFromSystemSeedFile(
         db,
-        createSeedFile([{ email: "next@example.com", username: "next" }])
+        createSeedFile([createSeedUser("next")])
       )
     ).rejects.toBeInstanceOf(SystemUserImportError);
   });
 
-  it("rejects invalid seed files", async () => {
-    const db = await createServiceTestDb();
-    const seedFile = createSeedFile([
-      {
-        email: "alice@example.com",
-        username: "alice",
-      },
-    ]);
-
-    await expect(
-      importUsersFromSystemSeedFile(db, { ...seedFile, hash: "invalid" })
-    ).rejects.toBeInstanceOf(SystemSeedFormatError);
-    await expect(
-      importUsersFromSystemSeedFile(db, { ...seedFile, kind: "invalid" })
-    ).rejects.toBeInstanceOf(SystemSeedFormatError);
-    await expect(
-      importUsersFromSystemSeedFile(db, { ...seedFile, version: 2 })
-    ).rejects.toBeInstanceOf(SystemSeedFormatError);
-  });
-
-  it("rejects duplicate user and OJ account identities", async () => {
-    const db = await createServiceTestDb();
-
-    await expect(
-      importUsersFromSystemSeedFile(
-        db,
-        createSeedFile([
-          { email: "first@example.com", username: "same" },
-          { email: "second@example.com", username: "same" },
-        ])
-      )
-    ).rejects.toThrow("Duplicate username");
-    await expect(
-      importUsersFromSystemSeedFile(
-        db,
-        createSeedFile([
-          { email: "same@example.com", username: "first" },
-          { email: "same@example.com", username: "second" },
-        ])
-      )
-    ).rejects.toThrow("Duplicate email");
-    await expect(
-      importUsersFromSystemSeedFile(
-        db,
-        createSeedFile([
-          {
-            email: "first@example.com",
-            ojAccounts: [{ handle: "sameHandle", platform: "luogu" }],
-            username: "first",
-          },
-          {
-            email: "second@example.com",
-            ojAccounts: [{ handle: "sameHandle", platform: "luogu" }],
-            username: "second",
-          },
-        ])
-      )
-    ).rejects.toThrow("Duplicate OJ handle");
-    await expect(
-      importUsersFromSystemSeedFile(
-        db,
-        createSeedFile([
-          {
-            email: "platform@example.com",
-            ojAccounts: [
-              { handle: "first", platform: "codeforces" },
-              { handle: "second", platform: "codeforces" },
-            ],
-            username: "platform-user",
-          },
-        ])
-      )
-    ).rejects.toThrow("Duplicate OJ platform");
-  });
-
-  it("rejects null values and unknown fields", async () => {
-    const db = await createServiceTestDb();
-    const seed: SystemSeed = {
+  it("rejects invalid system seed shapes", async () => {
+    const validSeedFile = createSeedFile([createSeedUser("alice")]);
+    const emptySeedFile = createSystemSeedFile({
       problemSets: [],
       settings: {},
       users: [],
-    };
-    const seedFile = createSystemSeedFile(seed);
+    } satisfies SystemSeed);
+    const seedFileWithUsers = (users: unknown[]) => ({
+      ...emptySeedFile,
+      seed: {
+        ...emptySeedFile.seed,
+        users,
+      },
+    });
+    const cases: Array<{
+      error: new (...args: never[]) => Error;
+      input: unknown;
+      message?: string;
+    }> = [
+      {
+        error: SystemSeedFormatError,
+        input: { ...validSeedFile, hash: "invalid" },
+      },
+      {
+        error: SystemSeedFormatError,
+        input: { ...validSeedFile, kind: "invalid" },
+      },
+      {
+        error: SystemSeedFormatError,
+        input: { ...validSeedFile, version: 2 },
+      },
+      {
+        error: SystemUserImportError,
+        input: createSeedFile([
+          createSeedUser("same", { email: "first@example.com" }),
+          createSeedUser("same", { email: "second@example.com" }),
+        ]),
+        message: "Duplicate username",
+      },
+      {
+        error: SystemUserImportError,
+        input: createSeedFile([
+          createSeedUser("first", { email: "same@example.com" }),
+          createSeedUser("second", { email: "same@example.com" }),
+        ]),
+        message: "Duplicate email",
+      },
+      {
+        error: SystemUserImportError,
+        input: createSeedFile([
+          createSeedUser("first", { ojAccounts: [luoguAccount("sameHandle")] }),
+          createSeedUser("second", {
+            ojAccounts: [luoguAccount("sameHandle")],
+          }),
+        ]),
+        message: "Duplicate OJ handle",
+      },
+      {
+        error: SystemUserImportError,
+        input: createSeedFile([
+          createSeedUser("platform-user", {
+            ojAccounts: [
+              codeforcesAccount("first"),
+              codeforcesAccount("second"),
+            ],
+          }),
+        ]),
+        message: "Duplicate OJ platform",
+      },
+      {
+        error: SystemSeedFormatError,
+        input: seedFileWithUsers([
+          {
+            email: "null@example.com",
+            profile: {
+              realName: null,
+            },
+            username: "null-user",
+          },
+        ]),
+      },
+      {
+        error: SystemSeedFormatError,
+        input: seedFileWithUsers([
+          {
+            email: "unknown@example.com",
+            password: "secret",
+            username: "unknown-user",
+          },
+        ]),
+      },
+    ];
 
-    await expect(
-      importUsersFromSystemSeedFile(db, {
-        ...seedFile,
-        seed: {
-          ...seedFile.seed,
-          users: [
-            {
-              email: "null@example.com",
-              profile: {
-                realName: null,
-              },
-              username: "null-user",
-            },
-          ],
-        },
-      })
-    ).rejects.toBeInstanceOf(SystemSeedFormatError);
-    await expect(
-      importUsersFromSystemSeedFile(db, {
-        ...seedFile,
-        seed: {
-          ...seedFile.seed,
-          users: [
-            {
-              email: "unknown@example.com",
-              password: "secret",
-              username: "unknown-user",
-            },
-          ],
-        },
-      })
-    ).rejects.toBeInstanceOf(SystemSeedFormatError);
+    for (const { error, input, message } of cases) {
+      const db = await createServiceTestDb();
+      const expectation = expect(
+        importUsersFromSystemSeedFile(db, input)
+      ).rejects;
+
+      if (message) {
+        await expectation.toThrow(message);
+      } else {
+        await expectation.toBeInstanceOf(error);
+      }
+    }
   });
 });
