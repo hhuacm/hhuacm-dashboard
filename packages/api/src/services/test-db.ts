@@ -86,7 +86,8 @@ select
   user_profile.real_name as real_name,
   user_profile.grade as grade,
   user_profile.student_id as student_id,
-  user_profile.major as major
+  user_profile.major as major,
+  coalesce(user_profile.member_status, ${defaultMemberStatusSql}) as member_status
 from user
 left join user_profile on user_profile.user_id = user.id
 where coalesce(user_profile.member_status, ${defaultMemberStatusSql}) in (${currentMemberStatusesSql})

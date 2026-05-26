@@ -12,7 +12,12 @@ import {
   Spinner,
   Table,
 } from "@heroui/react";
-import { getUserNameLabel } from "@hhuacm-dashboard/domain";
+import {
+  type CurrentMemberStatus,
+  currentMemberStatuses,
+  getUserNameLabel,
+  memberStatusLabels,
+} from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
@@ -29,6 +34,10 @@ import {
 } from "../_model/problem-set-detail-view";
 
 const emptyText = "-";
+const memberStatusOptions = currentMemberStatuses.map((status) => ({
+  label: memberStatusLabels[status],
+  value: status,
+}));
 
 function CurrentUserSuffix({ isCurrentUser }: { isCurrentUser: boolean }) {
   if (!isCurrentUser) {
@@ -162,6 +171,50 @@ function GradeFilterMenu({
   );
 }
 
+function MemberStatusFilterMenu({
+  onChange,
+  selectedValues,
+}: {
+  onChange: (values: CurrentMemberStatus[]) => void;
+  selectedValues: CurrentMemberStatus[];
+}) {
+  const selectedCount = selectedValues.length;
+  const buttonLabel = selectedCount > 0 ? `状态 ${selectedCount}` : "状态";
+
+  return (
+    <Popover>
+      <Button size="sm" variant="outline">
+        <SlidersHorizontal className="size-4" />
+        {buttonLabel}
+        <ChevronDown className="size-4" />
+      </Button>
+      <Popover.Content className="w-48">
+        <Popover.Dialog className="grid gap-3">
+          <Popover.Heading className="font-semibold text-sm">
+            状态筛选
+          </Popover.Heading>
+          <CheckboxGroup
+            className="grid gap-2"
+            onChange={(values) => onChange(values as CurrentMemberStatus[])}
+            value={selectedValues}
+          >
+            {memberStatusOptions.map((option) => (
+              <Checkbox key={option.value} value={option.value}>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Checkbox.Content>
+                  <Label>{option.label}</Label>
+                </Checkbox.Content>
+              </Checkbox>
+            ))}
+          </CheckboxGroup>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
 export function CompletionLeaderboardCard({
   problemSetId,
 }: {
@@ -173,6 +226,9 @@ export function CompletionLeaderboardCard({
     number | undefined
   >(undefined);
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
+  const [selectedMemberStatuses, setSelectedMemberStatuses] = useState<
+    CurrentMemberStatus[]
+  >([]);
   const completionsQuery = useQuery(
     trpc.problemSet.completions.queryOptions({ id: problemSetId })
   );
@@ -186,15 +242,19 @@ export function CompletionLeaderboardCard({
       filterCompletionRows(rows, {
         minCompletedCount,
         selectedGrades,
+        selectedMemberStatuses,
       }),
-    [minCompletedCount, rows, selectedGrades]
+    [minCompletedCount, rows, selectedGrades, selectedMemberStatuses]
   );
   const hasActiveFilters =
-    minCompletedCount !== undefined || selectedGrades.length > 0;
+    minCompletedCount !== undefined ||
+    selectedGrades.length > 0 ||
+    selectedMemberStatuses.length > 0;
 
   const clearFilters = () => {
     setMinCompletedCount(undefined);
     setSelectedGrades([]);
+    setSelectedMemberStatuses([]);
   };
 
   return (
@@ -235,6 +295,10 @@ export function CompletionLeaderboardCard({
                 onChange={setSelectedGrades}
                 options={gradeOptions}
                 selectedValues={selectedGrades}
+              />
+              <MemberStatusFilterMenu
+                onChange={setSelectedMemberStatuses}
+                selectedValues={selectedMemberStatuses}
               />
               <Button
                 isDisabled={!hasActiveFilters}

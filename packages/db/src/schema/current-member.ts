@@ -20,6 +20,9 @@ const currentMemberStatusesSql = sql.join(
 export const currentMember = sqliteView("current_member", {
   grade: text("grade"),
   major: text("major"),
+  memberStatus: text("member_status", {
+    enum: currentMemberStatuses,
+  }).notNull(),
   realName: text("real_name"),
   studentId: text("student_id"),
   userId: text("user_id").notNull(),
@@ -31,7 +34,8 @@ export const currentMember = sqliteView("current_member", {
     ${userProfile.realName} as real_name,
     ${userProfile.grade} as grade,
     ${userProfile.studentId} as student_id,
-    ${userProfile.major} as major
+    ${userProfile.major} as major,
+    coalesce(${userProfile.memberStatus}, ${defaultMemberStatusSql}) as member_status
   from ${user}
   left join ${userProfile} on ${userProfile.userId} = ${user.id}
   where coalesce(${userProfile.memberStatus}, ${defaultMemberStatusSql}) in (${currentMemberStatusesSql})

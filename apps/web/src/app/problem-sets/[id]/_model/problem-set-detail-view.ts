@@ -1,4 +1,7 @@
-import { getUserNameLabel } from "@hhuacm-dashboard/domain";
+import {
+  type CurrentMemberStatus,
+  getUserNameLabel,
+} from "@hhuacm-dashboard/domain";
 
 export interface ProblemSetProblem {
   accepted: boolean | null;
@@ -10,6 +13,7 @@ export interface ProblemSetProblem {
 export interface ProblemSetCompletion {
   completedProblemCount: number;
   grade: null | string;
+  memberStatus: CurrentMemberStatus;
   realName: null | string;
   userId: string;
   username: string;
@@ -23,6 +27,7 @@ export interface CompletionGradeOption {
 export interface CompletionRowFilters {
   minCompletedCount?: number;
   selectedGrades: string[];
+  selectedMemberStatuses: CurrentMemberStatus[];
 }
 
 export const emptyCompletionGradeFilterValue = "__empty_completion_grade__";
@@ -190,7 +195,9 @@ export const filterCompletionRows = (
   filters: CompletionRowFilters
 ) => {
   const selectedGradeSet = new Set(filters.selectedGrades);
+  const selectedMemberStatusSet = new Set(filters.selectedMemberStatuses);
   const hasGradeFilter = selectedGradeSet.size > 0;
+  const hasMemberStatusFilter = selectedMemberStatusSet.size > 0;
   const minCompletedCount = filters.minCompletedCount;
 
   return rows.filter((row) => {
@@ -204,6 +211,13 @@ export const filterCompletionRows = (
     if (
       hasGradeFilter &&
       !selectedGradeSet.has(getCompletionGradeFilterValue(row.grade))
+    ) {
+      return false;
+    }
+
+    if (
+      hasMemberStatusFilter &&
+      !selectedMemberStatusSet.has(row.memberStatus)
     ) {
       return false;
     }

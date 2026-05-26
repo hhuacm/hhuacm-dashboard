@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { CurrentMemberStatus } from "@hhuacm-dashboard/domain";
 
 import {
   emptyCompletionGradeFilterValue,
@@ -10,10 +11,12 @@ import {
 const buildCompletion = (
   userId: string,
   completedProblemCount: number,
-  grade: null | string
+  grade: null | string,
+  memberStatus: CurrentMemberStatus = "selection"
 ): ProblemSetCompletion => ({
   completedProblemCount,
   grade,
+  memberStatus,
   realName: null,
   userId,
   username: userId,
@@ -22,9 +25,9 @@ const buildCompletion = (
 describe("filterCompletionRows", () => {
   const rows = [
     buildCompletion("u1", 8, "24级"),
-    buildCompletion("u2", 5, "23级"),
+    buildCompletion("u2", 5, "23级", "active"),
     buildCompletion("u3", 2, null),
-    buildCompletion("u4", 10, "24级"),
+    buildCompletion("u4", 10, "24级", "active"),
   ];
 
   it("keeps rows whose completed count is greater than or equal to the minimum", () => {
@@ -32,6 +35,7 @@ describe("filterCompletionRows", () => {
       filterCompletionRows(rows, {
         minCompletedCount: 6,
         selectedGrades: [],
+        selectedMemberStatuses: [],
       }).map((row) => row.userId)
     ).toEqual(["u1", "u4"]);
   });
@@ -40,6 +44,7 @@ describe("filterCompletionRows", () => {
     expect(
       filterCompletionRows(rows, {
         selectedGrades: ["24级"],
+        selectedMemberStatuses: [],
       }).map((row) => row.userId)
     ).toEqual(["u1", "u4"]);
   });
@@ -49,6 +54,7 @@ describe("filterCompletionRows", () => {
       filterCompletionRows(rows, {
         minCompletedCount: 9,
         selectedGrades: ["24级"],
+        selectedMemberStatuses: [],
       }).map((row) => row.userId)
     ).toEqual(["u4"]);
   });
@@ -57,6 +63,7 @@ describe("filterCompletionRows", () => {
     expect(
       filterCompletionRows(rows, {
         selectedGrades: [emptyCompletionGradeFilterValue],
+        selectedMemberStatuses: [],
       }).map((row) => row.userId)
     ).toEqual(["u3"]);
   });
@@ -65,6 +72,26 @@ describe("filterCompletionRows", () => {
     expect(
       filterCompletionRows(rows, {
         selectedGrades: [],
+        selectedMemberStatuses: ["active"],
+      }).map((row) => row.userId)
+    ).toEqual(["u2", "u4"]);
+  });
+
+  it("combines completed count, grade, and member status filters", () => {
+    expect(
+      filterCompletionRows(rows, {
+        minCompletedCount: 6,
+        selectedGrades: ["24级"],
+        selectedMemberStatuses: ["active"],
+      }).map((row) => row.userId)
+    ).toEqual(["u4"]);
+  });
+
+  it("returns all rows without active filters", () => {
+    expect(
+      filterCompletionRows(rows, {
+        selectedGrades: [],
+        selectedMemberStatuses: [],
       })
     ).toEqual(rows);
   });

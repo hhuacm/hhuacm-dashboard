@@ -176,6 +176,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
     .select({
       completedProblemCount: count(luoguAcceptedProblem.pid),
       grade: currentMember.grade,
+      memberStatus: currentMember.memberStatus,
       realName: currentMember.realName,
       userId: currentMember.userId,
       username: currentMember.username,
@@ -198,6 +199,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
       currentMember.userId,
       currentMember.username,
       currentMember.grade,
+      currentMember.memberStatus,
       currentMember.realName
     );
 
@@ -206,6 +208,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
     .map((row) => ({
       completedProblemCount: row.completedProblemCount,
       grade: row.grade,
+      memberStatus: row.memberStatus,
       realName: row.realName,
       userId: row.userId,
       username: row.username,

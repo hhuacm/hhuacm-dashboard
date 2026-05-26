@@ -331,6 +331,7 @@ describe("problem sets", () => {
     expect(rowsByUserId.get("selection-user")).toEqual({
       completedProblemCount: 2,
       grade: "24级",
+      memberStatus: "selection",
       realName: "张三",
       userId: "selection-user",
       username: "selection-user",
@@ -338,6 +339,7 @@ describe("problem sets", () => {
     expect(rowsByUserId.get("active-user")).toEqual({
       completedProblemCount: 1,
       grade: "23级",
+      memberStatus: "active",
       realName: null,
       userId: "active-user",
       username: "active-user",
@@ -345,6 +347,7 @@ describe("problem sets", () => {
     expect(rowsByUserId.get("missing-profile-user")).toEqual({
       completedProblemCount: 1,
       grade: null,
+      memberStatus: "selection",
       realName: null,
       userId: "missing-profile-user",
       username: "missing-profile-user",
