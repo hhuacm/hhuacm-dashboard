@@ -15,6 +15,18 @@ export interface ProblemSetCompletion {
   username: string;
 }
 
+export interface CompletionGradeOption {
+  label: string;
+  value: string;
+}
+
+export interface CompletionRowFilters {
+  minCompletedCount?: number;
+  selectedGrades: string[];
+}
+
+export const emptyCompletionGradeFilterValue = "__empty_completion_grade__";
+
 export const luoguDifficultyClassNames = [
   "bg-[rgb(191,191,191)] text-[#333333]",
   "bg-[rgb(254,76,97)] text-white",
@@ -140,3 +152,62 @@ export const sortCompletionRows = (rows: ProblemSetCompletion[]) =>
 
     return left.userId.localeCompare(right.userId);
   });
+
+const getCompletionGradeFilterValue = (grade: null | string) =>
+  grade ?? emptyCompletionGradeFilterValue;
+
+const getCompletionGradeOption = (value: string): CompletionGradeOption => ({
+  label: value === emptyCompletionGradeFilterValue ? "未填写" : value,
+  value,
+});
+
+const compareCompletionGradeOptions = (
+  left: CompletionGradeOption,
+  right: CompletionGradeOption
+) => {
+  if (left.value === emptyCompletionGradeFilterValue) {
+    return 1;
+  }
+
+  if (right.value === emptyCompletionGradeFilterValue) {
+    return -1;
+  }
+
+  return right.label.localeCompare(left.label, "zh-CN", {
+    numeric: true,
+  });
+};
+
+export const getCompletionGradeOptions = (
+  rows: ProblemSetCompletion[]
+): CompletionGradeOption[] =>
+  [...new Set(rows.map((row) => getCompletionGradeFilterValue(row.grade)))]
+    .map(getCompletionGradeOption)
+    .sort(compareCompletionGradeOptions);
+
+export const filterCompletionRows = (
+  rows: ProblemSetCompletion[],
+  filters: CompletionRowFilters
+) => {
+  const selectedGradeSet = new Set(filters.selectedGrades);
+  const hasGradeFilter = selectedGradeSet.size > 0;
+  const minCompletedCount = filters.minCompletedCount;
+
+  return rows.filter((row) => {
+    if (
+      minCompletedCount !== undefined &&
+      row.completedProblemCount < minCompletedCount
+    ) {
+      return false;
+    }
+
+    if (
+      hasGradeFilter &&
+      !selectedGradeSet.has(getCompletionGradeFilterValue(row.grade))
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+};

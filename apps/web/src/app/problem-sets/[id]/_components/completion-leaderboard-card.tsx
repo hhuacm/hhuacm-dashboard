@@ -1,14 +1,28 @@
 "use client";
 
-import { Alert, Card, Spinner, Table } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  CheckboxGroup,
+  Label,
+  NumberField,
+  Popover,
+  Spinner,
+  Table,
+} from "@heroui/react";
 import { getUserNameLabel } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { useMemo } from "react";
+import { ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 import {
+  filterCompletionRows,
+  getCompletionGradeOptions,
   getProfileUrl,
   type ProblemSetCompletion,
   sortCompletionRows,
@@ -44,6 +58,110 @@ function LinkedProfileName({
   );
 }
 
+function CompletionCountFilter({
+  value,
+  onChange,
+}: {
+  onChange: (value: number | undefined) => void;
+  value: number | undefined;
+}) {
+  const buttonLabel = value === undefined ? "完成数" : `完成数 ≥ ${value}`;
+
+  return (
+    <Popover>
+      <Button size="sm" variant="outline">
+        <SlidersHorizontal className="size-4" />
+        {buttonLabel}
+        <ChevronDown className="size-4" />
+      </Button>
+      <Popover.Content className="w-44">
+        <Popover.Dialog className="grid gap-3">
+          <Popover.Heading className="font-semibold text-sm">
+            完成数筛选
+          </Popover.Heading>
+          <NumberField
+            className="w-full min-w-0 gap-2"
+            fullWidth
+            key={value === undefined ? "empty" : "valued"}
+            minValue={0}
+            name="minCompletedCount"
+            onChange={onChange}
+            step={1}
+            value={value}
+            variant="secondary"
+          >
+            <Label>最低完成数</Label>
+            <NumberField.Group className="flex w-full min-w-0 max-w-full overflow-hidden">
+              <NumberField.Input className="w-0 min-w-0 flex-1" />
+              <div className="flex h-full w-6 shrink-0 flex-col border-field-placeholder/15 border-l">
+                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 pt-0.5 text-muted">
+                  <ChevronUp aria-hidden="true" className="size-3" />
+                </NumberField.IncrementButton>
+                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 pb-0.5 text-muted">
+                  <ChevronDown aria-hidden="true" className="size-3" />
+                </NumberField.DecrementButton>
+              </div>
+            </NumberField.Group>
+          </NumberField>
+          <p className="text-muted text-xs leading-5">
+            显示不少于该数值的成员。
+          </p>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
+function GradeFilterMenu({
+  onChange,
+  options,
+  selectedValues,
+}: {
+  onChange: (values: string[]) => void;
+  options: { label: string; value: string }[];
+  selectedValues: string[];
+}) {
+  const selectedCount = selectedValues.length;
+  const buttonLabel = selectedCount > 0 ? `年级 ${selectedCount}` : "年级";
+
+  return (
+    <Popover>
+      <Button isDisabled={options.length === 0} size="sm" variant="outline">
+        <SlidersHorizontal className="size-4" />
+        {buttonLabel}
+        <ChevronDown className="size-4" />
+      </Button>
+      <Popover.Content className="w-48">
+        <Popover.Dialog className="grid gap-3">
+          <Popover.Heading className="font-semibold text-sm">
+            年级筛选
+          </Popover.Heading>
+          {options.length > 0 ? (
+            <CheckboxGroup
+              className="grid max-h-64 gap-2 overflow-y-auto pr-1"
+              onChange={onChange}
+              value={selectedValues}
+            >
+              {options.map((option) => (
+                <Checkbox key={option.value} value={option.value}>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label>{option.label}</Label>
+                  </Checkbox.Content>
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+          ) : (
+            <p className="text-muted text-sm">暂无可选项</p>
+          )}
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
 export function CompletionLeaderboardCard({
   problemSetId,
 }: {
@@ -51,6 +169,10 @@ export function CompletionLeaderboardCard({
 }) {
   const session = authClient.useSession();
   const currentUserId = session.data?.user.id ?? null;
+  const [minCompletedCount, setMinCompletedCount] = useState<
+    number | undefined
+  >(undefined);
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
   const completionsQuery = useQuery(
     trpc.problemSet.completions.queryOptions({ id: problemSetId })
   );
@@ -58,13 +180,29 @@ export function CompletionLeaderboardCard({
     () => sortCompletionRows(completionsQuery.data ?? []),
     [completionsQuery.data]
   );
+  const gradeOptions = useMemo(() => getCompletionGradeOptions(rows), [rows]);
+  const filteredRows = useMemo(
+    () =>
+      filterCompletionRows(rows, {
+        minCompletedCount,
+        selectedGrades,
+      }),
+    [minCompletedCount, rows, selectedGrades]
+  );
+  const hasActiveFilters =
+    minCompletedCount !== undefined || selectedGrades.length > 0;
+
+  const clearFilters = () => {
+    setMinCompletedCount(undefined);
+    setSelectedGrades([]);
+  };
 
   return (
     <Card>
       <Card.Header>
         <Card.Title>题单完成榜</Card.Title>
       </Card.Header>
-      <Card.Content>
+      <Card.Content className="grid gap-4">
         {completionsQuery.isPending ? (
           <div className="flex items-center gap-3 text-sm">
             <Spinner color="current" size="sm" />
@@ -87,6 +225,40 @@ export function CompletionLeaderboardCard({
         ) : null}
 
         {rows.length > 0 ? (
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <CompletionCountFilter
+                onChange={setMinCompletedCount}
+                value={minCompletedCount}
+              />
+              <GradeFilterMenu
+                onChange={setSelectedGrades}
+                options={gradeOptions}
+                selectedValues={selectedGrades}
+              />
+              <Button
+                isDisabled={!hasActiveFilters}
+                onPress={clearFilters}
+                size="sm"
+                variant="ghost"
+              >
+                <X className="size-4" />
+                清除筛选
+              </Button>
+            </div>
+            {hasActiveFilters ? (
+              <p className="text-muted text-sm">
+                显示 {filteredRows.length} / {rows.length} 条
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {rows.length > 0 && filteredRows.length === 0 ? (
+          <p className="text-muted text-sm">没有符合筛选条件的记录</p>
+        ) : null}
+
+        {filteredRows.length > 0 ? (
           <Table variant="secondary">
             <Table.ScrollContainer>
               <Table.Content aria-label="题单完成榜" className="min-w-60">
@@ -101,7 +273,7 @@ export function CompletionLeaderboardCard({
                   </Table.Column>
                 </Table.Header>
                 <Table.Body>
-                  {rows.map((row, index) => {
+                  {filteredRows.map((row, index) => {
                     const isCurrentUser = row.userId === currentUserId;
                     const currentUserLabel = isCurrentUser ? " 我" : "";
                     const nameLabel = getUserNameLabel(row);
