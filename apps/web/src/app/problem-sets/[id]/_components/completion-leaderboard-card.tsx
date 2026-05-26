@@ -14,6 +14,8 @@ import {
   sortCompletionRows,
 } from "../_model/problem-set-detail-view";
 
+const emptyText = "-";
+
 function CurrentUserSuffix({ isCurrentUser }: { isCurrentUser: boolean }) {
   if (!isCurrentUser) {
     return null;
@@ -93,6 +95,7 @@ export function CompletionLeaderboardCard({
                   <Table.Column className="text-center" isRowHeader>
                     姓名
                   </Table.Column>
+                  <Table.Column className="w-20 text-center">年级</Table.Column>
                   <Table.Column className="w-20 text-center">
                     过题数
                   </Table.Column>
@@ -102,13 +105,14 @@ export function CompletionLeaderboardCard({
                     const isCurrentUser = row.userId === currentUserId;
                     const currentUserLabel = isCurrentUser ? " 我" : "";
                     const nameLabel = getUserNameLabel(row);
+                    const gradeLabel = row.grade ?? emptyText;
 
                     return (
                       <Table.Row
                         className={clsx(isCurrentUser && "bg-accent-soft/60")}
                         id={row.userId}
                         key={row.userId}
-                        textValue={`${nameLabel}${currentUserLabel} ${row.completedProblemCount}`}
+                        textValue={`${nameLabel}${currentUserLabel} ${gradeLabel} ${row.completedProblemCount}`}
                       >
                         <Table.Cell className="text-center text-muted">
                           {index + 1}
@@ -118,6 +122,9 @@ export function CompletionLeaderboardCard({
                             isCurrentUser={isCurrentUser}
                             row={row}
                           />
+                        </Table.Cell>
+                        <Table.Cell className="text-center text-muted">
+                          {gradeLabel}
                         </Table.Cell>
                         <Table.Cell className="text-center font-semibold">
                           {row.completedProblemCount}

@@ -175,6 +175,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
   const rows = await db
     .select({
       completedProblemCount: count(luoguAcceptedProblem.pid),
+      grade: currentMember.grade,
       realName: currentMember.realName,
       userId: currentMember.userId,
       username: currentMember.username,
@@ -196,6 +197,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
     .groupBy(
       currentMember.userId,
       currentMember.username,
+      currentMember.grade,
       currentMember.realName
     );
 
@@ -203,6 +205,7 @@ export const listProblemSetCompletions = async (db: Database, id: string) => {
     .filter((row) => row.completedProblemCount > 0)
     .map((row) => ({
       completedProblemCount: row.completedProblemCount,
+      grade: row.grade,
       realName: row.realName,
       userId: row.userId,
       username: row.username,

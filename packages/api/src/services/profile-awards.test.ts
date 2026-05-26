@@ -272,7 +272,7 @@ describe("profile awards", () => {
     const awards = await getAwardsForPublicProfile(db, {
       canRefresh: true,
       luoguAccountId: "account-luogu",
-      now: new Date("2026-01-01T00:31:00.000Z"),
+      now: new Date("2026-01-01T01:01:00.000Z"),
       userId: "user-award",
     });
 

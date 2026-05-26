@@ -9,6 +9,7 @@ export interface ProblemSetProblem {
 
 export interface ProblemSetCompletion {
   completedProblemCount: number;
+  grade: null | string;
   realName: null | string;
   userId: string;
   username: string;

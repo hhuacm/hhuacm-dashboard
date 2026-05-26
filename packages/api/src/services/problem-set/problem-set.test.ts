@@ -30,6 +30,7 @@ const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,
   input: {
     fetchedAt?: Date;
+    grade?: null | string;
     id: string;
     memberStatus?: MemberStatus;
     realName?: null | string;
@@ -43,8 +44,13 @@ const createLuoguUser = async (
     username: input.username ?? input.id,
   });
 
-  if (input.memberStatus || input.realName !== undefined) {
+  if (
+    input.grade !== undefined ||
+    input.memberStatus ||
+    input.realName !== undefined
+  ) {
     await db.insert(userProfile).values({
+      grade: input.grade ?? null,
       memberStatus: input.memberStatus ?? "selection",
       realName: input.realName,
       userId: input.id,
@@ -291,8 +297,13 @@ describe("problem sets", () => {
       title: "基础题单",
     });
     for (const currentUser of [
-      { id: "selection-user", memberStatus: "selection", realName: "张三" },
-      { id: "active-user", memberStatus: "active" },
+      {
+        grade: "2024",
+        id: "selection-user",
+        memberStatus: "selection",
+        realName: "张三",
+      },
+      { grade: "2023", id: "active-user", memberStatus: "active" },
       { id: "missing-profile-user" },
       { id: "retired-user", memberStatus: "retired" },
       { id: "frozen-user", memberStatus: "frozen" },
@@ -319,18 +330,21 @@ describe("problem sets", () => {
     expect(rows).toHaveLength(3);
     expect(rowsByUserId.get("selection-user")).toEqual({
       completedProblemCount: 2,
+      grade: "2024",
       realName: "张三",
       userId: "selection-user",
       username: "selection-user",
     });
     expect(rowsByUserId.get("active-user")).toEqual({
       completedProblemCount: 1,
+      grade: "2023",
       realName: null,
       userId: "active-user",
       username: "active-user",
     });
     expect(rowsByUserId.get("missing-profile-user")).toEqual({
       completedProblemCount: 1,
+      grade: null,
       realName: null,
       userId: "missing-profile-user",
       username: "missing-profile-user",
