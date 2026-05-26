@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { parseProblemPidText } from "./problem-pid-import";
+import { parseProblemPidText } from "./problem-pid-text";
 
 describe("parseProblemPidText", () => {
   it("parses comma separated Luogu PIDs", () => {

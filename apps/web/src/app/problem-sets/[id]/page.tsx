@@ -2,7 +2,7 @@
 
 import { Alert, Button, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ListChecks, Trash2 } from "lucide-react";
+import { ArrowLeft, ListChecks, Pencil, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
@@ -85,15 +85,30 @@ export default function ProblemSetDetailPage({
       action={
         <div className="flex flex-wrap items-center justify-end gap-2">
           {isAdmin && problemSet ? (
-            <Button
-              className="border-danger/20 bg-danger-soft/45 text-danger hover:bg-danger-soft/65"
-              onPress={() => setIsDeleteDialogOpen(true)}
-              size="sm"
-              variant="outline"
-            >
-              <Trash2 className="size-4" />
-              删除
-            </Button>
+            <>
+              <Button
+                className="border-accent/20 bg-accent-soft/45 text-accent hover:bg-accent-soft/65"
+                onPress={() =>
+                  router.push(
+                    `/admin/problem-sets/${problemSet.id}/edit` as Route
+                  )
+                }
+                size="sm"
+                variant="outline"
+              >
+                <Pencil className="size-4" />
+                修改
+              </Button>
+              <Button
+                className="border-danger/20 bg-danger-soft/45 text-danger hover:bg-danger-soft/65"
+                onPress={() => setIsDeleteDialogOpen(true)}
+                size="sm"
+                variant="outline"
+              >
+                <Trash2 className="size-4" />
+                删除
+              </Button>
+            </>
           ) : null}
           <Button
             onPress={() => router.push("/problem-sets" as Route)}
