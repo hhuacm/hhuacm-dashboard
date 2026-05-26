@@ -35,7 +35,7 @@ function LinkedProfileName({
 
   return (
     <a
-      className="inline-flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
+      className="flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
       href={getProfileUrl(row.username)}
     >
       <span className="truncate">{nameLabel}</span>
@@ -123,7 +123,7 @@ export function CompletionLeaderboardCard({
                             row={row}
                           />
                         </Table.Cell>
-                        <Table.Cell className="text-center text-muted">
+                        <Table.Cell className="text-center">
                           {gradeLabel}
                         </Table.Cell>
                         <Table.Cell className="text-center font-semibold">

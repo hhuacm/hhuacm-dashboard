@@ -1,4 +1,4 @@
-import { Card, Table, Tooltip } from "@heroui/react";
+import { Card, Table } from "@heroui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
@@ -15,6 +15,7 @@ import {
   DifficultyChip,
   ProblemStatusChip,
 } from "./problem-status";
+import { ProblemTitleLink } from "./problem-title-link";
 
 interface ProblemTableProps {
   problems: ProblemSetProblem[];
@@ -23,42 +24,19 @@ interface ProblemTableProps {
 function LinkedProblemText({
   children,
   href,
-  isTruncated = false,
-  title,
 }: {
   children: ReactNode;
   href: string;
-  isTruncated?: boolean;
-  title?: string;
 }) {
-  const link = (
+  return (
     <a
-      className={clsx(
-        "inline-flex min-w-0 font-medium text-accent underline-offset-4 hover:underline focus-visible:underline",
-        isTruncated ? "max-w-full" : "whitespace-nowrap"
-      )}
+      className="inline-flex min-w-0 whitespace-nowrap font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
       href={href}
       rel="noopener noreferrer"
       target="_blank"
     >
-      <span className={clsx(isTruncated && "block min-w-0 truncate")}>
-        {children}
-      </span>
+      {children}
     </a>
-  );
-
-  if (!(isTruncated && title)) {
-    return link;
-  }
-
-  return (
-    <Tooltip delay={0}>
-      <Tooltip.Trigger>{link}</Tooltip.Trigger>
-      <Tooltip.Content className="wrap-break-word max-w-96" showArrow>
-        <Tooltip.Arrow />
-        {title}
-      </Tooltip.Content>
-    </Tooltip>
   );
 }
 
@@ -153,13 +131,7 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                         </LinkedProblemText>
                       </Table.Cell>
                       <Table.Cell className="min-w-0 overflow-hidden">
-                        <LinkedProblemText
-                          href={href}
-                          isTruncated
-                          title={problem.title}
-                        >
-                          {problem.title}
-                        </LinkedProblemText>
+                        <ProblemTitleLink href={href} title={problem.title} />
                       </Table.Cell>
                       <Table.Cell className={difficultyColumnClassName}>
                         <CenteredTableChip>
