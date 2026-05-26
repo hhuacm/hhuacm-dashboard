@@ -1,10 +1,10 @@
 export const refreshDefaults = {
-  codeforcesStatsTtlMs: 10 * 60 * 1000,
+  codeforcesStatsTtlMs: 5 * 60 * 1000,
   dueScanIntervalMs: 10 * 60 * 1000,
   jobCooldownMs: 2 * 1000,
-  luoguStatsTtlMs: 10 * 60 * 1000,
+  luoguStatsTtlMs: 5 * 60 * 1000,
   maxErrorLength: 500,
-  userAwardsTtlMs: 30 * 60 * 1000,
+  userAwardsTtlMs: 1 * 60 * 60 * 1000,
   workerPollIntervalMs: 5 * 1000,
 } as const;
 
