@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+  isValidGradeOption,
   type MemberStatus,
   memberStatuses,
   type OjPlatform,
@@ -76,7 +77,7 @@ const systemSeedOjAccountSchema = z
 
 const systemSeedUserProfileSchema = z
   .object({
-    grade: nonEmptyStringSchema.optional(),
+    grade: nonEmptyStringSchema.refine(isValidGradeOption).optional(),
     major: nonEmptyStringSchema.optional(),
     memberStatus: z.enum(memberStatuses).optional(),
     realName: nonEmptyStringSchema.optional(),

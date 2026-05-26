@@ -134,7 +134,7 @@ describe("system import users", () => {
       createSeedFile([
         createSeedUser("admin", {
           profile: {
-            grade: "2024级",
+            grade: "24级",
             major: "计算机科学与技术",
             memberStatus: "active",
             realName: "Admin",
@@ -158,7 +158,7 @@ describe("system import users", () => {
     });
     expect(createdUser?.role).toBe("admin");
     expect(profile).toMatchObject({
-      grade: "2024级",
+      grade: "24级",
       major: "计算机科学与技术",
       memberStatus: "active",
       realName: "Admin",
@@ -350,6 +350,18 @@ describe("system import users", () => {
               realName: null,
             },
             username: "null-user",
+          },
+        ]),
+      },
+      {
+        error: SystemSeedFormatError,
+        input: seedFileWithUsers([
+          {
+            email: "legacy-grade@example.com",
+            profile: {
+              grade: "2024级",
+            },
+            username: "legacy-grade-user",
           },
         ]),
       },

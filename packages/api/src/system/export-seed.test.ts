@@ -128,7 +128,7 @@ describe("system seed export", () => {
     expect(firstExport.exportedAt).not.toBe("");
 
     await createUser(db, {
-      grade: "2024级",
+      grade: "24级",
       id: "stable-user",
       realName: "Before",
     });
@@ -164,7 +164,7 @@ describe("system seed export", () => {
     });
     await createUser(db, {
       email: "alpha@example.com",
-      grade: "2024级",
+      grade: "24级",
       id: "alpha",
       memberStatus: "active",
       realName: "Alpha",
@@ -200,7 +200,7 @@ describe("system seed export", () => {
         },
       ],
       profile: {
-        grade: "2024级",
+        grade: "24级",
         memberStatus: "active",
         realName: "Alpha",
       },

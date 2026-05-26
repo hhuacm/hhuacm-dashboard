@@ -124,7 +124,7 @@ export const getGradeOptions = (currentDate = new Date()) => {
   const startYear = currentYear - gradeLookbackYears;
   const yearOptions = Array.from(
     { length: gradeLookbackYears + 1 },
-    (_, index) => `${startYear + index}级`
+    (_, index) => `${String(startYear + index).slice(-2)}级`
   );
 
   return [...yearOptions, gradeOtherOption];

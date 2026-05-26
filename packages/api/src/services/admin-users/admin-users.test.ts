@@ -127,12 +127,12 @@ describe("admin users", () => {
   it("sorts users by a selected profile column", async () => {
     const db = await createServiceTestDb();
     await createUser(db, {
-      grade: "2025级",
+      grade: "25级",
       id: "young",
       realName: "Young",
     });
     await createUser(db, {
-      grade: "2023级",
+      grade: "23级",
       id: "senior",
       realName: "Senior",
     });
@@ -152,22 +152,22 @@ describe("admin users", () => {
   it("filters users by member status, grade, and OJ platform", async () => {
     const db = await createServiceTestDb();
     await createUser(db, {
-      grade: "2024级",
+      grade: "24级",
       id: "target",
       memberStatus: "active",
     });
     await createUser(db, {
-      grade: "2024级",
+      grade: "24级",
       id: "missing-platform",
       memberStatus: "active",
     });
     await createUser(db, {
-      grade: "2023级",
+      grade: "23级",
       id: "wrong-grade",
       memberStatus: "active",
     });
     await createUser(db, {
-      grade: "2024级",
+      grade: "24级",
       id: "wrong-status",
       memberStatus: "retired",
     });
@@ -179,7 +179,7 @@ describe("admin users", () => {
 
     const result = await listAdminUsers(db, {
       filters: {
-        grades: ["2024级"],
+        grades: ["24级"],
         memberStatuses: ["active"],
         ojPlatforms: ["codeforces"],
       },
@@ -225,15 +225,15 @@ describe("admin users", () => {
 
   it("returns admin users metadata", async () => {
     const db = await createServiceTestDb();
-    await createUser(db, { grade: "2024级", id: "a" });
-    await createUser(db, { grade: "2023级", id: "b" });
+    await createUser(db, { grade: "24级", id: "a" });
+    await createUser(db, { grade: "23级", id: "b" });
     await createUser(db, { id: "c" });
 
     const metadata = await getAdminUsersMetadata(db);
 
     expect(metadata.grades).toEqual([
-      { label: "2023级", value: "2023级" },
-      { label: "2024级", value: "2024级" },
+      { label: "23级", value: "23级" },
+      { label: "24级", value: "24级" },
     ]);
     expect(metadata.memberStatuses.map((status) => status.value)).toEqual([
       "selection",

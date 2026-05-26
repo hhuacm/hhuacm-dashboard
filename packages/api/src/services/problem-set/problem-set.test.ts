@@ -298,12 +298,12 @@ describe("problem sets", () => {
     });
     for (const currentUser of [
       {
-        grade: "2024",
+        grade: "24级",
         id: "selection-user",
         memberStatus: "selection",
         realName: "张三",
       },
-      { grade: "2023", id: "active-user", memberStatus: "active" },
+      { grade: "23级", id: "active-user", memberStatus: "active" },
       { id: "missing-profile-user" },
       { id: "retired-user", memberStatus: "retired" },
       { id: "frozen-user", memberStatus: "frozen" },
@@ -330,14 +330,14 @@ describe("problem sets", () => {
     expect(rows).toHaveLength(3);
     expect(rowsByUserId.get("selection-user")).toEqual({
       completedProblemCount: 2,
-      grade: "2024",
+      grade: "24级",
       realName: "张三",
       userId: "selection-user",
       username: "selection-user",
     });
     expect(rowsByUserId.get("active-user")).toEqual({
       completedProblemCount: 1,
-      grade: "2023",
+      grade: "23级",
       realName: null,
       userId: "active-user",
       username: "active-user",
