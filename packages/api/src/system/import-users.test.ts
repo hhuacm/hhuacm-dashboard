@@ -357,18 +357,6 @@ describe("system import users", () => {
         error: SystemSeedFormatError,
         input: seedFileWithUsers([
           {
-            email: "legacy-grade@example.com",
-            profile: {
-              grade: "2024级",
-            },
-            username: "legacy-grade-user",
-          },
-        ]),
-      },
-      {
-        error: SystemSeedFormatError,
-        input: seedFileWithUsers([
-          {
             email: "unknown@example.com",
             password: "secret",
             username: "unknown-user",
