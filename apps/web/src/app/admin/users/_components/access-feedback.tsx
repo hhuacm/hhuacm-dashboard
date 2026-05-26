@@ -4,6 +4,7 @@ interface AccessFeedbackProps {
   isAccessError: boolean;
   isCheckingAccess: boolean;
   isMember: boolean;
+  loginReturnLabel?: string;
   shouldPromptLogin: boolean;
 }
 
@@ -11,6 +12,7 @@ export function AccessFeedback({
   isAccessError,
   isCheckingAccess,
   isMember,
+  loginReturnLabel = "用户列表",
   shouldPromptLogin,
 }: AccessFeedbackProps) {
   return (
@@ -28,7 +30,7 @@ export function AccessFeedback({
           <Alert.Content>
             <Alert.Title>请登录管理员账户</Alert.Title>
             <Alert.Description>
-              即将跳转到登录页面，登录后会回到用户列表。
+              即将跳转到登录页面，登录后会回到{loginReturnLabel}。
             </Alert.Description>
           </Alert.Content>
         </Alert>

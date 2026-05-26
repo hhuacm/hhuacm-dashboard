@@ -2,7 +2,13 @@
 
 import { Alert, Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, LayoutDashboard, Settings, UsersRound } from "lucide-react";
+import {
+  Download,
+  LayoutDashboard,
+  Plus,
+  Settings,
+  UsersRound,
+} from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -104,6 +110,17 @@ export default function AdminPage() {
               >
                 <UsersRound className="size-4" />
                 用户列表
+              </Button>
+              <Button
+                className="justify-start"
+                onPress={() =>
+                  router.push("/admin/problem-sets/import" as Route)
+                }
+                size="lg"
+                variant="outline"
+              >
+                <Plus className="size-4" />
+                导入题单
               </Button>
               <Button
                 className="justify-start"

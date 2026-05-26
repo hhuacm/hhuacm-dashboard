@@ -220,6 +220,7 @@ export default function AdminExportPage() {
           isAccessError={accountMe.isError}
           isCheckingAccess={isCheckingAccess}
           isMember={isMember}
+          loginReturnLabel="系统导出"
           shouldPromptLogin={shouldPromptLogin}
         />
 
