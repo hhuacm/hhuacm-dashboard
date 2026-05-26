@@ -1,12 +1,13 @@
 "use client";
 
-import { Alert, Card, Spinner } from "@heroui/react";
+import { Alert, Button, Card, Spinner, Tooltip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, ChevronRight, ListChecks } from "lucide-react";
+import { CheckCircle2, ChevronRight, ListChecks, Plus } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
 interface ProblemSetCardProps {
@@ -79,6 +80,40 @@ function ProblemSetCard({
   );
 }
 
+function CreateProblemSetButton() {
+  const router = useRouter();
+  const session = authClient.useSession();
+  const accountMe = useQuery(
+    trpc.account.me.queryOptions(undefined, {
+      enabled: Boolean(session.data?.user),
+    })
+  );
+  const isAdmin = accountMe.data?.role === "admin";
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  return (
+    <Tooltip delay={0}>
+      <Tooltip.Trigger className="fixed right-5 bottom-5 z-40 sm:right-8 sm:bottom-8">
+        <Button
+          aria-label="新建题单"
+          className="size-14 rounded-full shadow-accent/20 shadow-lg"
+          isIconOnly
+          onPress={() => router.push("/admin/problem-sets/import" as Route)}
+        >
+          <Plus className="size-6" />
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content placement="top" showArrow>
+        <Tooltip.Arrow />
+        新建题单
+      </Tooltip.Content>
+    </Tooltip>
+  );
+}
+
 export default function ProblemSetsPage() {
   const problemSetsQuery = useQuery(trpc.problemSet.list.queryOptions());
   const problemSets = problemSetsQuery.data ?? [];
@@ -136,6 +171,7 @@ export default function ProblemSetsPage() {
           </div>
         ) : null}
       </div>
+      <CreateProblemSetButton />
     </AppShell>
   );
 }
