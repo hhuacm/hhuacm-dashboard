@@ -12,10 +12,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "db:local": "turso dev --db-file local.db",
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:sync": "bun src/cli/db-sync.ts"
   },
   "dependencies": {
     "@hhuacm-dashboard/domain": "workspace:*",

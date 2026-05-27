@@ -58,10 +58,7 @@ bun run verify
 
 ```bash
 bun run db:local
-bun run db:push
-bun run db:generate
-bun run db:migrate
-bun run db:studio
+bun run db:sync
 ```
 
 提交前至少运行：

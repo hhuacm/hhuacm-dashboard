@@ -72,7 +72,7 @@ bun run dev:server
 brew install tursodatabase/tap/turso
 ```
 
-启动本地数据库：
+启动本地数据库服务：
 
 ```bash
 bun run db:local
@@ -85,18 +85,10 @@ DATABASE_URL=http://127.0.0.1:8080
 DATABASE_AUTH_TOKEN=
 ```
 
-将当前 Drizzle schema 推送到数据库：
+将当前 Drizzle schema 同步到数据库：
 
 ```bash
-bun run db:push
-```
-
-常用数据库命令：
-
-```bash
-bun run db:generate
-bun run db:migrate
-bun run db:studio
+bun run db:sync
 ```
 
 ## 代码检查与测试
@@ -121,5 +113,3 @@ bun run fix
 
 - `AGENTS.md`：面向 AI / LLM 协作者的项目协作准则、架构取舍和编码要求。
 - `DESIGN.md`：前端设计准则，描述产品气质、布局、颜色、组件和交互规则。
-
-README 只保留项目入口、启动方式和常用命令；更细的协作与设计约束以后分别维护在对应文档中。

@@ -6,7 +6,8 @@ dotenv.config({
 });
 
 const databaseUrl = process.env.DATABASE_URL || "";
-const isLocalLibsqlServer =
+const isLocalLibsqlDatabase =
+  databaseUrl.startsWith("file:") ||
   databaseUrl.startsWith("http://127.0.0.1") ||
   databaseUrl.startsWith("http://localhost");
 
@@ -28,6 +29,6 @@ export default defineConfig({
   dbCredentials: {
     url: databaseUrl,
     authToken:
-      process.env.DATABASE_AUTH_TOKEN || (isLocalLibsqlServer ? "local" : ""),
+      process.env.DATABASE_AUTH_TOKEN || (isLocalLibsqlDatabase ? "local" : ""),
   },
 });

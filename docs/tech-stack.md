@@ -120,28 +120,10 @@ Start a local Turso/libSQL database:
 bun run db:local
 ```
 
-Push schema changes:
+Synchronize the database with the Drizzle schema:
 
 ```bash
-bun run db:push
-```
-
-Generate migrations:
-
-```bash
-bun run db:generate
-```
-
-Run migrations:
-
-```bash
-bun run db:migrate
-```
-
-Open Drizzle Studio:
-
-```bash
-bun run db:studio
+bun run db:sync
 ```
 
 ## UI and Theme
