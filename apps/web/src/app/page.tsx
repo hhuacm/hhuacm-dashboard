@@ -3,7 +3,7 @@
 import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Sparkles, Trophy } from "lucide-react";
+import { ListChecks, Sparkles, Trophy } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -228,11 +228,19 @@ function QuickLinksCard() {
     <Card>
       <Card.Header>
         <div>
-          <Card.Description>常用入口</Card.Description>
-          <Card.Title className="mt-1">公开榜单</Card.Title>
+          <Card.Title className="mt-1">常用入口</Card.Title>
         </div>
       </Card.Header>
       <Card.Content className="grid gap-4">
+        <Button
+          className="justify-start"
+          onPress={() => router.push("/problem-sets" as Route)}
+          size="lg"
+          variant="outline"
+        >
+          <ListChecks className="size-4" />
+          题单
+        </Button>
         <Button
           className="justify-start"
           onPress={() => router.push("/rank/codeforces" as Route)}
