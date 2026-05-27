@@ -5,9 +5,7 @@ import {
   type MemberStatus,
   type OjPlatform,
 } from "@hhuacm-dashboard/domain";
-import type { Key } from "react";
 
-import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
 import {
   buildProfileFormValues,
   getChangedProfileValues,
@@ -17,18 +15,6 @@ import {
 } from "@/utils/profile-fields";
 
 export const redirectDelayMs = 3000;
-export const defaultPageSize = 10;
-const minPageSize = 5;
-const maxPageSize = 80;
-const tableRowHeightPx = 56;
-const tableReservedHeightPx = 156;
-const viewportBottomGapPx = 40;
-const compactPaginationLimit = 7;
-const paginationNeighborCount = 1;
-const adminUsersActionsColumnMinWidth = 112;
-
-export const adminUsersColumnVisibilityStorageKey =
-  "admin-users-column-visibility-v1";
 
 const sortableColumns = [
   "email",
@@ -40,44 +26,9 @@ const sortableColumns = [
   "username",
 ] as const;
 
-export const memberStatusConfig = {
-  active: {
-    color: "success",
-  },
-  frozen: {
-    color: "danger",
-  },
-  retired: {
-    color: "default",
-  },
-  selection: {
-    color: "accent",
-  },
-} as const satisfies Record<
-  MemberStatus,
-  { color: "accent" | "danger" | "default" | "success" }
->;
-
-export type PageItem = "leading-ellipsis" | "trailing-ellipsis" | number;
 export type SortColumn = (typeof sortableColumns)[number];
 export type SortDirection = "ascending" | "descending";
 export type UserRole = "admin" | "user";
-export type AdminUsersColumnId =
-  | "email"
-  | "grade"
-  | "major"
-  | "memberStatus"
-  | "ojAccounts"
-  | "realName"
-  | "studentId"
-  | "username";
-
-export interface AdminUsersColumnConfig
-  extends TableColumnVisibilityConfig<AdminUsersColumnId> {
-  cellClassName?: string;
-  headerClassName?: string;
-  minWidth: number;
-}
 
 export interface FilterOption {
   label: string;
@@ -145,109 +96,10 @@ export type AdminProfileUpdateValues = ProfileUpdateValues & {
   memberStatus?: MemberStatus;
 };
 
-const clampPageSize = (pageSize: number) =>
-  Math.min(maxPageSize, Math.max(minPageSize, pageSize));
-
 export const emptyAdminUsersFilters: AdminUsersFilters = {
   grades: [],
   memberStatuses: [],
   ojPlatforms: [],
-};
-
-export const adminUsersColumns = [
-  {
-    cellClassName: "max-w-48 whitespace-nowrap font-medium",
-    defaultVisible: true,
-    id: "username",
-    label: "用户名",
-    minWidth: 192,
-  },
-  {
-    cellClassName: "max-w-72 whitespace-nowrap",
-    defaultVisible: true,
-    id: "email",
-    label: "邮箱",
-    minWidth: 256,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "realName",
-    label: "姓名",
-    minWidth: 128,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: false,
-    id: "grade",
-    label: "年级",
-    minWidth: 96,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: false,
-    id: "studentId",
-    label: "学号",
-    minWidth: 136,
-  },
-  {
-    cellClassName: "max-w-64 whitespace-nowrap",
-    defaultVisible: false,
-    id: "major",
-    label: "专业",
-    minWidth: 176,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "memberStatus",
-    label: "状态",
-    minWidth: 112,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "ojAccounts",
-    label: "OJ 账号",
-    minWidth: 220,
-  },
-] as const satisfies readonly AdminUsersColumnConfig[];
-
-export const getVisibleTableMinWidth = (
-  columns: readonly AdminUsersColumnConfig[]
-) => {
-  let minWidth = 0;
-
-  for (const column of columns) {
-    minWidth += column.minWidth;
-  }
-
-  return Math.max(720, minWidth + adminUsersActionsColumnMinWidth);
-};
-
-export const getFirstVisibleSortColumn = (
-  columnIds: readonly AdminUsersColumnId[]
-) => {
-  for (const columnId of columnIds) {
-    if (isSortColumn(columnId)) {
-      return columnId;
-    }
-  }
-
-  return null;
-};
-
-export const calculatePageSize = (element: HTMLDivElement | null) => {
-  if (!element) {
-    return defaultPageSize;
-  }
-
-  const { top } = element.getBoundingClientRect();
-  const availableHeight =
-    window.innerHeight - top - viewportBottomGapPx - tableReservedHeightPx;
-  const visibleRows = Math.floor(availableHeight / tableRowHeightPx);
-
-  return clampPageSize(visibleRows);
 };
 
 export const getAdminUsernameLabel = (user: { username: string }) => {
@@ -259,10 +111,6 @@ export const getAdminUsernameLabel = (user: { username: string }) => {
 
   return "未设置";
 };
-
-export const isSortColumn = (key: Key): key is SortColumn =>
-  typeof key === "string" &&
-  sortableColumns.includes(key as (typeof sortableColumns)[number]);
 
 export const isMemberStatusFilterValue = (
   value: string
@@ -349,39 +197,3 @@ export const getOjAccountByPlatform = (
   accounts: AdminUserOjAccount[],
   platform: OjPlatform
 ) => accounts.find((account) => account.platform === platform);
-
-export const getPaginationItems = (
-  page: number,
-  totalPages: number
-): PageItem[] => {
-  if (totalPages <= compactPaginationLimit) {
-    const pages: PageItem[] = [];
-
-    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
-      pages.push(pageNumber);
-    }
-
-    return pages;
-  }
-
-  const pages: PageItem[] = [1];
-
-  if (page > 3) {
-    pages.push("leading-ellipsis");
-  }
-
-  const startPage = Math.max(2, page - paginationNeighborCount);
-  const endPage = Math.min(totalPages - 1, page + paginationNeighborCount);
-
-  for (let pageNumber = startPage; pageNumber <= endPage; pageNumber += 1) {
-    pages.push(pageNumber);
-  }
-
-  if (page < totalPages - 2) {
-    pages.push("trailing-ellipsis");
-  }
-
-  pages.push(totalPages);
-
-  return pages;
-};

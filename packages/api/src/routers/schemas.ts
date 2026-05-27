@@ -65,8 +65,6 @@ export const adminUsersListInputSchema = z.object({
       ojPlatforms: z.array(z.enum(ojPlatforms)).optional(),
     })
     .optional(),
-  page: z.number().int().min(1),
-  pageSize: z.number().int().min(5).max(80),
   sort: z
     .object({
       column: adminUsersSortColumnSchema,

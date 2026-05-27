@@ -21,8 +21,6 @@ export interface AdminUsersListInput {
         ojPlatforms?: OjPlatform[];
       }
     | undefined;
-  page: number;
-  pageSize: number;
   sort?:
     | {
         column: AdminUsersSortColumn;

@@ -145,16 +145,7 @@ export const listAdminUsers = async (
   db: Database,
   input: AdminUsersListInput
 ) => {
-  const offset = (input.page - 1) * input.pageSize;
   const whereCondition = getAdminUsersWhereCondition(db, input.filters);
-  const [totalRow] = await db
-    .select({
-      total: sql<number>`count(${user.id})`.mapWith(Number),
-    })
-    .from(user)
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
-    .where(whereCondition);
-
   const users = await db
     .select({
       email: user.email,
@@ -170,9 +161,7 @@ export const listAdminUsers = async (
     .from(user)
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(whereCondition)
-    .orderBy(...getAdminUsersOrderBy(input.sort))
-    .limit(input.pageSize)
-    .offset(offset);
+    .orderBy(...getAdminUsersOrderBy(input.sort));
 
   const userIds = users.map((currentUser) => currentUser.id);
   const ojAccountsByUserId = await listOjAccountsForUsers(db, userIds);
@@ -183,8 +172,6 @@ export const listAdminUsers = async (
       memberStatus: currentUser.memberStatus ?? defaultMemberStatus,
       ojAccounts: ojAccountsByUserId.get(currentUser.id) ?? [],
     })),
-    page: input.page,
-    pageSize: input.pageSize,
-    total: totalRow?.total ?? 0,
+    total: users.length,
   };
 };

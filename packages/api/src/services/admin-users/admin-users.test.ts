@@ -75,10 +75,7 @@ const createOjAccount = async (
 };
 
 const listUserIds = async (db: Database) => {
-  const result = await listAdminUsers(db, {
-    page: 1,
-    pageSize: 20,
-  });
+  const result = await listAdminUsers(db, {});
 
   return result.items.map((item) => item.id);
 };
@@ -102,10 +99,7 @@ describe("admin users", () => {
     await createOjAccount(db, { platform: "luogu", userId: "alpha" });
     await createOjAccount(db, { platform: "codeforces", userId: "alpha" });
 
-    const result = await listAdminUsers(db, {
-      page: 1,
-      pageSize: 20,
-    });
+    const result = await listAdminUsers(db, {});
     const alpha = result.items.find((item) => item.id === "alpha");
     const missingProfile = result.items.find(
       (item) => item.id === "no-profile"
@@ -138,8 +132,6 @@ describe("admin users", () => {
     });
 
     const result = await listAdminUsers(db, {
-      page: 1,
-      pageSize: 20,
       sort: {
         column: "grade",
         direction: "descending",
@@ -183,8 +175,6 @@ describe("admin users", () => {
         memberStatuses: ["active"],
         ojPlatforms: ["codeforces"],
       },
-      page: 1,
-      pageSize: 20,
     });
 
     expect(result.items.map((item) => item.id)).toEqual(["target"]);

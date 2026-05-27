@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UsersRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
@@ -15,13 +15,14 @@ import { AccessFeedback } from "./_components/access-feedback";
 import { AdminUserDeleteDialog } from "./_components/admin-user-delete-dialog";
 import { AdminUserEditDialog } from "./_components/admin-user-edit-dialog";
 import { AdminUsersTableSection } from "./_components/admin-users-table-section";
-import { useAutoPageSize } from "./_hooks/use-auto-page-size";
+import {
+  adminUsersColumns,
+  adminUsersColumnVisibilityStorageKey,
+} from "./_model/admin-users-table-columns";
 import {
   type AdminUsersFilters,
   type AdminUsersSort,
   type AdminUserTableRow,
-  adminUsersColumns,
-  adminUsersColumnVisibilityStorageKey,
   emptyAdminUsersFilters,
   getAdminEditErrorMessage,
   hasFilters,
@@ -37,7 +38,6 @@ export default function AdminUsersPage() {
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const targetUsername = searchParams.get("username");
-  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AdminUsersFilters>(
     emptyAdminUsersFilters
   );
@@ -53,8 +53,6 @@ export default function AdminUsersPage() {
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
     null
   );
-  const { pageSize, tableRegionRef } = useAutoPageSize();
-  const previousPageSizeRef = useRef(pageSize);
   const accountMe = useQuery(
     trpc.account.me.queryOptions(undefined, {
       enabled: Boolean(user),
@@ -89,20 +87,6 @@ export default function AdminUsersPage() {
     }
   }, [isMember, router, session.isPending, user]);
 
-  useEffect(() => {
-    const previousPageSize = previousPageSizeRef.current;
-
-    if (previousPageSize === pageSize) {
-      return;
-    }
-
-    setPage((currentPage) => {
-      const firstItemIndex = (currentPage - 1) * previousPageSize;
-      return Math.floor(firstItemIndex / pageSize) + 1;
-    });
-    previousPageSizeRef.current = pageSize;
-  }, [pageSize]);
-
   const handleFilterChange = (
     key: keyof AdminUsersFilters,
     values: string[]
@@ -123,17 +107,14 @@ export default function AdminUsersPage() {
       ...currentFilters,
       [key]: nextValues,
     }));
-    setPage(1);
   };
 
   const handleClearFilters = () => {
     setFilters(emptyAdminUsersFilters);
-    setPage(1);
   };
 
   const handleSortChange = useCallback((nextSort: AdminUsersSort) => {
     setSort(nextSort);
-    setPage(1);
   }, []);
 
   const handleEditUser = (nextUser: AdminUserTableRow) => {
@@ -168,11 +149,9 @@ export default function AdminUsersPage() {
   const listInput = useMemo(
     () => ({
       filters: hasActiveFilters ? filters : undefined,
-      page,
-      pageSize,
       sort,
     }),
-    [filters, hasActiveFilters, page, pageSize, sort]
+    [filters, hasActiveFilters, sort]
   );
   const listQueryKey = trpc.admin.users.list.queryKey(listInput);
   const usersQuery = useQuery(
@@ -189,7 +168,6 @@ export default function AdminUsersPage() {
   );
   const users = usersQuery.data?.items ?? [];
   const total = usersQuery.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const deleteUser = useMutation(
     trpc.admin.users.delete.mutationOptions({
       onError: (error) => {
@@ -213,12 +191,6 @@ export default function AdminUsersPage() {
       usernameConfirmation: deleteConfirmationValue,
     });
   };
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
 
   useEffect(() => {
     if (!(targetUsername && isAdmin && !usersQuery.isPending)) {
@@ -275,13 +247,8 @@ export default function AdminUsersPage() {
             onEditUser={handleEditUser}
             onFilterChange={handleFilterChange}
             onSortChange={handleSortChange}
-            page={page}
-            pageSize={pageSize}
-            setPage={setPage}
             sort={sort}
-            tableRegionRef={tableRegionRef}
             total={total}
-            totalPages={totalPages}
             users={users}
             visibleColumnControls={visibleColumnControls}
           />
