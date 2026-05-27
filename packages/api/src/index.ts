@@ -1,3 +1,4 @@
+import { isApplicationError } from "@hhuacm-dashboard/application/errors";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -8,9 +9,22 @@ export const t = initTRPC.context<Context>().create();
 
 export const router = t.router;
 
-export const publicProcedure = t.procedure;
+const applicationErrorMiddleware = t.middleware(async ({ next }) => {
+  const result = await next();
 
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (result.ok || !isApplicationError(result.error.cause)) {
+    return result;
+  }
+
+  throw new TRPCError({
+    code: result.error.cause.code,
+    message: result.error.cause.message,
+  });
+});
+
+export const publicProcedure = t.procedure.use(applicationErrorMiddleware);
+
+export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
   const currentSession = ctx.session;
 
   if (!currentSession) {

@@ -9,7 +9,6 @@
   "dependencies": {
     "@hhuacm-dashboard/api": "workspace:*",
     "@hhuacm-dashboard/auth": "workspace:*",
-    "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "@hono/trpc-server": "0.4",
     "@trpc/server": "catalog:",

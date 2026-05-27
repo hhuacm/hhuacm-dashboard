@@ -1,6 +1,6 @@
+import { getDashboardSummary } from "@hhuacm-dashboard/application/services/dashboard";
+import { getHomeNoticeMarkdown } from "@hhuacm-dashboard/application/services/site-setting";
 import { publicProcedure, router } from "../index";
-import { getDashboardSummary } from "../services/dashboard";
-import { getHomeNoticeMarkdown } from "../services/site-setting";
 
 export const dashboardRouter = router({
   homeNotice: publicProcedure.query(async ({ ctx }) => ({

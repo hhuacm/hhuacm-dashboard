@@ -1,8 +1,6 @@
 import { createContext } from "@hhuacm-dashboard/api/context";
 import { appRouter } from "@hhuacm-dashboard/api/routers/index";
-import { startRefreshRuntime } from "@hhuacm-dashboard/api/services/refresh/runtime";
 import { auth } from "@hhuacm-dashboard/auth";
-import { db } from "@hhuacm-dashboard/db";
 import { env } from "@hhuacm-dashboard/env/server";
 import { trpcServer } from "@hono/trpc-server";
 import { type Server, serve } from "bun";
@@ -13,12 +11,9 @@ import { logger } from "hono/logger";
 const app = new Hono();
 const runtimeStore = globalThis as typeof globalThis & {
   __hhuacmServer?: Server<unknown>;
-  __hhuacmRefreshRuntime?: ReturnType<typeof startRefreshRuntime>;
 };
 
-runtimeStore.__hhuacmRefreshRuntime?.stop();
 runtimeStore.__hhuacmServer?.stop(true);
-runtimeStore.__hhuacmRefreshRuntime = startRefreshRuntime({ db });
 
 app.use(logger());
 app.use(

@@ -1,9 +1,9 @@
-import { publicProcedure, router } from "../index";
 import {
   getProblemSet,
   listProblemSetCompletions,
   listProblemSets,
-} from "../services/problem-set/query";
+} from "@hhuacm-dashboard/application/services/problem-set/query";
+import { publicProcedure, router } from "../index";
 import { problemSetIdInputSchema } from "./schemas";
 
 export const problemSetRouter = router({

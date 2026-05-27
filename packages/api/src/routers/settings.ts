@@ -1,10 +1,13 @@
-import { protectedProcedure, router } from "../index";
 import {
   addOjAccount,
   deleteOjAccount,
   updateOjAccount,
-} from "../services/oj-account/commands";
-import { getSettingsProfile, updateUserProfile } from "../services/profile";
+} from "@hhuacm-dashboard/application/services/oj-account/commands";
+import {
+  getSettingsProfile,
+  updateUserProfile,
+} from "@hhuacm-dashboard/application/services/profile";
+import { protectedProcedure, router } from "../index";
 import {
   ojAccountInputSchema,
   ojAccountPlatformInputSchema,

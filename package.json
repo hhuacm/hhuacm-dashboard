@@ -31,6 +31,7 @@
     "build": "turbo build",
     "check-types": "turbo check-types --output-logs=errors-only --ui=stream",
     "dev:web": "turbo -F web dev",
+    "dev:refresh-worker": "turbo -F refresh-worker dev",
     "dev:server": "turbo -F server dev",
     "test": "bun test --only-failures",
     "verify": "bun run fix && bun run check && bun run test",
@@ -38,9 +39,9 @@
     "db:sync": "turbo -F @hhuacm-dashboard/db db:sync",
     "check": "bun run check-types && bun x ultracite check",
     "fix": "ultracite fix",
-    "system:grant-admin": "bun run --cwd packages/api system:grant-admin",
-    "system:import-users": "bun run --cwd packages/api system:import-users",
-    "system:revoke-admin": "bun run --cwd packages/api system:revoke-admin"
+    "system:grant-admin": "bun run --cwd packages/application system:grant-admin",
+    "system:import-users": "bun run --cwd packages/application system:import-users",
+    "system:revoke-admin": "bun run --cwd packages/application system:revoke-admin"
   },
   "devDependencies": {
     "@biomejs/biome": "latest",

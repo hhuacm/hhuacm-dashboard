@@ -1,5 +1,5 @@
+import { getCurrentUser } from "@hhuacm-dashboard/application/services/account";
 import { protectedProcedure, router } from "../index";
-import { getCurrentUser } from "../services/account";
 
 export const accountRouter = router({
   me: protectedProcedure.query(

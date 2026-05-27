@@ -1,4 +1,4 @@
-import { env } from "@hhuacm-dashboard/env/server";
+import { env } from "@hhuacm-dashboard/env/db";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
@@ -82,5 +82,10 @@ export function createDb() {
 
   return drizzle({ client, schema });
 }
+
+export type Database = ReturnType<typeof createDb>;
+export type DatabaseTransaction = Parameters<
+  Parameters<Database["transaction"]>[0]
+>[0];
 
 export const db = createDb();

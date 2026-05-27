@@ -1,20 +1,23 @@
-import { adminProcedure, router } from "../index";
-import { deleteAdminUser } from "../services/admin-users/delete-user";
-import { getAdminUser } from "../services/admin-users/detail";
-import { listAdminUsers } from "../services/admin-users/list-query";
-import { getAdminUsersMetadata } from "../services/admin-users/metadata";
+import { deleteAdminUser } from "@hhuacm-dashboard/application/services/admin-users/delete-user";
+import { getAdminUser } from "@hhuacm-dashboard/application/services/admin-users/detail";
+import { listAdminUsers } from "@hhuacm-dashboard/application/services/admin-users/list-query";
+import { getAdminUsersMetadata } from "@hhuacm-dashboard/application/services/admin-users/metadata";
 import {
   deleteOjAccount,
   upsertOjAccount,
-} from "../services/oj-account/commands";
+} from "@hhuacm-dashboard/application/services/oj-account/commands";
 import {
   createProblemSet,
   deleteProblemSet,
   updateProblemSet,
-} from "../services/problem-set/mutation";
-import { getTargetUser, updateUserProfile } from "../services/profile";
-import { updateHomeNoticeMarkdown } from "../services/site-setting";
-import { exportSystemSeed } from "../system/export-seed";
+} from "@hhuacm-dashboard/application/services/problem-set/mutation";
+import {
+  getTargetUser,
+  updateUserProfile,
+} from "@hhuacm-dashboard/application/services/profile";
+import { updateHomeNoticeMarkdown } from "@hhuacm-dashboard/application/services/site-setting";
+import { exportSystemSeed } from "@hhuacm-dashboard/application/system/export-seed";
+import { adminProcedure, router } from "../index";
 import {
   adminHomeNoticeInputSchema,
   adminProblemSetInputSchema,

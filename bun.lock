@@ -14,12 +14,23 @@
         "ultracite": "latest",
       },
     },
+    "apps/refresh-worker": {
+      "name": "refresh-worker",
+      "dependencies": {
+        "@hhuacm-dashboard/application": "workspace:*",
+        "@hhuacm-dashboard/db": "workspace:*",
+      },
+      "devDependencies": {
+        "@hhuacm-dashboard/config": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "apps/server": {
       "name": "server",
       "dependencies": {
         "@hhuacm-dashboard/api": "workspace:*",
         "@hhuacm-dashboard/auth": "workspace:*",
-        "@hhuacm-dashboard/db": "workspace:*",
         "@hhuacm-dashboard/env": "workspace:*",
         "@hono/trpc-server": "0.4",
         "@trpc/server": "catalog:",
@@ -70,10 +81,24 @@
     "packages/api": {
       "name": "@hhuacm-dashboard/api",
       "dependencies": {
+        "@hhuacm-dashboard/application": "workspace:*",
         "@hhuacm-dashboard/auth": "workspace:*",
         "@hhuacm-dashboard/db": "workspace:*",
         "@hhuacm-dashboard/domain": "workspace:*",
         "@trpc/server": "catalog:",
+        "drizzle-orm": "0.45",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@hhuacm-dashboard/config": "workspace:*",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/application": {
+      "name": "@hhuacm-dashboard/application",
+      "dependencies": {
+        "@hhuacm-dashboard/db": "workspace:*",
+        "@hhuacm-dashboard/domain": "workspace:*",
         "better-auth": "catalog:",
         "dotenv": "catalog:",
         "drizzle-orm": "0.45",
@@ -287,6 +312,8 @@
     "@heroui/styles": ["@heroui/styles@3.0.4", "", { "dependencies": { "tailwind-variants": "3.2.2", "tw-animate-css": "1.4.0" }, "peerDependencies": { "tailwindcss": ">=4.0.0" } }, "sha512-3zi0cu8PPmMbUdRg7AO486w9uA7ZHuV6m8ab23RQHChJ97q3s/tM13r74l7A963Dif+0ZWpQRiicsUvWuaAcDg=="],
 
     "@hhuacm-dashboard/api": ["@hhuacm-dashboard/api@workspace:packages/api"],
+
+    "@hhuacm-dashboard/application": ["@hhuacm-dashboard/application@workspace:packages/application"],
 
     "@hhuacm-dashboard/auth": ["@hhuacm-dashboard/auth@workspace:packages/auth"],
 
@@ -891,6 +918,8 @@
     "react-stately": ["react-stately@3.46.0", "", { "dependencies": { "@internationalized/date": "^3.12.1", "@internationalized/number": "^3.6.6", "@internationalized/string": "^3.2.8", "@react-types/shared": "^3.34.0", "@swc/helpers": "^0.5.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1" } }, "sha512-OdxhWvHgs2L4OJGIs7hnuTr5WjjMM6enhNEAMRqiekhF8+ITvA2LRwNftOZwcogaoCslGYq5S2VQTQwnm0GbCA=="],
 
     "react-transition-group": ["react-transition-group@4.4.5", "", { "dependencies": { "@babel/runtime": "^7.5.5", "dom-helpers": "^5.0.1", "loose-envify": "^1.4.0", "prop-types": "^15.6.2" }, "peerDependencies": { "react": ">=16.6.0", "react-dom": ">=16.6.0" } }, "sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g=="],
+
+    "refresh-worker": ["refresh-worker@workspace:apps/refresh-worker"],
 
     "remark-gfm": ["remark-gfm@4.0.1", "", { "dependencies": { "@types/mdast": "^4.0.0", "mdast-util-gfm": "^3.0.0", "micromark-extension-gfm": "^3.0.0", "remark-parse": "^11.0.0", "remark-stringify": "^11.0.0", "unified": "^11.0.0" } }, "sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg=="],
 

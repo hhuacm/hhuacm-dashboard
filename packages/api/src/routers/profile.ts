@@ -1,5 +1,5 @@
+import { getPublicProfile } from "@hhuacm-dashboard/application/services/profile";
 import { publicProcedure, router } from "../index";
-import { getPublicProfile } from "../services/profile";
 import { profileGetInputSchema } from "./schemas";
 
 export const profileRouter = router({

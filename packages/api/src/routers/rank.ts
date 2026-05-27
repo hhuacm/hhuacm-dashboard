@@ -1,6 +1,6 @@
+import { listCodeforcesRankRows } from "@hhuacm-dashboard/application/services/rank/codeforces";
+import { listLuoguRankRows } from "@hhuacm-dashboard/application/services/rank/luogu";
 import { publicProcedure, router } from "../index";
-import { listCodeforcesRankRows } from "../services/rank/codeforces";
-import { listLuoguRankRows } from "../services/rank/luogu";
 
 export const rankRouter = router({
   codeforces: router({
