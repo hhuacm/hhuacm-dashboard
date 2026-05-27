@@ -2,7 +2,6 @@
 
 import { Button, Dropdown, Label, Separator } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import clsx from "clsx";
 import {
   Home,
   LayoutDashboard,
@@ -19,13 +18,8 @@ import { type Key, useState } from "react";
 
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
+import { AppShellLayout, type AppShellMaxWidth } from "./app-shell-layout";
 
-const maxWidthClassNames = {
-  "4xl": "max-w-4xl",
-  "5xl": "max-w-5xl",
-  "6xl": "max-w-6xl",
-} as const;
-const shellMaxWidthClassName = maxWidthClassNames["6xl"];
 const usernameVisibleLength = 20;
 
 interface AppShellProps {
@@ -33,7 +27,7 @@ interface AppShellProps {
   children: ReactNode;
   description?: string;
   icon: ReactNode;
-  maxWidth?: keyof typeof maxWidthClassNames;
+  maxWidth?: AppShellMaxWidth;
   title: string;
 }
 
@@ -130,7 +124,7 @@ function AccountMenu({
   );
 }
 
-function MainNavigation() {
+export function AppShellNavigation() {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -167,7 +161,7 @@ function MainNavigation() {
   );
 }
 
-function HeaderActions({ action }: { action?: ReactNode }) {
+export function AppShellHeaderActions({ action }: { action?: ReactNode }) {
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
@@ -221,50 +215,15 @@ export function AppShell({
   title,
 }: AppShellProps) {
   return (
-    <main className="min-h-svh bg-background text-foreground">
-      <div className="flex min-h-svh flex-col py-4">
-        <div
-          className={clsx(
-            "mx-auto w-full px-4 sm:px-6 lg:px-8",
-            shellMaxWidthClassName
-          )}
-        >
-          <header className="flex min-h-16 flex-wrap items-center justify-between gap-4 border-b py-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-4">
-              <div className="flex min-w-0 items-center gap-3 sm:w-56 sm:shrink-0">
-                <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-border bg-surface text-accent shadow-surface">
-                  {icon}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-base leading-none">
-                    {title}
-                  </p>
-                  {description ? (
-                    <p className="mt-1 truncate text-muted text-sm">
-                      {description}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              <MainNavigation />
-            </div>
-
-            <div className="shrink-0">
-              <HeaderActions action={action} />
-            </div>
-          </header>
-        </div>
-
-        <div
-          className={clsx(
-            "mx-auto w-full flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8",
-            maxWidthClassNames[maxWidth]
-          )}
-        >
-          {children}
-        </div>
-      </div>
-    </main>
+    <AppShellLayout
+      description={description}
+      headerActions={<AppShellHeaderActions action={action} />}
+      icon={icon}
+      maxWidth={maxWidth}
+      navigation={<AppShellNavigation />}
+      title={title}
+    >
+      {children}
+    </AppShellLayout>
   );
 }

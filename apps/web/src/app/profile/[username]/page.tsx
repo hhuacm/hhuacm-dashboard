@@ -1,15 +1,10 @@
-"use client";
-
-import { Alert, Spinner } from "@heroui/react";
+import { Alert } from "@heroui/react";
 import { isStatsDisabledMemberStatus } from "@hhuacm-dashboard/domain";
-import { useQuery } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
-import { useRouter } from "next/navigation";
-import { use } from "react";
 
-import { AppShell } from "@/components/app-shell";
-import { trpc } from "@/utils/trpc";
+import { ServerAppShell } from "@/components/server-app-shell";
+import { createServerCaller } from "@/utils/server-trpc";
 import { OjAccountsSection } from "./_components/oj-accounts-section";
 import { ProfileAwardsSection } from "./_components/profile-awards-section";
 import { ProfileSummaryCard } from "./_components/profile-summary-card";
@@ -20,55 +15,35 @@ interface ProfilePageProps {
   }>;
 }
 
-export default function PublicProfilePage({ params }: ProfilePageProps) {
-  const router = useRouter();
-  const { username: routeUsername } = use(params);
+export const dynamic = "force-dynamic";
+
+export default async function PublicProfilePage({ params }: ProfilePageProps) {
+  const { username: routeUsername } = await params;
   const username = decodeURIComponent(routeUsername);
-  const profileQuery = useQuery(
-    trpc.profile.get.queryOptions(
-      { username },
-      {
-        retry: false,
-      }
-    )
-  );
-  const profile = profileQuery.data;
+  const caller = await createServerCaller();
+  const profileResult = await caller.profile.get
+    .query({ username })
+    .then((profile) => ({ profile, status: "success" as const }))
+    .catch(() => ({ profile: null, status: "error" as const }));
+  const profile = profileResult.profile;
   const usernameLabel = profile?.user.username ?? username;
   const isOjStatsDisabled = isStatsDisabledMemberStatus(
     profile?.profile.memberStatus
   );
-
-  const openSettings = () => {
-    router.push("/settings/profile" as Route);
-  };
-
-  const openAdmin = () => {
-    if (!profile) {
-      return;
-    }
-
-    router.push(
-      `/admin/users?username=${encodeURIComponent(
+  const adminHref = profile
+    ? (`/admin/users?username=${encodeURIComponent(
         profile.user.username
-      )}` as Route
-    );
-  };
+      )}` as Route)
+    : undefined;
 
   return (
-    <AppShell
+    <ServerAppShell
       icon={<UserRound className="size-4" />}
       maxWidth="5xl"
       title="个人主页"
     >
       <div className="grid gap-8">
-        {profileQuery.isPending ? (
-          <div className="flex items-center gap-3">
-            <Spinner color="current" size="sm" />
-            <p className="font-medium">正在读取个人主页。</p>
-          </div>
-        ) : null}
-
-        {profileQuery.isError ? (
+        {profileResult.status === "error" ? (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -83,9 +58,9 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
         {profile ? (
           <>
             <ProfileSummaryCard
-              onOpenAdmin={openAdmin}
-              onOpenSettings={openSettings}
+              adminHref={adminHref}
               profile={profile}
+              settingsHref={"/settings/profile" satisfies Route}
               usernameLabel={usernameLabel}
             />
             <ProfileAwardsSection awards={profile.awards} />
@@ -96,6 +71,6 @@ export default function PublicProfilePage({ params }: ProfilePageProps) {
           </>
         ) : null}
       </div>
-    </AppShell>
+    </ServerAppShell>
   );
 }

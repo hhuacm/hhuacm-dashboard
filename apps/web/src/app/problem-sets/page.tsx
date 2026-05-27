@@ -1,14 +1,9 @@
-"use client";
-
-import { Alert, Button, Card, Spinner, Tooltip } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { Alert, Card } from "@heroui/react";
 import { CheckCircle2, ChevronRight, ListChecks, Plus } from "lucide-react";
 import type { Route } from "next";
-import { useRouter } from "next/navigation";
 
-import { AppShell } from "@/components/app-shell";
-import { authClient } from "@/utils/auth-client";
-import { trpc } from "@/utils/trpc";
+import { ServerAppShell } from "@/components/server-app-shell";
+import { createServerCaller } from "@/utils/server-trpc";
 
 interface ProblemSetCardProps {
   completedProblemCount: null | number;
@@ -16,6 +11,8 @@ interface ProblemSetCardProps {
   problemCount: number;
   title: string;
 }
+
+export const dynamic = "force-dynamic";
 
 const formatProgress = (
   completedProblemCount: null | number,
@@ -34,14 +31,12 @@ function ProblemSetCard({
   problemCount,
   title,
 }: ProblemSetCardProps) {
-  const router = useRouter();
   const progressText = formatProgress(completedProblemCount, problemCount);
 
   return (
-    <button
+    <a
       className="group rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      onClick={() => router.push(`/problem-sets/${id}` as Route)}
-      type="button"
+      href={`/problem-sets/${id}` as Route}
     >
       <Card className="h-full transition-colors group-hover:border-accent/50">
         <Card.Header className="flex items-start justify-between gap-4">
@@ -76,63 +71,65 @@ function ProblemSetCard({
           </dl>
         </Card.Content>
       </Card>
-    </button>
+    </a>
   );
 }
 
-function CreateProblemSetButton() {
-  const router = useRouter();
-  const session = authClient.useSession();
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(session.data?.user),
-    })
+function CreateProblemSetLink() {
+  return (
+    <a
+      aria-label="新建题单"
+      className="button button--primary button--icon-only fixed right-5 bottom-5 z-40 size-14 rounded-full shadow-accent/20 shadow-lg sm:right-8 sm:bottom-8"
+      href={"/admin/problem-sets/import" satisfies Route}
+    >
+      <Plus className="size-6" />
+    </a>
   );
-  const isAdmin = accountMe.data?.role === "admin";
+}
 
-  if (!isAdmin) {
-    return null;
+const isUnauthorizedError = (error: unknown) =>
+  typeof error === "object" &&
+  error !== null &&
+  "data" in error &&
+  (error as { data?: { code?: string } }).data?.code === "UNAUTHORIZED";
+
+const getCurrentUserRole = async (
+  caller: Awaited<ReturnType<typeof createServerCaller>>
+) => {
+  try {
+    const account = await caller.account.me.query();
+
+    return account.role;
+  } catch (error) {
+    if (isUnauthorizedError(error)) {
+      return null;
+    }
+
+    throw error;
   }
+};
+
+export default async function ProblemSetsPage() {
+  const caller = await createServerCaller();
+  const [problemSetsResult, currentUserRole] = await Promise.all([
+    caller.problemSet.list
+      .query()
+      .then((problemSets) => ({ problemSets, status: "success" as const }))
+      .catch(() => ({ problemSets: [], status: "error" as const })),
+    getCurrentUserRole(caller),
+  ]);
+  const isProblemSetsError = problemSetsResult.status === "error";
+  const problemSets = problemSetsResult.problemSets;
+  const isAdmin = currentUserRole === "admin";
 
   return (
-    <Tooltip delay={0}>
-      <Tooltip.Trigger className="fixed right-5 bottom-5 z-40 sm:right-8 sm:bottom-8">
-        <Button
-          aria-label="新建题单"
-          className="size-14 rounded-full shadow-accent/20 shadow-lg"
-          isIconOnly
-          onPress={() => router.push("/admin/problem-sets/import" as Route)}
-        >
-          <Plus className="size-6" />
-        </Button>
-      </Tooltip.Trigger>
-      <Tooltip.Content placement="top" showArrow>
-        <Tooltip.Arrow />
-        新建题单
-      </Tooltip.Content>
-    </Tooltip>
-  );
-}
-
-export default function ProblemSetsPage() {
-  const problemSetsQuery = useQuery(trpc.problemSet.list.queryOptions());
-  const problemSets = problemSetsQuery.data ?? [];
-
-  return (
-    <AppShell
+    <ServerAppShell
       description="站内维护的洛谷训练题单"
       icon={<ListChecks className="size-4" />}
       title="题单"
     >
       <div className="grid gap-4">
-        {problemSetsQuery.isPending ? (
-          <div className="flex items-center gap-3">
-            <Spinner color="current" size="sm" />
-            <p className="font-medium">正在加载题单。</p>
-          </div>
-        ) : null}
-
-        {problemSetsQuery.isError ? (
+        {isProblemSetsError ? (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -142,8 +139,7 @@ export default function ProblemSetsPage() {
           </Alert>
         ) : null}
 
-        {!(problemSetsQuery.isPending || problemSetsQuery.isError) &&
-        problemSets.length === 0 ? (
+        {!isProblemSetsError && problemSets.length === 0 ? (
           <Card>
             <Card.Content className="py-8">
               <div className="grid place-items-center gap-2 text-center">
@@ -171,7 +167,7 @@ export default function ProblemSetsPage() {
           </div>
         ) : null}
       </div>
-      <CreateProblemSetButton />
-    </AppShell>
+      {isAdmin ? <CreateProblemSetLink /> : null}
+    </ServerAppShell>
   );
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import { Chip, Label } from "@heroui/react";
 import clsx from "clsx";
 

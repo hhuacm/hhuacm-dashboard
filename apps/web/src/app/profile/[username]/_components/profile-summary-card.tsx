@@ -1,5 +1,6 @@
-import { Button, Card } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { LayoutDashboard, Settings, UserRound } from "lucide-react";
+import type { Route } from "next";
 
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import { MemberStatusBadge } from "./member-status-badge";
@@ -28,9 +29,9 @@ interface PublicInfoItemProps {
 }
 
 interface ProfileSummaryCardProps {
-  onOpenAdmin: () => void;
-  onOpenSettings: () => void;
+  adminHref?: Route;
   profile: PublicProfileSummary;
+  settingsHref?: Route;
   usernameLabel: string;
 }
 
@@ -46,14 +47,14 @@ function PublicInfoItem({ label, value }: PublicInfoItemProps) {
 }
 
 export function ProfileSummaryCard({
-  onOpenAdmin,
-  onOpenSettings,
+  adminHref,
   profile,
+  settingsHref,
   usernameLabel,
 }: ProfileSummaryCardProps) {
-  const canOpenSettings = profile.permissions.isOwner;
+  const canOpenSettings = profile.permissions.isOwner && settingsHref;
   const canOpenAdmin =
-    profile.permissions.isAdmin && !profile.permissions.isOwner;
+    profile.permissions.isAdmin && !profile.permissions.isOwner && adminHref;
 
   return (
     <Card>
@@ -71,16 +72,19 @@ export function ProfileSummaryCard({
 
         <div className="flex flex-wrap gap-2">
           {canOpenSettings ? (
-            <Button onPress={onOpenSettings} size="sm" variant="secondary">
+            <a
+              className="button button--secondary button--sm"
+              href={settingsHref}
+            >
               <Settings className="size-4" />
               资料设置
-            </Button>
+            </a>
           ) : null}
           {canOpenAdmin ? (
-            <Button onPress={onOpenAdmin} size="sm" variant="secondary">
+            <a className="button button--secondary button--sm" href={adminHref}>
               <LayoutDashboard className="size-4" />
               管理用户
-            </Button>
+            </a>
           ) : null}
         </div>
       </Card.Header>
