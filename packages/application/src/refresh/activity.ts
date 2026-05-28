@@ -126,6 +126,18 @@ const getRefreshingLuoguAccountIds = (db: Database, accountIds: string[]) =>
     targetIds: accountIds,
   });
 
+const getRefreshingAtcoderAccountIds = (db: Database, accountIds: string[]) =>
+  getRefreshingTargetIds(db, {
+    kind: atcoderAccountStatsJob.kind,
+    targetIds: accountIds,
+  });
+
+const getRefreshingNowcoderAccountIds = (db: Database, accountIds: string[]) =>
+  getRefreshingTargetIds(db, {
+    kind: nowcoderAccountStatsJob.kind,
+    targetIds: accountIds,
+  });
+
 export const getCodeforcesRankRefreshActivity = async (
   db: Database,
   accountIds: string[]
@@ -148,11 +160,55 @@ export const getCodeforcesRankRefreshActivity = async (
   };
 };
 
+export const getAtcoderRankRefreshActivity = async (
+  db: Database,
+  accountIds: string[]
+) => {
+  const refreshingAccountIds = await getRefreshingAtcoderAccountIds(
+    db,
+    accountIds
+  );
+
+  return {
+    toStatusInput: (input: {
+      accountId: string;
+      fetchedAt: Date | null;
+      lastError: null | string;
+    }) => ({
+      fetchedAt: input.fetchedAt,
+      isQueued: refreshingAccountIds.has(input.accountId),
+      lastError: input.lastError,
+    }),
+  };
+};
+
 export const getLuoguRankRefreshActivity = async (
   db: Database,
   accountIds: string[]
 ) => {
   const refreshingAccountIds = await getRefreshingLuoguAccountIds(
+    db,
+    accountIds
+  );
+
+  return {
+    toStatusInput: (input: {
+      accountId: string;
+      fetchedAt: Date | null;
+      lastError: null | string;
+    }) => ({
+      fetchedAt: input.fetchedAt,
+      isQueued: refreshingAccountIds.has(input.accountId),
+      lastError: input.lastError,
+    }),
+  };
+};
+
+export const getNowcoderRankRefreshActivity = async (
+  db: Database,
+  accountIds: string[]
+) => {
+  const refreshingAccountIds = await getRefreshingNowcoderAccountIds(
     db,
     accountIds
   );

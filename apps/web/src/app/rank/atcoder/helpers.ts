@@ -17,11 +17,9 @@ import {
 } from "../_shared/rank-config";
 
 const sortableColumns = [
-  "acceptedProblemCount",
-  "acceptedProblemCountInMonth",
-  "lastOnlineAt",
-  "maxRating",
+  "fetchedAt",
   "rating",
+  "recentPerformanceAverage",
 ] as const;
 
 const numberFilterConfigs = [
@@ -31,42 +29,30 @@ const numberFilterConfigs = [
     placeholder: "Rating ≥",
   },
   {
-    key: "maxRating",
-    label: "最高 Rating",
-    placeholder: "最高 Rating ≥",
-  },
-  {
-    key: "acceptedProblemCount",
-    label: "AC 题数",
-    placeholder: "AC 题数 ≥",
-  },
-  {
-    key: "acceptedProblemCountInMonth",
-    label: "近 30 天 AC",
-    placeholder: "近 30 天 AC ≥",
+    key: "recentPerformanceAverage",
+    label: "近三场表现",
+    placeholder: "表现均值 ≥",
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
 const filterSearchThreshold = 8;
-const rankColumnVisibilityStorageKey = "rank-codeforces-column-visibility-v1";
+const rankColumnVisibilityStorageKey = "rank-atcoder-column-visibility-v1";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
-type RankRows = RouterOutputs["rank"]["codeforces"]["list"];
+type RankRows = RouterOutputs["rank"]["atcoder"]["list"];
 
 export type RankRow = RankRows[number];
 export type SortColumn = (typeof sortableColumns)[number];
 export type NumberFilterKey = (typeof numberFilterConfigs)[number]["key"];
 export type RankColumnId =
-  | "acceptedProblemCount"
-  | "acceptedProblemCountInMonth"
+  | "fetchedAt"
   | "grade"
   | "handle"
   | "index"
-  | "lastOnlineAt"
   | "major"
-  | "maxRating"
   | "name"
   | "rating"
+  | "recentPerformanceAverage"
   | "status";
 
 export type RankColumnConfig = SharedRankColumnConfig<RankColumnId>;
@@ -82,10 +68,11 @@ const emptyRankFilters = createEmptyRankFilters(numberFilterConfigs);
 
 const rankColumns = [
   ...createRankIdentityColumns({
-    accountLabel: "CF 账号",
+    accountLabel: "AtCoder 账号",
+    accountMinWidth: 144,
   }),
   {
-    cellClassName: "whitespace-nowrap",
+    cellClassName: "whitespace-nowrap font-semibold",
     defaultVisible: true,
     id: "rating",
     label: "Rating",
@@ -94,29 +81,15 @@ const rankColumns = [
   {
     cellClassName: "whitespace-nowrap",
     defaultVisible: true,
-    id: "maxRating",
-    label: "最高 Rating",
-    minWidth: 112,
-  },
-  {
-    cellClassName: "whitespace-nowrap font-semibold",
-    defaultVisible: true,
-    id: "acceptedProblemCount",
-    label: "AC 题数",
-    minWidth: 96,
-  },
-  {
-    cellClassName: "whitespace-nowrap font-semibold",
-    defaultVisible: true,
-    id: "acceptedProblemCountInMonth",
-    label: "近 30 天 AC",
-    minWidth: 112,
+    id: "recentPerformanceAverage",
+    label: "近三场表现",
+    minWidth: 128,
   },
   {
     cellClassName: "whitespace-nowrap",
     defaultVisible: true,
-    id: "lastOnlineAt",
-    label: "最近活跃",
+    id: "fetchedAt",
+    label: "数据更新",
     minWidth: 160,
   },
   createRankStatusColumn(),
@@ -132,28 +105,36 @@ export const isRankSortColumn = createIsRankSortColumn<
 const filterRankRows = createRankRowsFilter<
   RankRow,
   NumberFilterKey,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["atcoder"]
 >({
-  getStats: (row) => row.codeforces,
+  getStats: (row) => row.atcoder,
   numberFilterConfigs,
 });
 
 const sortRankRows = createRankRowsSorter<
   RankRow,
   SortColumn,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["atcoder"]
 >({
-  dateColumns: ["lastOnlineAt"],
-  getStats: (row) => row.codeforces,
+  dateColumns: ["fetchedAt"],
+  getStats: (row) => row.atcoder,
+  tieBreakers: {
+    rating: [
+      {
+        column: "recentPerformanceAverage",
+        direction: "descending",
+      },
+    ],
+  },
 });
 
-export const codeforcesRankConfig = defineRankConfig({
+export const atcoderRankConfig = defineRankConfig({
   columns: rankColumns,
   defaultSort,
   emptyFilters: emptyRankFilters,
   filterRows: filterRankRows,
   filterSearchThreshold,
-  numberFilterButtonText: "Rating 与 AC 数",
+  numberFilterButtonText: "Rating 与表现",
   numberFilterConfigs,
   numberFilterInputMode: "numeric",
   sortRows: sortRankRows,

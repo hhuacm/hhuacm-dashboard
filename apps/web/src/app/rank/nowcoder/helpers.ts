@@ -18,53 +18,39 @@ import {
 
 const sortableColumns = [
   "acceptedProblemCount",
-  "acceptedProblemCountInMonth",
-  "lastOnlineAt",
-  "maxRating",
+  "fetchedAt",
   "rating",
 ] as const;
 
 const numberFilterConfigs = [
-  {
-    key: "rating",
-    label: "Rating",
-    placeholder: "Rating ≥",
-  },
-  {
-    key: "maxRating",
-    label: "最高 Rating",
-    placeholder: "最高 Rating ≥",
-  },
   {
     key: "acceptedProblemCount",
     label: "AC 题数",
     placeholder: "AC 题数 ≥",
   },
   {
-    key: "acceptedProblemCountInMonth",
-    label: "近 30 天 AC",
-    placeholder: "近 30 天 AC ≥",
+    key: "rating",
+    label: "Rating",
+    placeholder: "Rating ≥",
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
 const filterSearchThreshold = 8;
-const rankColumnVisibilityStorageKey = "rank-codeforces-column-visibility-v1";
+const rankColumnVisibilityStorageKey = "rank-nowcoder-column-visibility-v1";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
-type RankRows = RouterOutputs["rank"]["codeforces"]["list"];
+type RankRows = RouterOutputs["rank"]["nowcoder"]["list"];
 
 export type RankRow = RankRows[number];
 export type SortColumn = (typeof sortableColumns)[number];
 export type NumberFilterKey = (typeof numberFilterConfigs)[number]["key"];
 export type RankColumnId =
   | "acceptedProblemCount"
-  | "acceptedProblemCountInMonth"
+  | "fetchedAt"
   | "grade"
   | "handle"
   | "index"
-  | "lastOnlineAt"
   | "major"
-  | "maxRating"
   | "name"
   | "rating"
   | "status";
@@ -74,7 +60,7 @@ export type SortState = RankSortState<SortColumn>;
 export type RankFilters = RankFilterState<NumberFilterKey>;
 
 const defaultSort: SortState = {
-  column: "rating",
+  column: "acceptedProblemCount",
   direction: "descending",
 };
 
@@ -82,8 +68,15 @@ const emptyRankFilters = createEmptyRankFilters(numberFilterConfigs);
 
 const rankColumns = [
   ...createRankIdentityColumns({
-    accountLabel: "CF 账号",
+    accountLabel: "牛客账号",
   }),
+  {
+    cellClassName: "whitespace-nowrap font-semibold",
+    defaultVisible: true,
+    id: "acceptedProblemCount",
+    label: "AC 题数",
+    minWidth: 96,
+  },
   {
     cellClassName: "whitespace-nowrap",
     defaultVisible: true,
@@ -94,29 +87,8 @@ const rankColumns = [
   {
     cellClassName: "whitespace-nowrap",
     defaultVisible: true,
-    id: "maxRating",
-    label: "最高 Rating",
-    minWidth: 112,
-  },
-  {
-    cellClassName: "whitespace-nowrap font-semibold",
-    defaultVisible: true,
-    id: "acceptedProblemCount",
-    label: "AC 题数",
-    minWidth: 96,
-  },
-  {
-    cellClassName: "whitespace-nowrap font-semibold",
-    defaultVisible: true,
-    id: "acceptedProblemCountInMonth",
-    label: "近 30 天 AC",
-    minWidth: 112,
-  },
-  {
-    cellClassName: "whitespace-nowrap",
-    defaultVisible: true,
-    id: "lastOnlineAt",
-    label: "最近活跃",
+    id: "fetchedAt",
+    label: "数据更新",
     minWidth: 160,
   },
   createRankStatusColumn(),
@@ -132,30 +104,38 @@ export const isRankSortColumn = createIsRankSortColumn<
 const filterRankRows = createRankRowsFilter<
   RankRow,
   NumberFilterKey,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["nowcoder"]
 >({
-  getStats: (row) => row.codeforces,
+  getStats: (row) => row.nowcoder,
   numberFilterConfigs,
 });
 
 const sortRankRows = createRankRowsSorter<
   RankRow,
   SortColumn,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["nowcoder"]
 >({
-  dateColumns: ["lastOnlineAt"],
-  getStats: (row) => row.codeforces,
+  dateColumns: ["fetchedAt"],
+  getStats: (row) => row.nowcoder,
+  tieBreakers: {
+    acceptedProblemCount: [
+      {
+        column: "rating",
+        direction: "descending",
+      },
+    ],
+  },
 });
 
-export const codeforcesRankConfig = defineRankConfig({
+export const nowcoderRankConfig = defineRankConfig({
   columns: rankColumns,
   defaultSort,
   emptyFilters: emptyRankFilters,
   filterRows: filterRankRows,
   filterSearchThreshold,
-  numberFilterButtonText: "Rating 与 AC 数",
+  numberFilterButtonText: "AC 与 Rating",
   numberFilterConfigs,
-  numberFilterInputMode: "numeric",
+  numberFilterInputMode: "decimal",
   sortRows: sortRankRows,
   storageKey: rankColumnVisibilityStorageKey,
 });

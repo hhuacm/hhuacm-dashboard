@@ -14,7 +14,6 @@ import { getRankNameLabel, getRankProfileUrl } from "../../_shared/rank-config";
 import {
   emptyText,
   formatDateTime,
-  formatDecimal,
   formatNumber,
   formatRelativeTime,
   isDormant,
@@ -29,7 +28,7 @@ import {
   type SortState,
 } from "../helpers";
 
-interface LuoguRankTableProps {
+interface NowcoderRankTableProps {
   onSortChange: (sort: SortState) => void;
   rows: RankRow[];
   sort: SortState;
@@ -54,23 +53,21 @@ const renderMajorCell = (row: RankRow) =>
   row.major ? <span className="truncate">{row.major}</span> : <EmptyRankCell />;
 
 const renderHandleCell = (row: RankRow) => (
-  <LinkedText href={buildOjProfileUrl("luogu", row.luogu.externalId)}>
-    {row.luogu.handle}
+  <LinkedText href={buildOjProfileUrl("nowcoder", row.nowcoder.externalId)}>
+    {row.nowcoder.handle}
   </LinkedText>
 );
 
 const rankCellRenderers = {
-  acceptedProblemCount: (row) => formatNumber(row.luogu.acceptedProblemCount),
-  acceptedWeightedScore: (row) => formatNumber(row.luogu.acceptedWeightedScore),
-  averageAcceptedDifficulty: (row) =>
-    formatDecimal(row.luogu.averageAcceptedDifficulty),
+  acceptedProblemCount: (row) =>
+    formatNumber(row.nowcoder.acceptedProblemCount),
   fetchedAt: (row) => (
     <RelativeTimeCell
       emptyText={emptyText}
       formatDateTime={formatDateTime}
       formatRelativeTime={formatRelativeTime}
       isDormant={isDormant}
-      value={row.luogu.fetchedAt}
+      value={row.nowcoder.fetchedAt}
     />
   ),
   grade: (row) => row.grade ?? <EmptyRankCell />,
@@ -78,9 +75,10 @@ const rankCellRenderers = {
   index: (_row, index) => index + 1,
   major: renderMajorCell,
   name: renderNameCell,
+  rating: (row) => formatNumber(row.nowcoder.rating),
   status: (row) => (
     <StatusChip
-      status={row.luogu.syncStatus ?? "missing-account"}
+      status={row.nowcoder.syncStatus ?? "missing-account"}
       statusConfig={statusConfig}
     />
   ),
@@ -93,15 +91,15 @@ function renderRankCell(columnId: RankColumnId, row: RankRow, index: number) {
   return rankCellRenderers[columnId](row, index);
 }
 
-export function LuoguRankTable({
+export function NowcoderRankTable({
   onSortChange,
   rows,
   sort,
   visibleColumns,
-}: LuoguRankTableProps) {
+}: NowcoderRankTableProps) {
   return (
     <RankDataTable
-      ariaLabel="Luogu 排行榜"
+      ariaLabel="Nowcoder 排行榜"
       getRowId={(row) => row.userId}
       getRowTextValue={getRankNameLabel}
       isRankSortColumn={isRankSortColumn}

@@ -1,33 +1,27 @@
 "use client";
 
-import { Table } from "@heroui/react";
 import clsx from "clsx";
-import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
   EmptyCell,
   LinkedText,
+  RankDataTable,
   RelativeTimeCell,
-  SortableColumnHeader,
   StatusChip,
 } from "../../_components/rank-shared";
+import { getRankNameLabel, getRankProfileUrl } from "../../_shared/rank-config";
 import {
   emptyText,
   formatDateTime,
   formatNumber,
   formatRelativeTime,
-  getVisibleTableMinWidth,
   isDormant,
-  rankTableCellClassName,
-  rankTableColumnClassName,
-  type SortDirection,
   statusConfig,
 } from "../../_shared/rank-utils";
 import {
-  getNameLabel,
-  getProfileUrl,
   isRankSortColumn,
   isSortColumn,
   type RankColumnConfig,
@@ -58,10 +52,10 @@ function EmptyRankCell() {
 }
 
 const renderNameCell = (row: RankRow) => {
-  const nameLabel = getNameLabel(row);
+  const nameLabel = getRankNameLabel(row);
 
   return (
-    <LinkedText href={getProfileUrl(row)} tone="text-foreground">
+    <LinkedText href={getRankProfileUrl(row)} tone="text-foreground">
       {nameLabel}
     </LinkedText>
   );
@@ -123,100 +117,24 @@ function renderRankCell(columnId: RankColumnId, row: RankRow, index: number) {
   return rankCellRenderers[columnId](row, index);
 }
 
-function renderRankColumnHeader(
-  column: RankColumnConfig,
-  sortDirection?: SortDirection
-) {
-  if (!isRankSortColumn(column.id)) {
-    return column.label;
-  }
-
-  return (
-    <SortableColumnHeader sortDirection={sortDirection}>
-      {column.label}
-    </SortableColumnHeader>
-  );
-}
-
 export function CodeforcesRankTable({
   onSortChange,
   rows,
   sort,
   visibleColumns,
 }: CodeforcesRankTableProps) {
-  const tableStyle = useMemo<CSSProperties>(
-    () => ({ minWidth: getVisibleTableMinWidth(visibleColumns) }),
-    [visibleColumns]
-  );
-  const tableContentKey = visibleColumns.map((column) => column.id).join("|");
-
-  const handleSortChange = (descriptor: {
-    column?: Key;
-    direction?: SortDirection;
-  }) => {
-    if (!(descriptor.column && isSortColumn(descriptor.column))) {
-      return;
-    }
-
-    onSortChange({
-      column: descriptor.column,
-      direction: descriptor.direction ?? "ascending",
-    });
-  };
-
   return (
-    <Table variant="secondary">
-      <Table.ScrollContainer>
-        <Table.Content
-          aria-label="Codeforces 排行榜"
-          key={tableContentKey}
-          onSortChange={handleSortChange}
-          sortDescriptor={sort}
-          style={tableStyle}
-        >
-          <Table.Header>
-            {visibleColumns.map((column) => (
-              <Table.Column
-                allowsSorting={isRankSortColumn(column.id)}
-                className={rankTableColumnClassName}
-                id={column.id}
-                isRowHeader={column.id === "index"}
-                key={column.id}
-              >
-                {({ sortDirection }) =>
-                  renderRankColumnHeader(column, sortDirection)
-                }
-              </Table.Column>
-            ))}
-          </Table.Header>
-          <Table.Body>
-            {rows.map((row, index) => {
-              const nameLabel = getNameLabel(row);
-
-              return (
-                <Table.Row
-                  className="h-14"
-                  id={row.userId}
-                  key={row.userId}
-                  textValue={nameLabel}
-                >
-                  {visibleColumns.map((column) => (
-                    <Table.Cell
-                      className={clsx(
-                        rankTableCellClassName,
-                        column.cellClassName
-                      )}
-                      key={column.id}
-                    >
-                      {renderRankCell(column.id, row, index)}
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-              );
-            })}
-          </Table.Body>
-        </Table.Content>
-      </Table.ScrollContainer>
-    </Table>
+    <RankDataTable
+      ariaLabel="Codeforces 排行榜"
+      getRowId={(row) => row.userId}
+      getRowTextValue={getRankNameLabel}
+      isRankSortColumn={isRankSortColumn}
+      isSortColumn={isSortColumn}
+      onSortChange={onSortChange}
+      renderCell={renderRankCell}
+      rows={rows}
+      sort={sort}
+      visibleColumns={visibleColumns}
+    />
   );
 }

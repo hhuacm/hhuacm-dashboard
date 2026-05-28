@@ -1,13 +1,17 @@
 "use client";
 
 import {
+  Alert,
   Button,
+  Card,
   Checkbox,
   CheckboxGroup,
   Chip,
   Input,
   Label,
   Popover,
+  Spinner,
+  Table,
   TextField,
 } from "@heroui/react";
 import clsx from "clsx";
@@ -18,22 +22,109 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import {
+  type CSSProperties,
+  type Key,
+  type ReactNode,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   ColumnVisibilityMenu,
   type TableColumnVisibilityConfig,
+  useColumnVisibility,
 } from "@/components/column-visibility";
+import type {
+  RankBoardBaseConfig,
+  RankColumnConfig,
+  RankFilterState,
+  RankNumberFilterConfig,
+  RankSortState,
+} from "../_shared/rank-config";
+import {
+  getRankFilterOptions,
+  getVisibleTableMinWidth,
+  rankTableCellClassName,
+  rankTableColumnClassName,
+  type SortDirection,
+} from "../_shared/rank-utils";
 
 export interface RankFilterOption {
   label: string;
   value: string;
 }
 
-export interface RankNumberFilterConfig<FilterKey extends string> {
-  key: FilterKey;
-  label: string;
-  placeholder: string;
+interface RankQueryResult<Row> {
+  data?: Row[];
+  isError: boolean;
+  isFetching: boolean;
+  isPending: boolean;
+  isSuccess: boolean;
+}
+
+export interface RankBoardTableProps<
+  Row,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<string>,
+> {
+  onSortChange: (sort: RankSortState<SortColumn>) => void;
+  rows: Row[];
+  sort: RankSortState<SortColumn>;
+  visibleColumns: readonly ColumnConfig[];
+}
+
+export interface RankBoardConfig<
+  Row extends Record<string, unknown>,
+  ColumnId extends string,
+  FilterKey extends string,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<ColumnId>,
+> extends RankBoardBaseConfig<
+    Row,
+    ColumnId,
+    FilterKey,
+    SortColumn,
+    ColumnConfig
+  > {
+  renderTable: (
+    props: RankBoardTableProps<Row, SortColumn, ColumnConfig>
+  ) => ReactNode;
+}
+
+interface RankBoardProps<
+  Row extends Record<string, unknown>,
+  ColumnId extends string,
+  FilterKey extends string,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<ColumnId>,
+> {
+  config: RankBoardConfig<Row, ColumnId, FilterKey, SortColumn, ColumnConfig>;
+  query: RankQueryResult<Row>;
+}
+
+interface RankDataTableProps<
+  Row,
+  ColumnId extends string,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<ColumnId>,
+> {
+  ariaLabel: string;
+  getRowId: (row: Row) => string;
+  getRowTextValue: (row: Row) => string;
+  isRankSortColumn: (columnId: ColumnId) => columnId is ColumnId & SortColumn;
+  isSortColumn: (key: Key) => key is SortColumn;
+  onSortChange: (sort: {
+    column: SortColumn;
+    direction: SortDirection;
+  }) => void;
+  renderCell: (columnId: ColumnId, row: Row, index: number) => ReactNode;
+  rows: Row[];
+  sort: {
+    column: SortColumn;
+    direction: SortDirection;
+  };
+  visibleColumns: readonly ColumnConfig[];
 }
 
 interface EmptyCellProps {
@@ -161,6 +252,298 @@ export function StatusChip<Status extends string>({
     <Chip className={config.className} size="sm" variant="soft">
       {config.label}
     </Chip>
+  );
+}
+
+const hasActiveRankFilters = <FilterKey extends string>(
+  filters: RankFilterState<FilterKey>,
+  numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[]
+) =>
+  filters.grades.length > 0 ||
+  filters.majors.length > 0 ||
+  numberFilterConfigs.some(({ key }) => filters.minimums[key].trim());
+
+const getActiveNumberFilterCount = <FilterKey extends string>(
+  minimums: Record<FilterKey, string>,
+  numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[]
+) =>
+  numberFilterConfigs.filter(({ key }) => minimums[key].trim().length > 0)
+    .length;
+
+export function RankDataTable<
+  Row,
+  ColumnId extends string,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<ColumnId>,
+>({
+  ariaLabel,
+  getRowId,
+  getRowTextValue,
+  isRankSortColumn,
+  isSortColumn,
+  onSortChange,
+  renderCell,
+  rows,
+  sort,
+  visibleColumns,
+}: RankDataTableProps<Row, ColumnId, SortColumn, ColumnConfig>) {
+  const tableStyle = useMemo<CSSProperties>(
+    () => ({ minWidth: getVisibleTableMinWidth(visibleColumns) }),
+    [visibleColumns]
+  );
+  const tableContentKey = visibleColumns.map((column) => column.id).join("|");
+
+  const handleSortChange = (descriptor: {
+    column?: Key;
+    direction?: SortDirection;
+  }) => {
+    if (!(descriptor.column && isSortColumn(descriptor.column))) {
+      return;
+    }
+
+    onSortChange({
+      column: descriptor.column,
+      direction: descriptor.direction ?? "ascending",
+    });
+  };
+
+  return (
+    <Table variant="secondary">
+      <Table.ScrollContainer>
+        <Table.Content
+          aria-label={ariaLabel}
+          key={tableContentKey}
+          onSortChange={handleSortChange}
+          sortDescriptor={sort}
+          style={tableStyle}
+        >
+          <Table.Header>
+            {visibleColumns.map((column) => (
+              <Table.Column
+                allowsSorting={isRankSortColumn(column.id)}
+                className={rankTableColumnClassName}
+                id={column.id}
+                isRowHeader={column.id === "index"}
+                key={column.id}
+              >
+                {({ sortDirection }) =>
+                  isRankSortColumn(column.id) ? (
+                    <SortableColumnHeader sortDirection={sortDirection}>
+                      {column.label}
+                    </SortableColumnHeader>
+                  ) : (
+                    column.label
+                  )
+                }
+              </Table.Column>
+            ))}
+          </Table.Header>
+          <Table.Body>
+            {rows.map((row, index) => {
+              const rowId = getRowId(row);
+
+              return (
+                <Table.Row
+                  className="h-14"
+                  id={rowId}
+                  key={rowId}
+                  textValue={getRowTextValue(row)}
+                >
+                  {visibleColumns.map((column) => (
+                    <Table.Cell
+                      className={clsx(
+                        rankTableCellClassName,
+                        column.cellClassName
+                      )}
+                      key={column.id}
+                    >
+                      {renderCell(column.id, row, index)}
+                    </Table.Cell>
+                  ))}
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+        </Table.Content>
+      </Table.ScrollContainer>
+    </Table>
+  );
+}
+
+export function RankBoard<
+  Row extends Record<string, unknown>,
+  ColumnId extends string,
+  FilterKey extends string,
+  SortColumn extends string,
+  ColumnConfig extends RankColumnConfig<ColumnId>,
+>({
+  config,
+  query,
+}: RankBoardProps<Row, ColumnId, FilterKey, SortColumn, ColumnConfig>) {
+  const {
+    columns,
+    defaultSort,
+    emptyFilters,
+    filterRows,
+    filterSearchThreshold,
+    numberFilterButtonText,
+    numberFilterConfigs,
+    numberFilterInputMode,
+    renderTable,
+    sortRows,
+    storageKey,
+  } = config;
+  const [sort, setSort] = useState(defaultSort);
+  const [filters, setFilters] = useState(emptyFilters);
+  const visibleColumnControls = useColumnVisibility({
+    columns,
+    storageKey,
+  });
+  const rankRows = query.data ?? [];
+  const gradeOptions = useMemo(
+    () => getRankFilterOptions(rankRows, "grade"),
+    [rankRows]
+  );
+  const majorOptions = useMemo(
+    () => getRankFilterOptions(rankRows, "major"),
+    [rankRows]
+  );
+  const filteredRows = useMemo(
+    () => filterRows(rankRows, filters),
+    [filterRows, filters, rankRows]
+  );
+  const rows = useMemo(
+    () => sortRows(filteredRows, sort),
+    [filteredRows, sort, sortRows]
+  );
+  const total = rankRows.length;
+  const filtersActive = hasActiveRankFilters(filters, numberFilterConfigs);
+  const activeNumberFilterCount = getActiveNumberFilterCount(
+    filters.minimums,
+    numberFilterConfigs
+  );
+
+  const handleFilterChange = (key: "grades" | "majors", values: string[]) => {
+    setFilters((currentFilters) =>
+      key === "grades"
+        ? {
+            ...currentFilters,
+            grades: values,
+          }
+        : {
+            ...currentFilters,
+            majors: values,
+          }
+    );
+  };
+
+  const handleMinimumFilterChange = (key: FilterKey, value: string) => {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      minimums: {
+        ...currentFilters.minimums,
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters(emptyFilters);
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Card.Title className="mt-1">
+              {query.isSuccess && filtersActive
+                ? `${rows.length} / ${total} 位成员`
+                : null}
+              {query.isSuccess && !filtersActive ? `${total} 位成员` : null}
+              {query.isSuccess ? null : "成员数据"}
+            </Card.Title>
+          </div>
+          <div className="flex items-center gap-3 text-muted text-sm">
+            {query.isFetching ? (
+              <span className="inline-flex items-center gap-2">
+                <Spinner color="current" size="sm" />
+                读取中
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </Card.Header>
+      <Card.Content className="grid gap-4">
+        {query.isPending ? (
+          <Alert>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>正在读取排行榜。</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+
+        {query.isError ? (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Title>排行榜加载失败</Alert.Title>
+              <Alert.Description>请刷新页面后重试。</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+
+        {query.isSuccess && total === 0 ? (
+          <Alert>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>暂无用户。</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+
+        {query.isSuccess && total > 0 ? (
+          <>
+            <RankToolbar
+              columns={columns}
+              filters={filters}
+              gradeOptions={gradeOptions}
+              hasActiveFilters={filtersActive}
+              majorOptions={majorOptions}
+              numberFilterActiveCount={activeNumberFilterCount}
+              numberFilterButtonText={numberFilterButtonText}
+              numberFilterConfigs={numberFilterConfigs}
+              numberFilterInputMode={numberFilterInputMode}
+              onClearFilters={handleClearFilters}
+              onFilterChange={handleFilterChange}
+              onMinimumFilterChange={handleMinimumFilterChange}
+              onResetColumns={visibleColumnControls.resetColumns}
+              onVisibleColumnChange={visibleColumnControls.setColumnVisible}
+              searchThreshold={filterSearchThreshold}
+              visibleColumnIds={visibleColumnControls.visibleColumnIds}
+            />
+            {rows.length > 0 ? (
+              renderTable({
+                onSortChange: setSort,
+                rows,
+                sort,
+                visibleColumns: visibleColumnControls.visibleColumns,
+              })
+            ) : (
+              <Alert>
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>
+                    没有匹配筛选条件的成员。
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+          </>
+        ) : null}
+      </Card.Content>
+    </Card>
   );
 }
 

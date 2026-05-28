@@ -1,11 +1,11 @@
 import type { Database } from "@hhuacm-dashboard/db";
+import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account-stats";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
-import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { desc, eq } from "drizzle-orm";
-import { getLuoguRankRefreshActivity } from "../../refresh/activity";
-import { luoguAccountStatsJob } from "../../refresh/jobs/luogu-account-stats";
-import { isLuoguStatsCacheFresh } from "../../refresh/policy";
+import { getAtcoderRankRefreshActivity } from "../../refresh/activity";
+import { atcoderAccountStatsJob } from "../../refresh/jobs/atcoder-account-stats";
+import { isAtcoderStatsCacheFresh } from "../../refresh/policy";
 import { getRefreshSyncStatus } from "../../refresh/sync-status";
 import {
   ensureRankStatsRefreshRequests,
@@ -13,34 +13,32 @@ import {
   toIsoString,
 } from "./shared";
 
-export const listLuoguRankRows = async (db: Database) => {
+export const listAtcoderRankRows = async (db: Database) => {
   const cachedRows = await db
     .select({
-      acceptedProblemCount: luoguAccountStats.acceptedProblemCount,
-      acceptedWeightedScore: luoguAccountStats.acceptedWeightedScore,
       accountId: userOjAccount.id,
-      averageAcceptedDifficulty: luoguAccountStats.averageAcceptedDifficulty,
       externalId: userOjAccount.externalId,
-      fetchedAt: luoguAccountStats.fetchedAt,
+      fetchedAt: atcoderAccountStats.fetchedAt,
       grade: currentMember.grade,
       handle: userOjAccount.handle,
-      lastError: luoguAccountStats.lastError,
+      lastError: atcoderAccountStats.lastError,
       major: currentMember.major,
+      rating: atcoderAccountStats.rating,
       realName: currentMember.realName,
+      recentPerformanceAverage: atcoderAccountStats.recentPerformanceAverage,
       userId: currentMember.userId,
       username: currentMember.username,
     })
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
-      luoguAccountStats,
-      eq(luoguAccountStats.accountId, userOjAccount.id)
+      atcoderAccountStats,
+      eq(atcoderAccountStats.accountId, userOjAccount.id)
     )
-    .where(eq(userOjAccount.platform, "luogu"))
+    .where(eq(userOjAccount.platform, "atcoder"))
     .orderBy(
-      desc(luoguAccountStats.acceptedWeightedScore),
-      desc(luoguAccountStats.acceptedProblemCount),
-      desc(luoguAccountStats.averageAcceptedDifficulty),
+      desc(atcoderAccountStats.rating),
+      desc(atcoderAccountStats.recentPerformanceAverage),
       ...rankUserNameOrder
     );
 
@@ -48,25 +46,23 @@ export const listLuoguRankRows = async (db: Database) => {
   const now = new Date();
 
   await ensureRankStatsRefreshRequests({
-    isFresh: isLuoguStatsCacheFresh,
+    isFresh: isAtcoderStatsCacheFresh,
     now,
     requestRefresh: async (accountId) => {
-      await luoguAccountStatsJob.enqueue(db, accountId);
+      await atcoderAccountStatsJob.enqueue(db, accountId);
     },
     rows: cachedRows,
   });
 
-  const refreshActivity = await getLuoguRankRefreshActivity(db, accountIds);
+  const refreshActivity = await getAtcoderRankRefreshActivity(db, accountIds);
 
   return cachedRows.map((row) => ({
-    grade: row.grade,
-    luogu: {
-      acceptedProblemCount: row.acceptedProblemCount,
-      acceptedWeightedScore: row.acceptedWeightedScore,
-      averageAcceptedDifficulty: row.averageAcceptedDifficulty,
+    atcoder: {
       externalId: row.externalId,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
+      rating: row.rating,
+      recentPerformanceAverage: row.recentPerformanceAverage,
       syncStatus: getRefreshSyncStatus(
         refreshActivity.toStatusInput({
           accountId: row.accountId,
@@ -75,6 +71,7 @@ export const listLuoguRankRows = async (db: Database) => {
         })
       ),
     },
+    grade: row.grade,
     major: row.major,
     realName: row.realName,
     userId: row.userId,

@@ -35,12 +35,30 @@ export default function RankPage() {
           </Button>
           <Button
             className="justify-start"
+            onPress={() => router.push("/rank/atcoder" as Route)}
+            size="lg"
+            variant="outline"
+          >
+            <Trophy className="size-4" />
+            AtCoder 排行榜
+          </Button>
+          <Button
+            className="justify-start"
             onPress={() => router.push("/rank/luogu" as Route)}
             size="lg"
             variant="outline"
           >
             <Trophy className="size-4" />
             洛谷排行榜
+          </Button>
+          <Button
+            className="justify-start"
+            onPress={() => router.push("/rank/nowcoder" as Route)}
+            size="lg"
+            variant="outline"
+          >
+            <Trophy className="size-4" />
+            牛客排行榜
           </Button>
         </Card.Content>
       </Card>

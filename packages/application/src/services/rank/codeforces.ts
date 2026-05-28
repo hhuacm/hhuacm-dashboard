@@ -2,33 +2,16 @@ import type { Database } from "@hhuacm-dashboard/db";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { asc, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getCodeforcesRankRefreshActivity } from "../../refresh/activity";
-import { enqueueRefreshIfDue } from "../../refresh/ensure";
 import { codeforcesAccountStatsJob } from "../../refresh/jobs/codeforces-account-stats";
 import { isCodeforcesStatsCacheFresh } from "../../refresh/policy";
 import { getRefreshSyncStatus } from "../../refresh/sync-status";
-
-const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
-
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
-const ensureCodeforcesRankStatsRefreshRequests = async (
-  db: Database,
-  rows: { accountId: string; fetchedAt: Date | null }[],
-  now: Date
-) => {
-  for (const row of rows) {
-    await enqueueRefreshIfDue({
-      fetchedAt: row.fetchedAt,
-      isFresh: isCodeforcesStatsCacheFresh,
-      now,
-      requestRefresh: async () => {
-        await codeforcesAccountStatsJob.enqueue(db, row.accountId);
-      },
-    });
-  }
-};
+import {
+  ensureRankStatsRefreshRequests,
+  rankUserNameOrder,
+  toIsoString,
+} from "./shared";
 
 export const listCodeforcesRankRows = async (db: Database) => {
   const cachedRows = await db
@@ -57,14 +40,19 @@ export const listCodeforcesRankRows = async (db: Database) => {
       eq(codeforcesAccountStats.accountId, userOjAccount.id)
     )
     .where(eq(userOjAccount.platform, "codeforces"))
-    .orderBy(asc(userNameLabelSortExpression), asc(currentMember.userId));
+    .orderBy(...rankUserNameOrder);
 
-  const accountIds = cachedRows.flatMap((row) =>
-    row.accountId ? [row.accountId] : []
-  );
+  const accountIds = cachedRows.map((row) => row.accountId);
   const now = new Date();
 
-  await ensureCodeforcesRankStatsRefreshRequests(db, cachedRows, now);
+  await ensureRankStatsRefreshRequests({
+    isFresh: isCodeforcesStatsCacheFresh,
+    now,
+    requestRefresh: async (accountId) => {
+      await codeforcesAccountStatsJob.enqueue(db, accountId);
+    },
+    rows: cachedRows,
+  });
 
   const refreshActivity = await getCodeforcesRankRefreshActivity(
     db,
