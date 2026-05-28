@@ -45,6 +45,40 @@ const buildNowcoderRatingBasicUrl = (uid: number) => {
   return url;
 };
 
+const buildNowcoderPracticeCodingUrl = (uid: number) => {
+  const url = new URL(
+    `/acm/contest/profile/${encodeURIComponent(uid)}/practice-coding`,
+    nowcoderBaseUrl
+  );
+  url.searchParams.set("pageSize", "1");
+
+  return url;
+};
+
+const parseCountText = (value: string) => {
+  const normalizedValue = value.replaceAll(",", "");
+  const count = Number(normalizedValue);
+
+  return Number.isSafeInteger(count) && count >= 0 ? count : null;
+};
+
+const parseAcceptedPracticeProblemCount = (html: string) => {
+  const statsItemPattern =
+    /<div\b[^>]*class="[^"]*\bmy-state-item\b[^"]*"[^>]*>\s*<div\b[^>]*class="[^"]*\bstate-num\b[^"]*"[^>]*>\s*([0-9,]+)\s*<\/div>\s*<span>\s*([^<]+?)\s*<\/span>/g;
+
+  for (const match of html.matchAll(statsItemPattern)) {
+    const [, countText, labelText] = match;
+
+    if (labelText?.trim() !== "题已通过") {
+      continue;
+    }
+
+    return countText === undefined ? null : parseCountText(countText);
+  }
+
+  return null;
+};
+
 const ratingBasic = async (params: {
   uid: number;
 }): Promise<NowcoderRatingBasic> => {
@@ -88,6 +122,29 @@ const ratingBasic = async (params: {
   return rating.data;
 };
 
+const acceptedPracticeProblemCount = async (params: {
+  uid: number;
+}): Promise<null | number> => {
+  const response = await requestExternalResource({
+    label: `Nowcoder practice-coding ${params.uid}`,
+    maxAttempts: requestMaxAttempts,
+    request: async (signal) =>
+      await fetch(buildNowcoderPracticeCodingUrl(params.uid), { signal }),
+    retryDelayMs: requestRetryDelayMs,
+    retryableStatus: isCommonRetryableHttpStatus,
+    timeoutMs: requestTimeoutMs,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Nowcoder practice-coding ${params.uid} HTTP ${response.status}`
+    );
+  }
+
+  return parseAcceptedPracticeProblemCount(await response.text());
+};
+
 export const nowcoderSource = {
+  acceptedPracticeProblemCount,
   ratingBasic,
 };

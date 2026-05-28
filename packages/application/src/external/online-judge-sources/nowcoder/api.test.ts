@@ -31,10 +31,44 @@ const createOkEnvelope = (data: unknown = createRatingBasicData()) => ({
   msg: "OK",
 });
 
+const createPracticeCodingHtml = (acceptedProblemCount: string | number) => `
+  <section>
+    <div class="my-state-main">
+      <div class="my-state-item" style="width:310px;">
+        <div class="state-num">329</div>
+        <span>题已挑战</span>
+      </div>
+      <div class="my-state-item" style="width:310px;">
+        <div class="state-num">${acceptedProblemCount}</div>
+        <span>题已通过</span>
+      </div>
+      <div class="my-state-item" style="width:310px;">
+        <div class="state-num">1201</div>
+        <span>次提交</span>
+      </div>
+    </div>
+    <table>
+      <tbody>
+        <tr><td>答案错误</td></tr>
+        <tr><td>答案正确</td></tr>
+      </tbody>
+    </table>
+  </section>
+`;
+
 const mockJsonResponse = (payload: unknown, status = 200) => {
   globalThis.fetch = Object.assign(
     async () => Response.json(payload, { status }),
     { preconnect: originalFetch.preconnect }
+  );
+};
+
+const mockTextResponse = (payload: string, status = 200) => {
+  globalThis.fetch = Object.assign(
+    async () => new Response(payload, { status }),
+    {
+      preconnect: originalFetch.preconnect,
+    }
   );
 };
 
@@ -178,5 +212,70 @@ describe("nowcoderSource", () => {
     await expect(nowcoderSource.ratingBasic({ uid: 1 })).rejects.toThrow(
       "Nowcoder rating-basic 1 data is invalid"
     );
+  });
+
+  it("loads accepted practice problem count from profile stats", async () => {
+    mockTextResponse(createPracticeCodingHtml(312));
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).resolves.toBe(312);
+  });
+
+  it("builds practice-coding URL with a small page size", async () => {
+    const urls = mockFetchResponses([
+      new Response(createPracticeCodingHtml(312)),
+    ]);
+
+    await nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 });
+
+    expect(urls).toEqual([
+      "https://ac.nowcoder.com/acm/contest/profile/660255087/practice-coding?pageSize=1",
+    ]);
+  });
+
+  it("allows grouped accepted practice problem counts", async () => {
+    mockTextResponse(createPracticeCodingHtml("1,234"));
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).resolves.toBe(1234);
+  });
+
+  it("returns null when practice-coding stats are missing", async () => {
+    mockTextResponse("<html><title>牛客竞赛</title></html>");
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 999_999_999 })
+    ).resolves.toBeNull();
+  });
+
+  it("returns null when accepted practice problem count is invalid", async () => {
+    mockTextResponse(createPracticeCodingHtml("暂无"));
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).resolves.toBeNull();
+  });
+
+  it("retries retryable practice-coding HTTP status responses", async () => {
+    const urls = mockFetchResponses([
+      new Response("", { status: 502 }),
+      new Response(createPracticeCodingHtml(312)),
+    ]);
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).resolves.toBe(312);
+    expect(urls).toHaveLength(2);
+  });
+
+  it("does not retry non-retryable practice-coding HTTP status responses", async () => {
+    const urls = mockFetchResponses([new Response("", { status: 404 })]);
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).rejects.toThrow("Nowcoder practice-coding 660255087 HTTP 404");
+    expect(urls).toHaveLength(1);
   });
 });
