@@ -8,10 +8,14 @@ import { buildOjProfileUrl, getOjPlatformConfig } from "@/utils/oj-platforms";
 import {
   formatDateTime,
   formatNumber,
+  getAtcoderStatusClassName,
+  getAtcoderStatusText,
   getCodeforcesStatusClassName,
   getCodeforcesStatusText,
   getLuoguStatusClassName,
   getLuoguStatusText,
+  getNowcoderStatusClassName,
+  getNowcoderStatusText,
   luoguDifficultyClassNames,
   type PublicOjAccount,
 } from "../_model/public-profile-view";
@@ -106,6 +110,42 @@ function CodeforcesStatsContent({
   );
 }
 
+function AtcoderStatsContent({
+  atcoder,
+}: {
+  atcoder: PublicOjAccount["atcoder"] | undefined;
+}) {
+  return (
+    <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+      <Metric
+        label="当前 Rating"
+        value={formatNumber(atcoder?.rating ?? null)}
+      />
+      <Metric
+        label="近三场 Performance 均值"
+        value={formatNumber(atcoder?.recentPerformanceAverage ?? null)}
+      />
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+        <dt className="text-muted text-xs">数据更新</dt>
+        <dd className="mt-1 font-medium text-foreground">
+          {formatDateTime(atcoder?.fetchedAt ?? null)}
+        </dd>
+      </div>
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+        <dt className="text-muted text-xs">刷新状态</dt>
+        <dd
+          className={clsx(
+            "wrap-break-word mt-1 font-medium",
+            getAtcoderStatusClassName(atcoder)
+          )}
+        >
+          {getAtcoderStatusText(atcoder)}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function LuoguDifficultyRow({
   count,
   difficulty,
@@ -187,6 +227,171 @@ function LuoguStatsContent({
   );
 }
 
+function NowcoderStatsContent({
+  nowcoder,
+}: {
+  nowcoder: PublicOjAccount["nowcoder"] | undefined;
+}) {
+  return (
+    <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+      <Metric label="Rating" value={formatNumber(nowcoder?.rating ?? null)} />
+      <Metric
+        label="AC 题数"
+        value={formatNumber(nowcoder?.acceptedProblemCount ?? null)}
+      />
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+        <dt className="text-muted text-xs">数据更新</dt>
+        <dd className="mt-1 font-medium text-foreground">
+          {formatDateTime(nowcoder?.fetchedAt ?? null)}
+        </dd>
+      </div>
+      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+        <dt className="text-muted text-xs">刷新状态</dt>
+        <dd
+          className={clsx(
+            "wrap-break-word mt-1 font-medium",
+            getNowcoderStatusClassName(nowcoder)
+          )}
+        >
+          {getNowcoderStatusText(nowcoder)}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
+  if (account.platform === "atcoder") {
+    return (
+      <StatusLine
+        className={getAtcoderStatusClassName(account.atcoder)}
+        isFailed={account.atcoder?.syncStatus === "failed"}
+        text={getAtcoderStatusText(account.atcoder)}
+      />
+    );
+  }
+
+  if (account.platform === "codeforces") {
+    return (
+      <StatusLine
+        className={getCodeforcesStatusClassName(account.codeforces)}
+        isFailed={account.codeforces?.syncStatus === "failed"}
+        text={getCodeforcesStatusText(account.codeforces)}
+      />
+    );
+  }
+
+  if (account.platform === "luogu") {
+    return (
+      <StatusLine
+        className={getLuoguStatusClassName(account.luogu)}
+        isFailed={account.luogu?.syncStatus === "failed"}
+        text={getLuoguStatusText(account.luogu)}
+      />
+    );
+  }
+
+  if (account.platform === "nowcoder") {
+    return (
+      <StatusLine
+        className={getNowcoderStatusClassName(account.nowcoder)}
+        isFailed={account.nowcoder?.syncStatus === "failed"}
+        text={getNowcoderStatusText(account.nowcoder)}
+      />
+    );
+  }
+
+  return null;
+}
+
+function StatusLine({
+  className,
+  isFailed,
+  text,
+}: {
+  className: string;
+  isFailed: boolean;
+  text: string;
+}) {
+  return (
+    <p
+      className={clsx("mt-1 inline-flex items-center gap-1 text-sm", className)}
+    >
+      {isFailed ? <CircleAlert className="size-3.5" /> : null}
+      {text}
+    </p>
+  );
+}
+
+function OjAccountStatsContent({ account }: { account: PublicOjAccount }) {
+  if (account.platform === "atcoder") {
+    return <AtcoderStatsContent atcoder={account.atcoder} />;
+  }
+
+  if (account.platform === "codeforces") {
+    return <CodeforcesStatsContent codeforces={account.codeforces} />;
+  }
+
+  if (account.platform === "luogu") {
+    return <LuoguStatsContent luogu={account.luogu} />;
+  }
+
+  if (account.platform === "nowcoder") {
+    return <NowcoderStatsContent nowcoder={account.nowcoder} />;
+  }
+
+  return null;
+}
+
+function OjAccountIdentity({
+  account,
+  isStatsDisabled,
+  profileUrl,
+}: {
+  account: PublicOjAccount;
+  isStatsDisabled: boolean;
+  profileUrl: string;
+}) {
+  const isCodeforces = account.platform === "codeforces";
+  const codeforces = account.codeforces;
+  const handleClassName = clsx(
+    "inline-flex min-w-0 max-w-full items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline",
+    isCodeforces && !isStatsDisabled
+      ? getCodeforcesRatingClassName(codeforces?.rating)
+      : "text-accent"
+  );
+  const handleContent = (
+    <>
+      <span>{account.handle}</span>
+      <ExternalLink className="size-4 shrink-0" />
+    </>
+  );
+
+  return (
+    <span className="grid min-w-0 justify-items-start gap-0.5 sm:justify-items-end sm:text-right">
+      {profileUrl ? (
+        <a
+          className={handleClassName}
+          href={profileUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {handleContent}
+        </a>
+      ) : (
+        <span className="max-w-full break-all font-medium text-foreground">
+          {account.handle}
+        </span>
+      )}
+      {account.externalId === account.handle ? null : (
+        <span className="max-w-full break-all font-mono text-muted text-xs">
+          ID: {account.externalId}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function OjAccountCard({
   account,
   isStatsDisabled,
@@ -195,10 +400,6 @@ export function OjAccountCard({
   isStatsDisabled: boolean;
 }) {
   const platform = getOjPlatformConfig(account.platform);
-  const isCodeforces = account.platform === "codeforces";
-  const isLuogu = account.platform === "luogu";
-  const codeforces = account.codeforces;
-  const luogu = account.luogu;
   const profileUrl = buildOjProfileUrl(account.platform, account.externalId);
 
   return (
@@ -216,67 +417,18 @@ export function OjAccountCard({
           </div>
           <div className="min-w-0">
             <p className="font-medium text-foreground">{platform.label}</p>
-            {isCodeforces && !isStatsDisabled ? (
-              <p
-                className={clsx(
-                  "mt-1 inline-flex items-center gap-1 text-sm",
-                  getCodeforcesStatusClassName(codeforces)
-                )}
-              >
-                {codeforces?.syncStatus === "failed" ? (
-                  <CircleAlert className="size-3.5" />
-                ) : null}
-                {getCodeforcesStatusText(codeforces)}
-              </p>
-            ) : null}
-            {isLuogu && !isStatsDisabled ? (
-              <p
-                className={clsx(
-                  "mt-1 inline-flex items-center gap-1 text-sm",
-                  getLuoguStatusClassName(luogu)
-                )}
-              >
-                {luogu?.syncStatus === "failed" ? (
-                  <CircleAlert className="size-3.5" />
-                ) : null}
-                {getLuoguStatusText(luogu)}
-              </p>
-            ) : null}
+            {isStatsDisabled ? null : <OjAccountStatusLine account={account} />}
           </div>
         </div>
 
-        {profileUrl ? (
-          <a
-            className={clsx(
-              "inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline",
-              isCodeforces && !isStatsDisabled
-                ? getCodeforcesRatingClassName(codeforces?.rating)
-                : "text-accent"
-            )}
-            href={profileUrl}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span>{account.handle}</span>
-            <ExternalLink className="size-4 shrink-0" />
-          </a>
-        ) : (
-          <span className="break-all font-medium text-foreground">
-            {account.handle}
-          </span>
-        )}
-        {account.externalId === account.handle ? null : (
-          <span className="break-all font-mono text-muted text-xs">
-            ID: {account.externalId}
-          </span>
-        )}
+        <OjAccountIdentity
+          account={account}
+          isStatsDisabled={isStatsDisabled}
+          profileUrl={profileUrl}
+        />
       </div>
 
-      {isCodeforces && !isStatsDisabled ? (
-        <CodeforcesStatsContent codeforces={codeforces} />
-      ) : null}
-
-      {isLuogu && !isStatsDisabled ? <LuoguStatsContent luogu={luogu} /> : null}
+      {isStatsDisabled ? null : <OjAccountStatsContent account={account} />}
     </div>
   );
 }

@@ -6,6 +6,12 @@ import {
 } from "@hhuacm-dashboard/domain";
 
 export interface PublicOjAccount {
+  atcoder?: null | {
+    fetchedAt: null | string;
+    rating: null | number;
+    recentPerformanceAverage: null | number;
+    syncStatus: RefreshSyncStatus;
+  };
   codeforces?: null | {
     acceptedProblemCount: null | number;
     acceptedProblemCountInMonth: null | number;
@@ -27,6 +33,12 @@ export interface PublicOjAccount {
       label: string;
     }[];
     fetchedAt: null | string;
+    syncStatus: RefreshSyncStatus;
+  };
+  nowcoder?: null | {
+    acceptedProblemCount: null | number;
+    fetchedAt: null | string;
+    rating: null | number;
     syncStatus: RefreshSyncStatus;
   };
   platform: OjPlatform;
@@ -164,6 +176,34 @@ export function getCodeforcesStatusClassName(
   return "text-muted";
 }
 
+export function getAtcoderStatusText(
+  atcoder: PublicOjAccount["atcoder"] | undefined
+) {
+  if (!atcoder || atcoder.syncStatus === "empty") {
+    return "等待数据";
+  }
+
+  if (atcoder.syncStatus === "refreshing") {
+    return atcoder.fetchedAt ? "后台刷新中" : "等待数据";
+  }
+
+  if (atcoder.syncStatus === "failed") {
+    return atcoder.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
+  }
+
+  return "数据已更新";
+}
+
+export function getAtcoderStatusClassName(
+  atcoder: PublicOjAccount["atcoder"] | undefined
+) {
+  if (atcoder?.syncStatus === "failed") {
+    return "text-danger";
+  }
+
+  return atcoder?.syncStatus === "ready" ? "text-muted" : "text-accent";
+}
+
 export function getLuoguStatusText(
   luogu: PublicOjAccount["luogu"] | undefined
 ) {
@@ -190,4 +230,32 @@ export function getLuoguStatusClassName(
   }
 
   return luogu?.syncStatus === "ready" ? "text-muted" : "text-accent";
+}
+
+export function getNowcoderStatusText(
+  nowcoder: PublicOjAccount["nowcoder"] | undefined
+) {
+  if (!nowcoder || nowcoder.syncStatus === "empty") {
+    return "等待数据";
+  }
+
+  if (nowcoder.syncStatus === "refreshing") {
+    return nowcoder.fetchedAt ? "后台刷新中" : "等待数据";
+  }
+
+  if (nowcoder.syncStatus === "failed") {
+    return nowcoder.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
+  }
+
+  return "数据已更新";
+}
+
+export function getNowcoderStatusClassName(
+  nowcoder: PublicOjAccount["nowcoder"] | undefined
+) {
+  if (nowcoder?.syncStatus === "failed") {
+    return "text-danger";
+  }
+
+  return nowcoder?.syncStatus === "ready" ? "text-muted" : "text-accent";
 }

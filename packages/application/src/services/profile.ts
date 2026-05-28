@@ -9,10 +9,14 @@ import {
 } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { ApplicationError } from "../errors";
+import type { PublicAtcoderStats } from "./atcoder/profile-stats";
+import { getAtcoderStatsForProfile } from "./atcoder/profile-stats";
 import { getCodeforcesStatsForProfile } from "./codeforces/stats-cache";
 import type { PublicCodeforcesStats } from "./codeforces/types";
 import type { PublicLuoguStats } from "./luogu/profile-stats";
 import { getLuoguStatsForProfile } from "./luogu/profile-stats";
+import type { PublicNowcoderStats } from "./nowcoder/profile-stats";
+import { getNowcoderStatsForProfile } from "./nowcoder/profile-stats";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
@@ -38,10 +42,12 @@ const userFields = {
 } as const;
 
 export interface PublicOjAccount {
+  atcoder?: PublicAtcoderStats | null;
   codeforces?: PublicCodeforcesStats | null;
   externalId: string;
   handle: string;
   luogu?: PublicLuoguStats | null;
+  nowcoder?: PublicNowcoderStats | null;
   platform: OjPlatform;
 }
 
@@ -134,8 +140,16 @@ const attachPublicOjAccountData = async (
       );
     }
 
+    if (account.platform === "atcoder") {
+      publicAccount.atcoder = await getAtcoderStatsForProfile(db, account);
+    }
+
     if (account.platform === "luogu") {
       publicAccount.luogu = await getLuoguStatsForProfile(db, account);
+    }
+
+    if (account.platform === "nowcoder") {
+      publicAccount.nowcoder = await getNowcoderStatsForProfile(db, account);
     }
 
     publicAccounts.push(publicAccount);

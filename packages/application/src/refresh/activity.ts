@@ -1,8 +1,10 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, inArray } from "drizzle-orm";
+import { atcoderAccountStatsJob } from "./jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
+import { nowcoderAccountStatsJob } from "./jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
 import type { RefreshRequestKind } from "./request-store";
 
@@ -73,12 +75,30 @@ export const getCodeforcesAccountStatsRefreshActivity = (
     targetId: accountId,
   });
 
+export const getAtcoderAccountStatsRefreshActivity = (
+  db: Database,
+  accountId: string
+) =>
+  getRefreshActivityForTarget(db, {
+    kind: atcoderAccountStatsJob.kind,
+    targetId: accountId,
+  });
+
 export const getLuoguAccountStatsRefreshActivity = (
   db: Database,
   accountId: string
 ) =>
   getRefreshActivityForTarget(db, {
     kind: luoguAccountStatsJob.kind,
+    targetId: accountId,
+  });
+
+export const getNowcoderAccountStatsRefreshActivity = (
+  db: Database,
+  accountId: string
+) =>
+  getRefreshActivityForTarget(db, {
+    kind: nowcoderAccountStatsJob.kind,
     targetId: accountId,
   });
 

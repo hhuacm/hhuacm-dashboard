@@ -1,15 +1,21 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import {
+  getAtcoderAccountStatsRefreshActivity,
   getCodeforcesAccountStatsRefreshActivity,
   getLuoguAccountStatsRefreshActivity,
+  getNowcoderAccountStatsRefreshActivity,
   getUserAwardsFromLuoguRefreshActivity,
 } from "./activity";
+import { atcoderAccountStatsJob } from "./jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
+import { nowcoderAccountStatsJob } from "./jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
 import {
+  isAtcoderStatsCacheFresh,
   isCodeforcesStatsCacheFresh,
   isLuoguStatsCacheFresh,
+  isNowcoderStatsCacheFresh,
   isUserAwardsCacheFresh,
 } from "./policy";
 
@@ -97,6 +103,26 @@ export const ensureCodeforcesAccountStatsRefresh = async (
     targetId: input.accountId,
   });
 
+export const ensureAtcoderAccountStatsRefresh = async (
+  db: Database,
+  input: {
+    accountId: string;
+    fetchedAt: Date | null;
+    now: Date;
+  }
+) =>
+  ensureRefreshRequest({
+    fetchedAt: input.fetchedAt,
+    getActivity: async (accountId) =>
+      await getAtcoderAccountStatsRefreshActivity(db, accountId),
+    isFresh: isAtcoderStatsCacheFresh,
+    now: input.now,
+    requestRefresh: async (accountId) => {
+      await atcoderAccountStatsJob.enqueue(db, accountId);
+    },
+    targetId: input.accountId,
+  });
+
 export const ensureLuoguAccountStatsRefresh = async (
   db: Database,
   input: {
@@ -113,6 +139,26 @@ export const ensureLuoguAccountStatsRefresh = async (
     now: input.now,
     requestRefresh: async (accountId) => {
       await luoguAccountStatsJob.enqueue(db, accountId);
+    },
+    targetId: input.accountId,
+  });
+
+export const ensureNowcoderAccountStatsRefresh = async (
+  db: Database,
+  input: {
+    accountId: string;
+    fetchedAt: Date | null;
+    now: Date;
+  }
+) =>
+  ensureRefreshRequest({
+    fetchedAt: input.fetchedAt,
+    getActivity: async (accountId) =>
+      await getNowcoderAccountStatsRefreshActivity(db, accountId),
+    isFresh: isNowcoderStatsCacheFresh,
+    now: input.now,
+    requestRefresh: async (accountId) => {
+      await nowcoderAccountStatsJob.enqueue(db, accountId);
     },
     targetId: input.accountId,
   });
