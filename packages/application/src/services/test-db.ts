@@ -1,6 +1,7 @@
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Database } from "@hhuacm-dashboard/db";
+import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account-stats";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
@@ -8,6 +9,7 @@ import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
+import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import {
   problemSet,
@@ -114,6 +116,16 @@ create table codeforces_account_stats (
 )
 `,
   `
+create table atcoder_account_stats (
+  account_id text primary key not null,
+  rating integer,
+  recent_performance_average integer,
+  fetched_at integer,
+  last_attempted_at integer not null,
+  last_error text
+)
+`,
+  `
 create table luogu_account_stats (
   account_id text primary key not null,
   accepted_problem_count integer,
@@ -132,6 +144,16 @@ create table luogu_accepted_problem (
   type text not null,
   difficulty integer,
   primary key (account_id, pid)
+)
+`,
+  `
+create table nowcoder_account_stats (
+  account_id text primary key not null,
+  rating real,
+  accepted_problem_count integer,
+  fetched_at integer,
+  last_attempted_at integer not null,
+  last_error text
 )
 `,
   `
@@ -194,10 +216,12 @@ create table site_setting (
 
 const testSchema = {
   account,
+  atcoderAccountStats,
   codeforcesAccountStats,
   currentMember,
   luoguAcceptedProblem,
   luoguAccountStats,
+  nowcoderAccountStats,
   problemSet,
   problemSetProblem,
   refreshRequest,

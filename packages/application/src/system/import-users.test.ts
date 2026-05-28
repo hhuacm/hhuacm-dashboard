@@ -5,8 +5,10 @@ import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { verifyPassword } from "better-auth/crypto";
 import { asc, eq } from "drizzle-orm";
+import { atcoderAccountStatsJob } from "../refresh/jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
+import { nowcoderAccountStatsJob } from "../refresh/jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
 import { createServiceTestDb } from "../services/test-db";
 import {
@@ -27,6 +29,12 @@ const codeforcesAccount = (externalId: string) =>
 
 const luoguAccount = (externalId: string) =>
   ({ externalId, platform: "luogu" }) as const;
+
+const atcoderAccount = (externalId: string) =>
+  ({ externalId, platform: "atcoder" }) as const;
+
+const nowcoderAccount = (externalId: string) =>
+  ({ externalId, platform: "nowcoder" }) as const;
 
 const createSeedUser = (
   username: string,
@@ -180,6 +188,18 @@ describe("system import users", () => {
             memberStatus: "active",
           },
         }),
+        createSeedUser("active-atcoder-user", {
+          ojAccounts: [atcoderAccount("activeAtcoder")],
+          profile: {
+            memberStatus: "active",
+          },
+        }),
+        createSeedUser("active-nowcoder-user", {
+          ojAccounts: [nowcoderAccount("660255087")],
+          profile: {
+            memberStatus: "active",
+          },
+        }),
         createSeedUser("retired-user", {
           ojAccounts: [codeforcesAccount("retiredCf")],
           profile: {
@@ -215,14 +235,25 @@ describe("system import users", () => {
     );
 
     expect(result).toMatchObject({
-      ojAccountCount: 4,
-      refreshRequestCount: 3,
+      ojAccountCount: 6,
+      refreshRequestCount: 5,
     });
     expect(accounts.map((currentAccount) => currentAccount.externalId)).toEqual(
-      ["activeLuogu", "frozenLuogu", "retiredCf", "selectionCf"]
+      [
+        "660255087",
+        "activeAtcoder",
+        "activeLuogu",
+        "frozenLuogu",
+        "retiredCf",
+        "selectionCf",
+      ]
     );
     expect(requests).toEqual(
       expect.arrayContaining([
+        {
+          kind: atcoderAccountStatsJob.kind,
+          targetId: accountByHandle.get("activeAtcoder")?.id,
+        },
         {
           kind: codeforcesAccountStatsJob.kind,
           targetId: accountByHandle.get("selectionCf")?.id,
@@ -230,6 +261,10 @@ describe("system import users", () => {
         {
           kind: luoguAccountStatsJob.kind,
           targetId: accountByHandle.get("activeLuogu")?.id,
+        },
+        {
+          kind: nowcoderAccountStatsJob.kind,
+          targetId: accountByHandle.get("660255087")?.id,
         },
         {
           kind: userAwardsFromLuoguJob.kind,

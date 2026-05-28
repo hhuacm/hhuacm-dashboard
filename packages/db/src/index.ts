@@ -1,7 +1,10 @@
 import { env } from "@hhuacm-dashboard/env/db";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-
+import {
+  atcoderAccountStats,
+  atcoderAccountStatsRelations,
+} from "./schema/atcoder-account-stats";
 import {
   account,
   accountRelations,
@@ -22,6 +25,10 @@ import {
   luoguAccountStats,
   luoguAccountStatsRelations,
 } from "./schema/luogu-account-stats";
+import {
+  nowcoderAccountStats,
+  nowcoderAccountStatsRelations,
+} from "./schema/nowcoder-account-stats";
 import { userOjAccount, userOjAccountRelations } from "./schema/oj-account";
 import {
   problemSet,
@@ -45,6 +52,8 @@ import {
 const schema = {
   account,
   accountRelations,
+  atcoderAccountStats,
+  atcoderAccountStatsRelations,
   codeforcesAccountStats,
   codeforcesAccountStatsRelations,
   currentMember,
@@ -52,6 +61,8 @@ const schema = {
   luoguAcceptedProblemRelations,
   luoguAccountStats,
   luoguAccountStatsRelations,
+  nowcoderAccountStats,
+  nowcoderAccountStatsRelations,
   problemSet,
   problemSetProblem,
   problemSetProblemRelations,

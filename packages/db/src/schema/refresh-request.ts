@@ -8,9 +8,11 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 export const refreshRequestKinds = [
+  "atcoder.accountStats",
   "codeforces.accountStats",
   "luogu.accountStats",
   "luogu.problemDetails",
+  "nowcoder.accountStats",
   "user.awardsFromLuogu",
 ] as const;
 

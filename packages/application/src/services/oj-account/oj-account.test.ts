@@ -37,6 +37,14 @@ describe("addOjAccount", () => {
 
     await createUser(db, { id: "active-user", memberStatus: "active" });
     await createUser(db, { id: "active-luogu-user", memberStatus: "active" });
+    await createUser(db, {
+      id: "active-atcoder-user",
+      memberStatus: "active",
+    });
+    await createUser(db, {
+      id: "active-nowcoder-user",
+      memberStatus: "active",
+    });
     await createUser(db, { id: "retired-user", memberStatus: "retired" });
     await createUser(db, {
       id: "retired-luogu-user",
@@ -59,6 +67,16 @@ describe("addOjAccount", () => {
       userId: "active-luogu-user",
     });
     await addOjAccount(db, {
+      externalId: "forlight",
+      platform: "atcoder",
+      userId: "active-atcoder-user",
+    });
+    await addOjAccount(db, {
+      externalId: "660255087",
+      platform: "nowcoder",
+      userId: "active-nowcoder-user",
+    });
+    await addOjAccount(db, {
       externalId: "93247",
       platform: "luogu",
       userId: "retired-luogu-user",
@@ -73,10 +91,12 @@ describe("addOjAccount", () => {
       .from(userOjAccount)
       .where(eq(userOjAccount.platform, "luogu"));
 
-    expect(refreshRequests).toHaveLength(3);
+    expect(refreshRequests).toHaveLength(5);
     expect(refreshRequests.map((request) => request.kind).sort()).toEqual([
+      "atcoder.accountStats",
       "codeforces.accountStats",
       "luogu.accountStats",
+      "nowcoder.accountStats",
       "user.awardsFromLuogu",
     ]);
     expect(luoguAccounts).toEqual(

@@ -9,8 +9,10 @@ import {
   type OjPlatform,
 } from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
+import { atcoderAccountStatsJob } from "../refresh/jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
+import { nowcoderAccountStatsJob } from "../refresh/jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
 import { parseSystemSeedFile, type SystemSeedUser } from "./seed-format";
 
@@ -142,6 +144,12 @@ const enqueueImportedOjAccountRefreshJobs = async (
 ) => {
   let count = 0;
 
+  if (input.platform === "atcoder" && input.isCurrentMember) {
+    count += await countCreatedRefreshRequest(
+      atcoderAccountStatsJob.enqueue(db, input.accountId)
+    );
+  }
+
   if (input.platform === "codeforces" && input.isCurrentMember) {
     count += await countCreatedRefreshRequest(
       codeforcesAccountStatsJob.enqueue(db, input.accountId)
@@ -154,6 +162,12 @@ const enqueueImportedOjAccountRefreshJobs = async (
     );
     count += await countCreatedRefreshRequest(
       userAwardsFromLuoguJob.enqueue(db, input.accountId)
+    );
+  }
+
+  if (input.platform === "nowcoder" && input.isCurrentMember) {
+    count += await countCreatedRefreshRequest(
+      nowcoderAccountStatsJob.enqueue(db, input.accountId)
     );
   }
 
