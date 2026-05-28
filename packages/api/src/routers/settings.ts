@@ -32,7 +32,7 @@ export const settingsRouter = router({
     add: protectedProcedure.input(ojAccountInputSchema).mutation(
       async ({ ctx, input }) =>
         await addOjAccount(ctx.db, {
-          handle: input.handle,
+          externalId: input.externalId,
           platform: input.platform,
           userId: ctx.session.user.id,
         })
@@ -40,7 +40,7 @@ export const settingsRouter = router({
     update: protectedProcedure.input(ojAccountInputSchema).mutation(
       async ({ ctx, input }) =>
         await updateOjAccount(ctx.db, {
-          handle: input.handle,
+          externalId: input.externalId,
           platform: input.platform,
           userId: ctx.session.user.id,
         })

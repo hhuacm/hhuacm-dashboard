@@ -1,5 +1,7 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
+import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import { eq } from "drizzle-orm";
 import type { CodeforcesUserInfoResult } from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
 import { truncateRefreshError } from "../../refresh/policy";
@@ -26,12 +28,12 @@ const getErrorMessage = (error: unknown) =>
 
 const selectCodeforcesUserInfo = (
   userInfoList: CodeforcesUserInfoResult,
-  handle: string
+  externalId: string
 ) => {
   const [userInfo] = userInfoList;
 
   if (!userInfo) {
-    throw new Error(`Codeforces user.info ${handle} result is empty`);
+    throw new Error(`Codeforces user.info ${externalId} result is empty`);
   }
 
   return userInfo;
@@ -44,9 +46,9 @@ export const syncCodeforcesAccountStats = async (
 ) => {
   const userInfo = selectCodeforcesUserInfo(
     await codeforcesSource.userInfo({
-      handles: account.handle,
+      handles: account.externalId,
     }),
-    account.handle
+    account.externalId
   );
 
   const submissions = await codeforcesSource.userStatus({
@@ -91,7 +93,14 @@ export const syncCodeforcesAccountStats = async (
     .returning(codeforcesStatsFields);
 
   if (!stats) {
-    throw new Error(`Codeforces stats write failed for ${account.handle}`);
+    throw new Error(`Codeforces stats write failed for ${account.externalId}`);
+  }
+
+  if (account.handle !== userInfo.handle) {
+    await db
+      .update(userOjAccount)
+      .set({ handle: userInfo.handle })
+      .where(eq(userOjAccount.id, account.id));
   }
 
   return stats;
@@ -123,7 +132,7 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
 
   if (!stats) {
     throw new Error(
-      `Codeforces failure write failed for ${account.handle}: ${lastError}`
+      `Codeforces failure write failed for ${account.externalId}: ${lastError}`
     );
   }
 

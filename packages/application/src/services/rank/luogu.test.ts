@@ -36,10 +36,10 @@ describe("listLuoguRankRows", () => {
     }
 
     await db.insert(userOjAccount).values({
+      externalId: "97238",
       handle: input.id,
       id: `account-${input.id}`,
       platform: "luogu",
-      profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: input.id,
     });
 

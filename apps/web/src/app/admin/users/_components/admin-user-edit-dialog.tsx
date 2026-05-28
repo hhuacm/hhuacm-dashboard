@@ -92,6 +92,13 @@ interface EditorMessage {
   tone: "danger" | "success";
 }
 
+const ojAccountExternalIdPlaceholders: Record<OjPlatform, string> = {
+  atcoder: "AtCoder 用户名",
+  codeforces: "Codeforces Handle",
+  luogu: "洛谷 UID",
+  nowcoder: "牛客 UID",
+};
+
 function AdminUserBasicInfoEditor({
   detail,
   isLoading,
@@ -397,15 +404,15 @@ function AdminUserOjAccountRow({
   userId,
 }: AdminUserOjAccountRowProps) {
   const queryClient = useQueryClient();
-  const [handle, setHandle] = useState(account?.handle ?? "");
+  const [externalId, setExternalId] = useState(account?.externalId ?? "");
   const [message, setMessage] = useState<EditorMessage | null>(null);
   const [deleteTargetPlatform, setDeleteTargetPlatform] =
     useState<OjPlatform | null>(null);
 
   useEffect(() => {
-    setHandle(account?.handle ?? "");
+    setExternalId(account?.externalId ?? "");
     setMessage(null);
-  }, [account?.handle]);
+  }, [account?.externalId]);
 
   const invalidateUserData = async () => {
     await Promise.all([
@@ -450,8 +457,8 @@ function AdminUserOjAccountRow({
       },
     })
   );
-  const isChanged = handle !== (account?.handle ?? "");
-  const canSave = Boolean(handle) && isChanged;
+  const isChanged = externalId !== (account?.externalId ?? "");
+  const canSave = Boolean(externalId) && isChanged;
   const isBusy = upsertAccount.isPending || deleteAccount.isPending;
   const platformLabel = ojPlatformLabels[platform];
   const saveIcon = account ? (
@@ -465,14 +472,14 @@ function AdminUserOjAccountRow({
 
     if (!canSave) {
       setMessage({
-        text: handle ? "没有需要保存的修改。" : "请填写账号昵称。",
-        tone: handle ? "success" : "danger",
+        text: externalId ? "没有需要保存的修改。" : "请填写账号标识。",
+        tone: externalId ? "success" : "danger",
       });
       return;
     }
 
     await upsertAccount.mutateAsync({
-      handle,
+      externalId,
       platform,
       userId,
     });
@@ -506,16 +513,26 @@ function AdminUserOjAccountRow({
         <TextField
           fullWidth
           isDisabled={isLoading || isBusy}
-          name={`${platform}-handle`}
+          name={`${platform}-external-id`}
           onChange={(nextValue) => {
             setMessage(null);
-            setHandle(nextValue);
+            setExternalId(nextValue);
           }}
-          value={handle}
+          value={externalId}
         >
-          <DirtyFieldLabel isChanged={isChanged} label="账号昵称" />
-          <Input autoComplete="off" placeholder="未登记" variant="secondary" />
+          <DirtyFieldLabel isChanged={isChanged} label="账号标识" />
+          <Input
+            autoComplete="off"
+            placeholder={ojAccountExternalIdPlaceholders[platform]}
+            variant="secondary"
+          />
         </TextField>
+        {account && account.externalId !== account.handle ? (
+          <p className="-mt-2 break-all text-muted text-xs md:col-start-2">
+            当前展示名：
+            <span className="font-mono">{account.handle}</span>
+          </p>
+        ) : null}
         <div className="flex items-end gap-2">
           <Button
             isDisabled={isLoading || !canSave || deleteAccount.isPending}

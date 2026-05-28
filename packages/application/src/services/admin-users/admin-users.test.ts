@@ -55,19 +55,22 @@ const createUser = async (
 const createOjAccount = async (
   db: Database,
   input: {
+    externalId?: string;
     handle?: string;
     platform: OjPlatform;
     userId: string;
   }
 ) => {
+  const externalId =
+    input.externalId ?? input.handle ?? `${input.userId}-${input.platform}`;
   const handle = input.handle ?? `${input.userId}-${input.platform}`;
   const id = `account-${input.userId}-${input.platform}`;
 
   await db.insert(userOjAccount).values({
+    externalId,
     handle,
     id,
     platform: input.platform,
-    profileUrl: `https://example.com/${input.platform}/${handle}`,
     userId: input.userId,
   });
 
@@ -206,9 +209,9 @@ describe("admin users", () => {
     });
     expect(result.ojAccounts).toEqual([
       {
+        externalId: "detailLuogu",
         handle: "detailLuogu",
         platform: "luogu",
-        profileUrl: "https://example.com/luogu/detailLuogu",
       },
     ]);
   });

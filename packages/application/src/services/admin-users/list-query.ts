@@ -112,9 +112,9 @@ const groupOjAccountsByUserId = (
   for (const account of accounts) {
     const currentAccounts = ojAccountsByUserId.get(account.userId) ?? [];
     currentAccounts.push({
+      externalId: account.externalId,
       handle: account.handle,
       platform: account.platform,
-      profileUrl: account.profileUrl,
     });
     ojAccountsByUserId.set(account.userId, currentAccounts);
   }
@@ -129,9 +129,9 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
 
   const ojAccounts = await db
     .select({
+      externalId: userOjAccount.externalId,
       handle: userOjAccount.handle,
       platform: userOjAccount.platform,
-      profileUrl: userOjAccount.profileUrl,
       userId: userOjAccount.userId,
     })
     .from(userOjAccount)

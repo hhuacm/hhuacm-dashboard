@@ -94,7 +94,7 @@ export const adminRouter = router({
         await getTargetUser(ctx.db, input.userId);
 
         return await upsertOjAccount(ctx.db, {
-          handle: input.handle,
+          externalId: input.externalId,
           platform: input.platform,
           userId: input.userId,
         });

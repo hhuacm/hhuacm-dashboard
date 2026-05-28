@@ -9,9 +9,9 @@ interface OjAccountLookup {
 }
 
 export const ojAccountFields = {
+  externalId: userOjAccount.externalId,
   handle: userOjAccount.handle,
   platform: userOjAccount.platform,
-  profileUrl: userOjAccount.profileUrl,
 } as const;
 
 export const internalOjAccountFields = {
@@ -20,13 +20,13 @@ export const internalOjAccountFields = {
 } as const;
 
 export const toPublicOjAccount = (account: {
+  externalId: string;
   handle: string;
   platform: OjPlatform;
-  profileUrl: string;
 }) => ({
+  externalId: account.externalId,
   handle: account.handle,
   platform: account.platform,
-  profileUrl: account.profileUrl,
 });
 
 export const listOjAccountsByUserId = (db: Database, userId: string) =>

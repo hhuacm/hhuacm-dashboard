@@ -67,9 +67,9 @@ const createUser = async (
 };
 
 const account = {
+  externalId: "97238",
   handle: "forlight",
   id: "account-luogu",
-  profileUrl: "https://www.luogu.com.cn/user/97238",
   userId: "user-award",
 };
 
@@ -240,7 +240,7 @@ describe("profile awards", () => {
     );
     await markUserAwardsFromLuoguRefreshFailed(
       db,
-      { ...account, profileUrl: "" },
+      { ...account, externalId: "" },
       new Error("Luogu UID is missing"),
       failedAt
     );

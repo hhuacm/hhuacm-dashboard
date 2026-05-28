@@ -11,6 +11,7 @@ import { refreshDefaults } from "../policy";
 import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 const codeforcesAccountFields = {
+  externalId: userOjAccount.externalId,
   handle: userOjAccount.handle,
   id: userOjAccount.id,
 } as const;

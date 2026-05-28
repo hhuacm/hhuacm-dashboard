@@ -16,9 +16,9 @@ describe("user awards from Luogu refresh request", () => {
   const createAccount = async (
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
+      externalId?: string;
       id: string;
       memberStatus?: MemberStatus;
-      profileUrl?: string;
     }
   ) => {
     await db.insert(user).values({
@@ -36,10 +36,10 @@ describe("user awards from Luogu refresh request", () => {
     }
 
     await db.insert(userOjAccount).values({
+      externalId: input.externalId ?? "97238",
       handle: input.id,
       id: `account-${input.id}`,
       platform: "luogu",
-      profileUrl: input.profileUrl ?? "https://www.luogu.com.cn/user/97238",
       userId: input.id,
     });
   };
@@ -92,9 +92,9 @@ describe("user awards from Luogu refresh request", () => {
   it("handles queued retired users and preserves cached awards on failure", async () => {
     const db = await createServiceTestDb();
     await createAccount(db, {
+      externalId: "",
       id: "retired-user",
       memberStatus: "retired",
-      profileUrl: "",
     });
     await db.insert(userAward).values({
       contest: "Cached Contest",
@@ -123,9 +123,9 @@ describe("user awards from Luogu refresh request", () => {
   it("records missing UID failures without deleting cached awards", async () => {
     const db = await createServiceTestDb();
     await createAccount(db, {
+      externalId: "",
       id: "active-user",
       memberStatus: "active",
-      profileUrl: "",
     });
     await db.insert(userAward).values({
       contest: "Cached Contest",

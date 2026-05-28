@@ -12,6 +12,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { Key, ReactNode } from "react";
 
 import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
+import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import {
   type AdminUserOjAccount,
@@ -136,6 +137,10 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
           return null;
         }
 
+        const profileUrl = buildOjProfileUrl(
+          account.platform,
+          account.externalId
+        );
         const chip = (
           <Chip color="success" size="sm" variant="soft">
             {ojPlatformLabels[platform]}
@@ -145,10 +150,10 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
         return (
           <Tooltip delay={0} key={platform}>
             <Tooltip.Trigger>
-              {account.profileUrl ? (
+              {profileUrl ? (
                 <a
                   className="inline-flex no-underline"
-                  href={account.profileUrl}
+                  href={profileUrl}
                   rel="noopener"
                   target="_blank"
                 >
@@ -160,7 +165,14 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
             </Tooltip.Trigger>
             <Tooltip.Content showArrow>
               <Tooltip.Arrow />
-              <span className="font-mono text-xs">{account.handle}</span>
+              <span className="grid gap-0.5 text-xs">
+                <span className="font-mono">{account.handle}</span>
+                {account.externalId === account.handle ? null : (
+                  <span className="font-mono text-muted">
+                    ID: {account.externalId}
+                  </span>
+                )}
+              </span>
             </Tooltip.Content>
           </Tooltip>
         );

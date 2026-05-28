@@ -37,6 +37,7 @@ export const listCodeforcesRankRows = async (db: Database) => {
       acceptedProblemCountInMonth:
         codeforcesAccountStats.acceptedProblemCountInMonth,
       accountId: userOjAccount.id,
+      externalId: userOjAccount.externalId,
       fetchedAt: codeforcesAccountStats.fetchedAt,
       grade: currentMember.grade,
       handle: userOjAccount.handle,
@@ -44,7 +45,6 @@ export const listCodeforcesRankRows = async (db: Database) => {
       lastOnlineAt: codeforcesAccountStats.lastOnlineAt,
       major: currentMember.major,
       maxRating: codeforcesAccountStats.maxRating,
-      profileUrl: userOjAccount.profileUrl,
       rating: codeforcesAccountStats.rating,
       realName: currentMember.realName,
       userId: currentMember.userId,
@@ -76,10 +76,10 @@ export const listCodeforcesRankRows = async (db: Database) => {
       acceptedProblemCount: row.acceptedProblemCount,
       acceptedProblemCountInMonth: row.acceptedProblemCountInMonth,
       fetchedAt: toIsoString(row.fetchedAt),
+      externalId: row.externalId,
       handle: row.handle,
       lastOnlineAt: toIsoString(row.lastOnlineAt),
       maxRating: row.maxRating,
-      profileUrl: row.profileUrl,
       rating: row.rating,
       syncStatus: getRefreshSyncStatus(
         refreshActivity.toStatusInput({

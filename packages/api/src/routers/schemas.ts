@@ -29,7 +29,7 @@ export const profileUpdateInputSchema = profileInputSchema
 export const ojPlatformSchema = z.enum(ojPlatforms);
 
 export const ojAccountInputSchema = z.object({
-  handle: trimmedStringSchema,
+  externalId: trimmedStringSchema,
   platform: ojPlatformSchema,
 });
 
@@ -92,7 +92,7 @@ export const adminUserProfileUpdateInputSchema = adminUserInputSchema.extend({
 });
 
 export const adminUserOjAccountInputSchema = adminUserInputSchema.extend({
-  handle: trimmedStringSchema,
+  externalId: trimmedStringSchema,
   platform: ojPlatformSchema,
 });
 

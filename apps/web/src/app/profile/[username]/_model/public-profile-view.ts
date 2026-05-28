@@ -15,6 +15,7 @@ export interface PublicOjAccount {
     rating: null | number;
     syncStatus: RefreshSyncStatus;
   };
+  externalId: string;
   handle: string;
   luogu?: null | {
     acceptedProblemCount: null | number;
@@ -29,7 +30,6 @@ export interface PublicOjAccount {
     syncStatus: RefreshSyncStatus;
   };
   platform: OjPlatform;
-  profileUrl: string;
 }
 
 export interface PublicProfileAward {

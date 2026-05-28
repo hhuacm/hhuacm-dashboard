@@ -39,10 +39,10 @@ const userFields = {
 
 export interface PublicOjAccount {
   codeforces?: PublicCodeforcesStats | null;
+  externalId: string;
   handle: string;
   luogu?: PublicLuoguStats | null;
   platform: OjPlatform;
-  profileUrl: string;
 }
 
 const getLuoguAccountId = (
@@ -117,9 +117,9 @@ const attachPublicOjAccountData = async (
 
   for (const account of accounts) {
     const publicAccount: PublicOjAccount = {
+      externalId: account.externalId,
       handle: account.handle,
       platform: account.platform,
-      profileUrl: account.profileUrl,
     };
 
     if (!shouldAttachStats) {

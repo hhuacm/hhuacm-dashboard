@@ -230,7 +230,7 @@ export default function AdminExportPage() {
               <div>
                 <Card.Title className="text-xl">系统最小种子文件</Card.Title>
                 <Card.Description>
-                  JSON 仅包含用户、OJ handle、题单和非默认站点设置。
+                  JSON 仅包含用户、OJ 账号标识、题单和非默认站点设置。
                 </Card.Description>
               </div>
               <div className="flex flex-wrap gap-2">

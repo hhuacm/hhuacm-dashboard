@@ -24,13 +24,17 @@ import { type Key, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
-import { getOjPlatformConfig, ojPlatformConfigs } from "@/utils/oj-platforms";
+import {
+  buildOjProfileUrl,
+  getOjPlatformConfig,
+  ojPlatformConfigs,
+} from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
 
 interface OjAccount {
+  externalId: string;
   handle: string;
   platform: OjPlatform;
-  profileUrl: string;
 }
 
 interface OjAccountSectionProps {
@@ -54,24 +58,24 @@ type AccountDialog =
     };
 
 interface OjAccountFormValues {
-  handle: string;
+  externalId: string;
   platform: OjPlatform;
 }
 
 const emptyOjAccountFormValues: OjAccountFormValues = {
-  handle: "",
+  externalId: "",
   platform: "luogu",
 };
 
 const ojAccountFormSchema = z.object({
-  handle: z.string().min(1, "请填写 OJ 账号昵称。"),
+  externalId: z.string().min(1, "请填写 OJ 账号标识。"),
   platform: z.custom<OjPlatform>(
     (value) => typeof value === "string" && isOjPlatform(value),
     { message: "请选择 OJ 平台。" }
   ),
 }) satisfies z.ZodType<OjAccountFormValues>;
 
-const getOriginalDialogHandle = (
+const getOriginalDialogExternalId = (
   accountsByPlatform: Map<OjPlatform, OjAccount>,
   dialog: AccountDialog | null
 ) => {
@@ -79,14 +83,21 @@ const getOriginalDialogHandle = (
     return "";
   }
 
-  return accountsByPlatform.get(dialog.platform)?.handle ?? "";
+  return accountsByPlatform.get(dialog.platform)?.externalId ?? "";
 };
 
-const isOjHandleChanged = (
+const isOjExternalIdChanged = (
   dialog: AccountDialog | null,
-  handle: string,
-  originalHandle: string
-) => dialog?.mode === "edit" && handle !== originalHandle;
+  externalId: string,
+  originalExternalId: string
+) => dialog?.mode === "edit" && externalId !== originalExternalId;
+
+const ojAccountExternalIdPlaceholders: Record<OjPlatform, string> = {
+  atcoder: "AtCoder 用户名",
+  codeforces: "Codeforces Handle",
+  luogu: "洛谷 UID",
+  nowcoder: "牛客 UID",
+};
 
 const getErrorText = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("message" in error)) {
@@ -105,8 +116,8 @@ const getOjAccountErrorMessage = (error: unknown) => {
     return "该平台已登记，请直接修改已有账号。";
   }
 
-  if (errorText.includes("OJ handle already exists")) {
-    return "该平台账号已被其他用户登记。";
+  if (errorText.includes("OJ external ID already exists")) {
+    return "该平台账号标识已被其他用户登记。";
   }
 
   if (errorText.includes("OJ account does not exist")) {
@@ -125,22 +136,30 @@ function OjAccountHandle({ account }: { account: OjAccount | undefined }) {
     return null;
   }
 
-  if (account.profileUrl) {
-    return (
-      <a
-        className="max-w-full break-all font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
-        href={account.profileUrl}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {account.handle}
-      </a>
-    );
-  }
-
-  return (
+  const profileUrl = buildOjProfileUrl(account.platform, account.externalId);
+  const handleElement = profileUrl ? (
+    <a
+      className="max-w-full break-all font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
+      href={profileUrl}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      {account.handle}
+    </a>
+  ) : (
     <span className="max-w-full break-all font-medium text-foreground">
       {account.handle}
+    </span>
+  );
+
+  return (
+    <span className="grid justify-items-start gap-0.5 sm:justify-items-end">
+      {handleElement}
+      {account.externalId === account.handle ? null : (
+        <span className="break-all font-mono text-muted text-xs">
+          ID: {account.externalId}
+        </span>
+      )}
     </span>
   );
 }
@@ -248,14 +267,14 @@ export function OjAccountSection({
   const isSaving = addAccount.isPending || updateAccount.isPending;
   const isBusy = isSaving || deleteAccount.isPending;
   const dialogPlatformConfig = getOjPlatformConfig(formValues.platform);
-  const originalDialogHandle = getOriginalDialogHandle(
+  const originalDialogExternalId = getOriginalDialogExternalId(
     accountsByPlatform,
     dialog
   );
-  const isHandleChanged = isOjHandleChanged(
+  const isExternalIdChanged = isOjExternalIdChanged(
     dialog,
-    formValues.handle,
-    originalDialogHandle
+    formValues.externalId,
+    originalDialogExternalId
   );
   const dialogTitle =
     dialog?.mode === "edit"
@@ -271,7 +290,7 @@ export function OjAccountSection({
 
     setDialog({ mode: "add" });
     reset({
-      handle: "",
+      externalId: "",
       platform: nextPlatform,
     });
     setMessage(null);
@@ -281,7 +300,7 @@ export function OjAccountSection({
   const openEditDialog = (account: OjAccount) => {
     setDialog({ mode: "edit", platform: account.platform });
     reset({
-      handle: account.handle,
+      externalId: account.externalId,
       platform: account.platform,
     });
     setMessage(null);
@@ -318,19 +337,22 @@ export function OjAccountSection({
       setDialogMessage(null);
 
       if (dialog.mode === "add") {
-        addAccount.mutate({ handle: values.handle, platform: values.platform });
+        addAccount.mutate({
+          externalId: values.externalId,
+          platform: values.platform,
+        });
         return;
       }
 
       updateAccount.mutate({
-        handle: values.handle,
+        externalId: values.externalId,
         platform: dialog.platform,
       });
     },
     (errors) => {
       setDialogMessage({
         text:
-          errors.handle?.message ??
+          errors.externalId?.message ??
           errors.platform?.message ??
           "请检查 OJ 账号信息。",
         tone: "danger",
@@ -551,7 +573,7 @@ export function OjAccountSection({
 
                 <Controller
                   control={control}
-                  name="handle"
+                  name="externalId"
                   render={({ field }) => (
                     <TextField
                       fullWidth
@@ -564,12 +586,14 @@ export function OjAccountSection({
                       value={field.value}
                     >
                       <DirtyFieldLabel
-                        isChanged={isHandleChanged}
-                        label="账号昵称"
+                        isChanged={isExternalIdChanged}
+                        label="账号标识"
                       />
                       <Input
                         autoComplete="off"
-                        placeholder="填写该平台的账号昵称"
+                        placeholder={
+                          ojAccountExternalIdPlaceholders[formValues.platform]
+                        }
                         variant="secondary"
                       />
                     </TextField>

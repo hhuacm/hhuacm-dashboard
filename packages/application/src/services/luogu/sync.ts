@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 import { truncateRefreshError } from "../../refresh/policy";
-import { parseLuoguUidFromProfileUrl } from "./profile-stats";
 import { summarizeLuoguPracticeStats } from "./summary";
 import type { LuoguAccount } from "./types";
 
@@ -50,6 +49,12 @@ const selectLuoguPracticeStatsFields = (
   passedProblemCount: practice.user.passedProblemCount,
 });
 
+const parseLuoguExternalId = (externalId: string) => {
+  const uid = Number(externalId);
+
+  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
+};
+
 const writeAcceptedProblems = async (
   tx: DatabaseTransaction,
   account: LuoguAccount,
@@ -89,7 +94,7 @@ export const syncLuoguAccountStats = async (
   now = new Date(),
   loadPractice: LuoguPracticeLoader = luoguSource.practice
 ) => {
-  const uid = parseLuoguUidFromProfileUrl(account.profileUrl);
+  const uid = parseLuoguExternalId(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");
@@ -127,7 +132,7 @@ export const syncLuoguAccountStats = async (
       .returning(luoguStatsFields);
 
     if (!stats) {
-      throw new Error(`Luogu stats write failed for ${account.handle}`);
+      throw new Error(`Luogu stats write failed for ${account.externalId}`);
     }
 
     return stats;
@@ -159,7 +164,7 @@ export const markLuoguAccountStatsRefreshFailed = async (
     .returning(luoguStatsFields);
 
   if (!stats) {
-    throw new Error(`Luogu failure write failed for ${account.handle}`);
+    throw new Error(`Luogu failure write failed for ${account.externalId}`);
   }
 
   return stats;

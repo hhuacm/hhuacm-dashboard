@@ -3,12 +3,10 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { and, eq } from "drizzle-orm";
 import { ApplicationError } from "../../errors";
-import { luoguProfileUrlJob } from "../../refresh/jobs/luogu-profile-url";
-import { buildOjProfileUrl } from "../oj-profile-url";
 import {
-  assertNoHandleOwner,
+  assertNoExternalIdOwner,
   getExistingCurrentUserAccountMessage,
-} from "./handle";
+} from "./external-id";
 import {
   getInternalOjAccountForUserPlatform,
   getPublicOjAccountForUserPlatform,
@@ -22,7 +20,7 @@ import {
 } from "./stats-effects";
 
 export interface OjAccountInput {
-  handle: string;
+  externalId: string;
   platform: OjPlatform;
   userId: string;
 }
@@ -32,26 +30,13 @@ interface OjAccountDeleteInput {
   userId: string;
 }
 
-const requestOjAccountProfileUrlRefreshIfNeeded = async (
-  db: Database,
-  account: {
-    id: string;
-    platform: OjPlatform;
-  }
-) => {
-  if (account.platform === "luogu") {
-    await luoguProfileUrlJob.enqueue(db, account.id);
-  }
-};
-
 const createOjAccount = async (db: Database, input: OjAccountInput) => {
-  const profileUrl = buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .insert(userOjAccount)
     .values({
-      handle: input.handle,
+      externalId: input.externalId,
+      handle: input.externalId,
       platform: input.platform,
-      profileUrl,
       userId: input.userId,
     })
     .returning(internalOjAccountFields);
@@ -60,18 +45,16 @@ const createOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new ApplicationError({ code: "INTERNAL_SERVER_ERROR" });
   }
 
-  await requestOjAccountProfileUrlRefreshIfNeeded(db, account);
   await requestOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
 };
 const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
-  const profileUrl = buildOjProfileUrl(input.platform, input.handle);
   const [account] = await db
     .update(userOjAccount)
     .set({
-      handle: input.handle,
-      profileUrl,
+      externalId: input.externalId,
+      handle: input.externalId,
     })
     .where(
       and(
@@ -85,7 +68,6 @@ const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
     throw new ApplicationError({ code: "NOT_FOUND" });
   }
 
-  await requestOjAccountProfileUrlRefreshIfNeeded(db, account);
   await replaceOjAccountStatsEffectsIfNeeded(db, account, input.userId);
 
   return toPublicOjAccount(account);
@@ -104,7 +86,7 @@ export const addOjAccount = async (db: Database, input: OjAccountInput) => {
     });
   }
 
-  await assertNoHandleOwner(db, input, {});
+  await assertNoExternalIdOwner(db, input, {});
 
   return await createOjAccount(db, input);
 };
@@ -122,13 +104,13 @@ export const updateOjAccount = async (db: Database, input: OjAccountInput) => {
     });
   }
 
-  await assertNoHandleOwner(db, input, { excludeUserId: input.userId });
+  await assertNoExternalIdOwner(db, input, { excludeUserId: input.userId });
 
   return await updateExistingOjAccount(db, input);
 };
 
 export const upsertOjAccount = async (db: Database, input: OjAccountInput) => {
-  await assertNoHandleOwner(db, input, { excludeUserId: input.userId });
+  await assertNoExternalIdOwner(db, input, { excludeUserId: input.userId });
 
   const existingAccount = await getInternalOjAccountForUserPlatform(db, input);
 

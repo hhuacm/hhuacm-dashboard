@@ -7,7 +7,6 @@ import { verifyPassword } from "better-auth/crypto";
 import { asc, eq } from "drizzle-orm";
 import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
-import { luoguProfileUrlJob } from "../refresh/jobs/luogu-profile-url";
 import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
 import { createServiceTestDb } from "../services/test-db";
 import {
@@ -23,11 +22,11 @@ import {
 
 type Database = Awaited<ReturnType<typeof createServiceTestDb>>;
 
-const codeforcesAccount = (handle: string) =>
-  ({ handle, platform: "codeforces" }) as const;
+const codeforcesAccount = (externalId: string) =>
+  ({ externalId, platform: "codeforces" }) as const;
 
-const luoguAccount = (handle: string) =>
-  ({ handle, platform: "luogu" }) as const;
+const luoguAccount = (externalId: string) =>
+  ({ externalId, platform: "luogu" }) as const;
 
 const createSeedUser = (
   username: string,
@@ -166,7 +165,7 @@ describe("system import users", () => {
     });
   });
 
-  it("imports OJ accounts offline and requests Luogu URL refreshes", async () => {
+  it("imports OJ accounts offline and requests current-member refreshes", async () => {
     const db = await createServiceTestDb();
 
     const result = await importUsersFromSystemSeedFile(
@@ -197,10 +196,10 @@ describe("system import users", () => {
     );
     const accounts = await db
       .select({
+        externalId: userOjAccount.externalId,
         handle: userOjAccount.handle,
         id: userOjAccount.id,
         platform: userOjAccount.platform,
-        profileUrl: userOjAccount.profileUrl,
       })
       .from(userOjAccount)
       .orderBy(asc(userOjAccount.handle));
@@ -217,10 +216,10 @@ describe("system import users", () => {
 
     expect(result).toMatchObject({
       ojAccountCount: 4,
-      refreshRequestCount: 5,
+      refreshRequestCount: 3,
     });
-    expect(accounts.map((currentAccount) => currentAccount.profileUrl)).toEqual(
-      ["", "", "", ""]
+    expect(accounts.map((currentAccount) => currentAccount.externalId)).toEqual(
+      ["activeLuogu", "frozenLuogu", "retiredCf", "selectionCf"]
     );
     expect(requests).toEqual(
       expect.arrayContaining([
@@ -231,14 +230,6 @@ describe("system import users", () => {
         {
           kind: luoguAccountStatsJob.kind,
           targetId: accountByHandle.get("activeLuogu")?.id,
-        },
-        {
-          kind: luoguProfileUrlJob.kind,
-          targetId: accountByHandle.get("activeLuogu")?.id,
-        },
-        {
-          kind: luoguProfileUrlJob.kind,
-          targetId: accountByHandle.get("frozenLuogu")?.id,
         },
         {
           kind: userAwardsFromLuoguJob.kind,
@@ -253,9 +244,7 @@ describe("system import users", () => {
     ).toBe(false);
     expect(
       requests.some(
-        (request) =>
-          request.targetId === accountByHandle.get("frozenLuogu")?.id &&
-          request.kind !== luoguProfileUrlJob.kind
+        (request) => request.targetId === accountByHandle.get("frozenLuogu")?.id
       )
     ).toBe(false);
   });
@@ -322,12 +311,14 @@ describe("system import users", () => {
       {
         error: SystemUserImportError,
         input: createSeedFile([
-          createSeedUser("first", { ojAccounts: [luoguAccount("sameHandle")] }),
+          createSeedUser("first", {
+            ojAccounts: [luoguAccount("sameExternalId")],
+          }),
           createSeedUser("second", {
-            ojAccounts: [luoguAccount("sameHandle")],
+            ojAccounts: [luoguAccount("sameExternalId")],
           }),
         ]),
-        message: "Duplicate OJ handle",
+        message: "Duplicate OJ external ID",
       },
       {
         error: SystemUserImportError,

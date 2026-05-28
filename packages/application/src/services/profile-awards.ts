@@ -12,7 +12,6 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../refresh/sync-status";
-import { parseLuoguUidFromProfileUrl } from "./luogu/profile-stats";
 import type { LuoguAccount } from "./luogu/types";
 
 type LuoguUserLoader = typeof luoguSource.user;
@@ -67,6 +66,12 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown user award sync error";
 
+const parseLuoguExternalId = (externalId: string) => {
+  const uid = Number(externalId);
+
+  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
+};
+
 export const selectLuoguUserAwards = (
   userPage: LuoguUserPageData
 ): SelectedLuoguUserAward[] =>
@@ -115,7 +120,7 @@ export const syncUserAwardsFromLuogu = async (
   now = new Date(),
   loadUser: LuoguUserLoader = luoguSource.user
 ) => {
-  const uid = parseLuoguUidFromProfileUrl(account.profileUrl);
+  const uid = parseLuoguExternalId(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");
@@ -147,7 +152,7 @@ export const syncUserAwardsFromLuogu = async (
       .returning(awardSyncFields);
 
     if (!sync) {
-      throw new Error(`User award sync write failed for ${account.handle}`);
+      throw new Error(`User award sync write failed for ${account.externalId}`);
     }
 
     return sync;
@@ -180,7 +185,9 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
     .returning(awardSyncFields);
 
   if (!sync) {
-    throw new Error(`User award failure write failed for ${account.handle}`);
+    throw new Error(
+      `User award failure write failed for ${account.externalId}`
+    );
   }
 
   return sync;

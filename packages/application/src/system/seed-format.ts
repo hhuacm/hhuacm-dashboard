@@ -11,7 +11,7 @@ export const systemSeedKind = "hhuacm-dashboard.system-seed";
 export const systemSeedVersion = 1;
 
 export interface SystemSeedOjAccount {
-  handle: string;
+  externalId: string;
   platform: OjPlatform;
 }
 
@@ -69,7 +69,7 @@ const nonEmptyStringSchema = z.string().min(1);
 
 const systemSeedOjAccountSchema = z
   .object({
-    handle: nonEmptyStringSchema,
+    externalId: nonEmptyStringSchema,
     platform: z.enum(ojPlatforms),
   })
   .strict();

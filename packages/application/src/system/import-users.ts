@@ -11,7 +11,6 @@ import {
 import { hashPassword } from "better-auth/crypto";
 import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
-import { luoguProfileUrlJob } from "../refresh/jobs/luogu-profile-url";
 import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
 import { parseSystemSeedFile, type SystemSeedUser } from "./seed-format";
 
@@ -93,7 +92,7 @@ const assertUniqueValue = (
 const validateSeedUsers = (users: SystemSeedUser[]) => {
   const usernames = new Set<string>();
   const emails = new Set<string>();
-  const platformHandles = new Set<string>();
+  const platformExternalIds = new Set<string>();
 
   for (const seedUser of users) {
     assertUniqueValue(
@@ -116,9 +115,9 @@ const validateSeedUsers = (users: SystemSeedUser[]) => {
         `Duplicate OJ platform for ${seedUser.username}: ${accountSeed.platform}`
       );
       assertUniqueValue(
-        platformHandles,
-        `${accountSeed.platform}\0${accountSeed.handle}`,
-        `Duplicate OJ handle in system seed: ${accountSeed.platform}/${accountSeed.handle}`
+        platformExternalIds,
+        `${accountSeed.platform}\0${accountSeed.externalId}`,
+        `Duplicate OJ external ID in system seed: ${accountSeed.platform}/${accountSeed.externalId}`
       );
     }
   }
@@ -149,19 +148,13 @@ const enqueueImportedOjAccountRefreshJobs = async (
     );
   }
 
-  if (input.platform === "luogu") {
+  if (input.platform === "luogu" && input.isCurrentMember) {
     count += await countCreatedRefreshRequest(
-      luoguProfileUrlJob.enqueue(db, input.accountId)
+      luoguAccountStatsJob.enqueue(db, input.accountId)
     );
-
-    if (input.isCurrentMember) {
-      count += await countCreatedRefreshRequest(
-        luoguAccountStatsJob.enqueue(db, input.accountId)
-      );
-      count += await countCreatedRefreshRequest(
-        userAwardsFromLuoguJob.enqueue(db, input.accountId)
-      );
-    }
+    count += await countCreatedRefreshRequest(
+      userAwardsFromLuoguJob.enqueue(db, input.accountId)
+    );
   }
 
   return count;
@@ -207,7 +200,8 @@ const createImportedUser = async (
     const [createdOjAccount] = await db
       .insert(userOjAccount)
       .values({
-        handle: accountSeed.handle,
+        externalId: accountSeed.externalId,
+        handle: accountSeed.externalId,
         platform: accountSeed.platform,
         userId,
       })

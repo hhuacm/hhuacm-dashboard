@@ -10,7 +10,6 @@ import {
 export const refreshRequestKinds = [
   "codeforces.accountStats",
   "luogu.accountStats",
-  "luogu.profileUrl",
   "luogu.problemDetails",
   "user.awardsFromLuogu",
 ] as const;

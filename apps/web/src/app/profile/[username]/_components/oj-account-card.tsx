@@ -4,7 +4,7 @@ import { CircleAlert, ExternalLink } from "lucide-react";
 import Image from "next/image";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
-import { getOjPlatformConfig } from "@/utils/oj-platforms";
+import { buildOjProfileUrl, getOjPlatformConfig } from "@/utils/oj-platforms";
 import {
   formatDateTime,
   formatNumber,
@@ -199,6 +199,7 @@ export function OjAccountCard({
   const isLuogu = account.platform === "luogu";
   const codeforces = account.codeforces;
   const luogu = account.luogu;
+  const profileUrl = buildOjProfileUrl(account.platform, account.externalId);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
@@ -244,7 +245,7 @@ export function OjAccountCard({
           </div>
         </div>
 
-        {account.profileUrl ? (
+        {profileUrl ? (
           <a
             className={clsx(
               "inline-flex min-w-0 items-center gap-2 break-all font-medium underline-offset-4 hover:underline focus-visible:underline",
@@ -252,7 +253,7 @@ export function OjAccountCard({
                 ? getCodeforcesRatingClassName(codeforces?.rating)
                 : "text-accent"
             )}
-            href={account.profileUrl}
+            href={profileUrl}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -262,6 +263,11 @@ export function OjAccountCard({
         ) : (
           <span className="break-all font-medium text-foreground">
             {account.handle}
+          </span>
+        )}
+        {account.externalId === account.handle ? null : (
+          <span className="break-all font-mono text-muted text-xs">
+            ID: {account.externalId}
           </span>
         )}
       </div>

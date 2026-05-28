@@ -59,19 +59,22 @@ const createUser = async (
 const createOjAccount = async (
   db: Database,
   input: {
+    externalId?: string;
     handle?: string;
     platform: OjPlatform;
     userId: string;
   }
 ) => {
+  const externalId =
+    input.externalId ?? input.handle ?? `${input.userId}-${input.platform}`;
   const handle = input.handle ?? `${input.userId}-${input.platform}`;
   const id = `account-${input.userId}-${input.platform}`;
 
   await db.insert(userOjAccount).values({
+    externalId,
     handle,
     id,
     platform: input.platform,
-    profileUrl: `https://example.com/${input.platform}/${handle}`,
     userId: input.userId,
   });
 
@@ -172,6 +175,7 @@ describe("system seed export", () => {
       username: "alpha",
     });
     await createOjAccount(db, {
+      externalId: "97238",
       handle: "alphaLuogu",
       platform: "luogu",
       userId: "alpha",
@@ -191,11 +195,11 @@ describe("system seed export", () => {
       email: "alpha@example.com",
       ojAccounts: [
         {
-          handle: "alphaCf",
+          externalId: "alphaCf",
           platform: "codeforces",
         },
         {
-          handle: "alphaLuogu",
+          externalId: "97238",
           platform: "luogu",
         },
       ],
@@ -292,7 +296,8 @@ describe("system seed export", () => {
       username: "secret-user",
     });
     const accountId = await createOjAccount(db, {
-      handle: "secretHandle",
+      externalId: "secretExternalId",
+      handle: "secretDisplayHandle",
       platform: "codeforces",
       userId: "secret-user-id",
     });
@@ -316,6 +321,7 @@ describe("system seed export", () => {
       "refreshToken",
       "verification",
       "secret-user-id",
+      "secretDisplayHandle",
       accountId,
       "profileUrl",
       "createdAt",

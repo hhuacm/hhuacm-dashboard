@@ -31,8 +31,6 @@ interface LuoguPracticeSummaryInput {
   passedProblemCount?: null | number;
 }
 
-const luoguProfilePathRegex = /^\/user\/(\d+)\/?$/;
-
 export const luoguDifficultyLabels = [
   "暂无评定",
   "入门",
@@ -44,20 +42,10 @@ export const luoguDifficultyLabels = [
   "NOI/NOI+/CTSC",
 ] as const;
 
-export const parseLuoguUidFromProfileUrl = (profileUrl: string) => {
-  if (!profileUrl) {
-    return null;
-  }
+const parseLuoguExternalId = (externalId: string) => {
+  const uid = Number(externalId);
 
-  try {
-    const url = new URL(profileUrl);
-    const match = luoguProfilePathRegex.exec(url.pathname);
-    const uid = match?.[1] ? Number(match[1]) : null;
-
-    return uid === null || Number.isSafeInteger(uid) ? uid : null;
-  } catch {
-    return null;
-  }
+  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
 };
 
 export const summarizeLuoguPractice = (
@@ -129,7 +117,7 @@ export const getLuoguStatsForProfile = async (
   db: Database,
   account: LuoguAccount
 ): Promise<PublicLuoguStats | null> => {
-  const uid = parseLuoguUidFromProfileUrl(account.profileUrl);
+  const uid = parseLuoguExternalId(account.externalId);
   const emptyDifficultyCounts = summarizeLuoguPractice({
     passed: [],
   }).difficultyCounts;

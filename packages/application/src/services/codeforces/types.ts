@@ -1,6 +1,7 @@
 import type { RefreshSyncStatus } from "../../refresh/sync-status";
 
 export interface CodeforcesAccount {
+  externalId: string;
   handle: string;
   id: string;
 }

@@ -56,17 +56,17 @@ const createLuoguAccount = async (
     username: "luogu",
   });
   await db.insert(userOjAccount).values({
+    externalId: "97238",
     handle: "forlight",
     id: "account-luogu",
     platform: "luogu",
-    profileUrl: "https://www.luogu.com.cn/user/97238",
     userId: "user-luogu",
   });
 
   return {
+    externalId: "97238",
     handle: "forlight",
     id: "account-luogu",
-    profileUrl: "https://www.luogu.com.cn/user/97238",
   };
 };
 

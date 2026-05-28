@@ -96,8 +96,8 @@ create table user_oj_account (
   id text primary key not null,
   user_id text not null,
   platform text not null,
-  handle text not null,
-  profile_url text default '' not null
+  external_id text not null,
+  handle text not null
 )
 `,
   `

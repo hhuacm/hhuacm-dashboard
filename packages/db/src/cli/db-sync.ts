@@ -20,6 +20,137 @@ const fail = (message: string): never => {
 const quoteIdentifier = (identifier: string) =>
   `"${identifier.replaceAll('"', '""')}"`;
 
+const readTableColumnNames = async (client: DbClient, tableName: string) => {
+  const result = await client.execute(
+    `PRAGMA table_info(${quoteIdentifier(tableName)});`
+  );
+  const columnNames: string[] = [];
+
+  for (const row of result.rows) {
+    const name = row.name;
+
+    if (typeof name === "string") {
+      columnNames.push(name);
+    }
+  }
+
+  return columnNames;
+};
+
+const readTableIndexNames = async (client: DbClient, tableName: string) => {
+  const result = await client.execute(
+    `PRAGMA index_list(${quoteIdentifier(tableName)});`
+  );
+  const indexNames: string[] = [];
+
+  for (const row of result.rows) {
+    const name = row.name;
+
+    if (typeof name === "string") {
+      indexNames.push(name);
+    }
+  }
+
+  return indexNames;
+};
+
+const hasTable = async (client: DbClient, tableName: string) => {
+  const result = await client.execute({
+    args: [tableName],
+    sql: "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1;",
+  });
+
+  return result.rows.length > 0;
+};
+
+const prepareOjAccountExternalIdColumn = async (client: DbClient) => {
+  if (!(await hasTable(client, "user_oj_account"))) {
+    return;
+  }
+
+  const columnNames = await readTableColumnNames(client, "user_oj_account");
+
+  if (!columnNames.includes("external_id")) {
+    await client.execute(
+      "ALTER TABLE user_oj_account ADD COLUMN external_id text;"
+    );
+  }
+
+  const externalIdBackfillExpression = columnNames.includes("profile_url")
+    ? `
+      CASE
+        WHEN platform = 'luogu' AND profile_url GLOB '*://www.luogu.com.cn/user/[0-9]*'
+          THEN replace(substr(profile_url, length('https://www.luogu.com.cn/user/') + 1), '/', '')
+        WHEN platform = 'nowcoder' AND handle = 'ForLight'
+          THEN '660255087'
+        ELSE handle
+      END
+    `
+    : `
+      CASE
+        WHEN platform = 'nowcoder' AND handle = 'ForLight'
+          THEN '660255087'
+        ELSE handle
+      END
+    `;
+
+  await client.execute(`
+    UPDATE user_oj_account
+    SET external_id = ${externalIdBackfillExpression}
+    WHERE external_id IS NULL OR trim(external_id) = '';
+  `);
+  await client.execute(`
+    UPDATE user_oj_account
+    SET handle = 'F0rL1ght'
+    WHERE platform = 'nowcoder' AND external_id = '660255087';
+  `);
+
+  const missingExternalIds = await client.execute(`
+    SELECT id FROM user_oj_account
+    WHERE external_id IS NULL OR trim(external_id) = ''
+    LIMIT 1;
+  `);
+
+  if (missingExternalIds.rows.length > 0) {
+    fail("user_oj_account contains rows without external_id.");
+  }
+
+  const duplicateExternalIds = await client.execute(`
+    SELECT platform, external_id, count(*) as count
+    FROM user_oj_account
+    GROUP BY platform, external_id
+    HAVING count(*) > 1
+    LIMIT 1;
+  `);
+
+  if (duplicateExternalIds.rows.length > 0) {
+    fail("user_oj_account contains duplicate platform/external_id pairs.");
+  }
+
+  const indexNames = await readTableIndexNames(client, "user_oj_account");
+
+  if (indexNames.includes("user_oj_account_platform_handle_unique")) {
+    await client.execute("DROP INDEX user_oj_account_platform_handle_unique;");
+  }
+
+  if (!indexNames.includes("user_oj_account_platform_external_id_unique")) {
+    await client.execute(`
+      CREATE UNIQUE INDEX user_oj_account_platform_external_id_unique
+      ON user_oj_account (platform, external_id);
+    `);
+  }
+};
+
+const deleteRetiredRefreshRequests = async (client: DbClient) => {
+  if (!(await hasTable(client, "refresh_request"))) {
+    return;
+  }
+
+  await client.execute(
+    "DELETE FROM refresh_request WHERE kind = 'luogu.profileUrl';"
+  );
+};
+
 const getLocalAuthToken = (databaseUrl: string) => {
   if (
     databaseUrl.startsWith("file:") ||
@@ -125,6 +256,8 @@ const main = async () => {
   const client = createDbClient();
 
   try {
+    await prepareOjAccountExternalIdColumn(client);
+    await deleteRetiredRefreshRequests(client);
     await dropViews(client, await readViewNames(client));
     runDrizzlePush();
     await verifyDatabase(client);

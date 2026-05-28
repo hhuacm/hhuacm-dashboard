@@ -20,8 +20,8 @@ export const userOjAccount = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     platform: text("platform", { enum: ojPlatforms }).notNull(),
+    externalId: text("external_id").notNull(),
     handle: text("handle").notNull(),
-    profileUrl: text("profile_url").default("").notNull(),
   },
   (table) => [
     check(
@@ -32,9 +32,9 @@ export const userOjAccount = sqliteTable(
       table.userId,
       table.platform
     ),
-    uniqueIndex("user_oj_account_platform_handle_unique").on(
+    uniqueIndex("user_oj_account_platform_external_id_unique").on(
       table.platform,
-      table.handle
+      table.externalId
     ),
     index("user_oj_account_platform_userId_idx").on(
       table.platform,

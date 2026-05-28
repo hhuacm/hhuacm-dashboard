@@ -3,12 +3,10 @@ import { codeforcesAccountStatsJob as codeforcesAccountStatsJobDefinition } from
 import type { RefreshJobDefinition } from "./definition";
 import { luoguAccountStatsJob as luoguAccountStatsJobDefinition } from "./luogu-account-stats";
 import { luoguProblemDetailsJob as luoguProblemDetailsJobDefinition } from "./luogu-problem-details";
-import { luoguProfileUrlJob as luoguProfileUrlJobDefinition } from "./luogu-profile-url";
 import { userAwardsFromLuoguJob as userAwardsFromLuoguJobDefinition } from "./user-awards-from-luogu";
 
 export const refreshJobDefinitions = [
   codeforcesAccountStatsJobDefinition,
-  luoguProfileUrlJobDefinition,
   luoguAccountStatsJobDefinition,
   luoguProblemDetailsJobDefinition,
   userAwardsFromLuoguJobDefinition,

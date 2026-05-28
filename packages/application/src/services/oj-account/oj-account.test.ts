@@ -32,7 +32,7 @@ describe("addOjAccount", () => {
     }
   };
 
-  it("enqueues Luogu URL refreshes and current-member stats refreshes", async () => {
+  it("enqueues current-member stats refreshes", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "active-user", memberStatus: "active" });
@@ -44,22 +44,22 @@ describe("addOjAccount", () => {
     });
 
     await addOjAccount(db, {
-      handle: "activeHandle",
+      externalId: "activeHandle",
       platform: "codeforces",
       userId: "active-user",
     });
     await addOjAccount(db, {
-      handle: "retiredHandle",
+      externalId: "retiredHandle",
       platform: "codeforces",
       userId: "retired-user",
     });
     await addOjAccount(db, {
-      handle: "activeLuogu",
+      externalId: "97238",
       platform: "luogu",
       userId: "active-luogu-user",
     });
     await addOjAccount(db, {
-      handle: "retiredLuogu",
+      externalId: "93247",
       platform: "luogu",
       userId: "retired-luogu-user",
     });
@@ -67,48 +67,77 @@ describe("addOjAccount", () => {
     const refreshRequests = await db.select().from(refreshRequest);
     const luoguAccounts = await db
       .select({
+        externalId: userOjAccount.externalId,
         handle: userOjAccount.handle,
-        profileUrl: userOjAccount.profileUrl,
       })
       .from(userOjAccount)
       .where(eq(userOjAccount.platform, "luogu"));
 
-    expect(refreshRequests).toHaveLength(5);
+    expect(refreshRequests).toHaveLength(3);
     expect(refreshRequests.map((request) => request.kind).sort()).toEqual([
       "codeforces.accountStats",
       "luogu.accountStats",
-      "luogu.profileUrl",
-      "luogu.profileUrl",
       "user.awardsFromLuogu",
     ]);
     expect(luoguAccounts).toEqual(
       expect.arrayContaining([
-        { handle: "activeLuogu", profileUrl: "" },
-        { handle: "retiredLuogu", profileUrl: "" },
+        {
+          externalId: "97238",
+          handle: "97238",
+        },
+        {
+          externalId: "93247",
+          handle: "93247",
+        },
       ])
     );
   });
 
-  it("rejects the exact same handle on the same platform", async () => {
+  it("rejects the exact same external ID on the same platform", async () => {
     const db = await createServiceTestDb();
 
     await createUser(db, { id: "first-user" });
     await createUser(db, { id: "second-user" });
 
     await addOjAccount(db, {
-      handle: "same-handle",
+      externalId: "same-id",
       platform: "atcoder",
       userId: "first-user",
     });
 
     await expect(
       addOjAccount(db, {
-        handle: "same-handle",
+        externalId: "same-id",
         platform: "atcoder",
         userId: "second-user",
       })
     ).rejects.toMatchObject({
       code: "CONFLICT",
+    });
+  });
+
+  it("allows matching display handles with different external IDs", async () => {
+    const db = await createServiceTestDb();
+
+    await createUser(db, { id: "first-user" });
+    await createUser(db, { id: "second-user" });
+
+    await db.insert(userOjAccount).values({
+      externalId: "first-id",
+      handle: "same-handle",
+      platform: "nowcoder",
+      userId: "first-user",
+    });
+
+    await expect(
+      addOjAccount(db, {
+        externalId: "second-id",
+        platform: "nowcoder",
+        userId: "second-user",
+      })
+    ).resolves.toMatchObject({
+      externalId: "second-id",
+      handle: "second-id",
     });
   });
 });

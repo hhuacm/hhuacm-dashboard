@@ -49,3 +49,25 @@ export const getOjPlatformConfig = (platform: OjPlatform): OjPlatformConfig => {
 
   return config;
 };
+
+export const buildOjProfileUrl = (platform: OjPlatform, externalId: string) => {
+  const encodedExternalId = encodeURIComponent(externalId);
+
+  if (platform === "codeforces") {
+    return `https://codeforces.com/profile/${encodedExternalId}`;
+  }
+
+  if (platform === "atcoder") {
+    return `https://atcoder.jp/users/${encodedExternalId}`;
+  }
+
+  if (platform === "luogu") {
+    return `https://www.luogu.com.cn/user/${encodedExternalId}`;
+  }
+
+  if (platform === "nowcoder") {
+    return `https://ac.nowcoder.com/acm/contest/profile/${encodedExternalId}`;
+  }
+
+  return "";
+};

@@ -44,9 +44,9 @@ describe("Luogu profile stats", () => {
 
     await expect(
       getLuoguStatsForProfile(db, {
+        externalId: "",
         handle: "",
         id: "account-luogu",
-        profileUrl: "",
       })
     ).resolves.toMatchObject({
       acceptedProblemCount: null,
@@ -86,9 +86,9 @@ describe("Luogu profile stats", () => {
 
     await expect(
       getLuoguStatsForProfile(db, {
+        externalId: "97238",
         handle: "forlight",
         id: "account-luogu",
-        profileUrl: "https://www.luogu.com.cn/user/97238",
       })
     ).resolves.toMatchObject({
       acceptedProblemCount: 3,
@@ -103,9 +103,9 @@ describe("Luogu profile stats", () => {
     const db = await createServiceTestDb();
 
     const stats = await getLuoguStatsForProfile(db, {
+      externalId: "97238",
       handle: "forlight",
       id: "account-luogu",
-      profileUrl: "https://www.luogu.com.cn/user/97238",
     });
     const requests = await db.select().from(refreshRequest);
 

@@ -47,9 +47,9 @@ export interface AdminUsersSort {
 }
 
 export interface AdminUserOjAccount {
+  externalId: string;
   handle: string;
   platform: OjPlatform;
-  profileUrl: string;
 }
 
 export interface AdminUserProfile {
@@ -137,8 +137,8 @@ const getErrorText = (error: unknown) => {
 export const getAdminEditErrorMessage = (error: unknown) => {
   const errorText = getErrorText(error);
 
-  if (errorText.includes("OJ handle already exists")) {
-    return "该平台账号已被其他用户登记。";
+  if (errorText.includes("OJ external ID already exists")) {
+    return "该平台账号标识已被其他用户登记。";
   }
 
   if (errorText.includes("OJ account does not exist")) {

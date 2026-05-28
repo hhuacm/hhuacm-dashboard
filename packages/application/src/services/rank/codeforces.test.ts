@@ -33,10 +33,10 @@ describe("listCodeforcesRankRows", () => {
     }
 
     await db.insert(userOjAccount).values({
+      externalId: input.id,
       handle: input.id,
       id: `account-${input.id}`,
       platform: "codeforces",
-      profileUrl: `https://codeforces.com/profile/${input.id}`,
       userId: input.id,
     });
 

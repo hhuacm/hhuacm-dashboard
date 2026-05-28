@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
+import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
   EmptyCell,
   LinkedText,
@@ -78,12 +79,7 @@ const renderHandleCell = (row: RankRow) => {
 
   return (
     <LinkedText
-      href={
-        codeforces.profileUrl ||
-        `https://codeforces.com/profile/${encodeURIComponent(
-          codeforces.handle
-        )}`
-      }
+      href={buildOjProfileUrl("codeforces", codeforces.externalId)}
       tone={getCodeforcesRatingClassName(codeforces.rating)}
     >
       {codeforces.handle}

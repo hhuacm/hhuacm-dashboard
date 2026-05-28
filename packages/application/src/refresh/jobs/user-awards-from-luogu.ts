@@ -13,9 +13,9 @@ import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 const userAwardSource = "luogu";
 
 const luoguAccountFields = {
+  externalId: userOjAccount.externalId,
   handle: userOjAccount.handle,
   id: userOjAccount.id,
-  profileUrl: userOjAccount.profileUrl,
   userId: userOjAccount.userId,
 } as const;
 

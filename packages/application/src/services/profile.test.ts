@@ -27,17 +27,17 @@ describe("getPublicProfile", () => {
     });
     await db.insert(userOjAccount).values([
       {
+        externalId: "tourist",
         handle: "tourist",
         id: "account-codeforces",
         platform: "codeforces",
-        profileUrl: "https://codeforces.com/profile/tourist",
         userId: "user-retired",
       },
       {
+        externalId: "12345",
         handle: "12345",
         id: "account-luogu",
         platform: "luogu",
-        profileUrl: "https://www.luogu.com.cn/user/12345",
         userId: "user-retired",
       },
     ]);
@@ -56,14 +56,14 @@ describe("getPublicProfile", () => {
     expect(profile.profile.memberStatus).toBe("retired");
     expect(profile.ojAccounts).toEqual([
       {
+        externalId: "tourist",
         handle: "tourist",
         platform: "codeforces",
-        profileUrl: "https://codeforces.com/profile/tourist",
       },
       {
+        externalId: "12345",
         handle: "12345",
         platform: "luogu",
-        profileUrl: "https://www.luogu.com.cn/user/12345",
       },
     ]);
     expect(refreshRequests).toHaveLength(0);
@@ -84,10 +84,10 @@ describe("getPublicProfile", () => {
       userId: "user-retired-award",
     });
     await db.insert(userOjAccount).values({
+      externalId: "97238",
       handle: "forlight",
       id: "account-luogu-award",
       platform: "luogu",
-      profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "user-retired-award",
     });
     await db.insert(userAwardSync).values({
@@ -142,10 +142,10 @@ describe("getPublicProfile", () => {
       userId: "user-active-award",
     });
     await db.insert(userOjAccount).values({
+      externalId: "97238",
       handle: "forlight",
       id: "account-luogu-active-award",
       platform: "luogu",
-      profileUrl: "https://www.luogu.com.cn/user/97238",
       userId: "user-active-award",
     });
 

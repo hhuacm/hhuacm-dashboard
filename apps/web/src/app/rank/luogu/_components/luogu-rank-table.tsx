@@ -4,6 +4,7 @@ import { Table } from "@heroui/react";
 import clsx from "clsx";
 import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
 
+import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
   EmptyCell,
   LinkedText,
@@ -60,12 +61,7 @@ const renderMajorCell = (row: RankRow) =>
   row.major ? <span className="truncate">{row.major}</span> : <EmptyRankCell />;
 
 const renderHandleCell = (row: RankRow) => (
-  <LinkedText
-    href={
-      row.luogu.profileUrl ||
-      `https://www.luogu.com.cn/user/${encodeURIComponent(row.luogu.handle)}`
-    }
-  >
+  <LinkedText href={buildOjProfileUrl("luogu", row.luogu.externalId)}>
     {row.luogu.handle}
   </LinkedText>
 );

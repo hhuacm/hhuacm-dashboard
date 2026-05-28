@@ -39,7 +39,7 @@ const groupOjAccountsByUserId = (
   for (const account of accounts) {
     const currentAccounts = accountsByUserId.get(account.userId) ?? [];
     currentAccounts.push({
-      handle: account.handle,
+      externalId: account.externalId,
       platform: account.platform,
     });
     accountsByUserId.set(account.userId, currentAccounts);
@@ -55,7 +55,7 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
 
   const accounts = await db
     .select({
-      handle: userOjAccount.handle,
+      externalId: userOjAccount.externalId,
       platform: userOjAccount.platform,
       userId: userOjAccount.userId,
     })
@@ -63,7 +63,7 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
     .where(inArray(userOjAccount.userId, userIds))
     .orderBy(
       asc(userOjAccount.platform),
-      asc(userOjAccount.handle),
+      asc(userOjAccount.externalId),
       asc(userOjAccount.id)
     );
 

@@ -28,7 +28,7 @@ export interface AdminUsersListInput {
 }
 
 export interface AdminUserOjAccount {
+  externalId: string;
   handle: string;
   platform: OjPlatform;
-  profileUrl: string;
 }
