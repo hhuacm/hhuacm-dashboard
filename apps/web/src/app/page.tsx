@@ -3,7 +3,7 @@
 import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { ListChecks, Sparkles, Trophy } from "lucide-react";
+import { ListChecks, Sparkles, Trophy, UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -231,34 +231,70 @@ function QuickLinksCard() {
           <Card.Title className="mt-1">常用入口</Card.Title>
         </div>
       </Card.Header>
-      <Card.Content className="grid gap-4">
-        <Button
-          className="justify-start"
-          onPress={() => router.push("/problem-sets" as Route)}
-          size="lg"
-          variant="outline"
-        >
-          <ListChecks className="size-4" />
-          题单
-        </Button>
-        <Button
-          className="justify-start"
-          onPress={() => router.push("/rank/codeforces" as Route)}
-          size="lg"
-          variant="outline"
-        >
-          <Trophy className="size-4" />
-          Codeforces 排行榜
-        </Button>
-        <Button
-          className="justify-start"
-          onPress={() => router.push("/rank/luogu" as Route)}
-          size="lg"
-          variant="outline"
-        >
-          <Trophy className="size-4" />
-          洛谷排行榜
-        </Button>
+      <Card.Content className="grid gap-5">
+        <OverviewSection title="个人与练习">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/problem-sets" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <ListChecks className="size-4" />
+              题单
+            </Button>
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/profile" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <UserRound className="size-4" />
+              个人主页
+            </Button>
+          </div>
+        </OverviewSection>
+
+        <OverviewSection title="排行榜">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/rank/codeforces" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <Trophy className="size-4" />
+              Codeforces
+            </Button>
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/rank/atcoder" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <Trophy className="size-4" />
+              AtCoder
+            </Button>
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/rank/luogu" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <Trophy className="size-4" />
+              洛谷
+            </Button>
+            <Button
+              className="w-full justify-start"
+              onPress={() => router.push("/rank/nowcoder" as Route)}
+              size="lg"
+              variant="outline"
+            >
+              <Trophy className="size-4" />
+              牛客
+            </Button>
+          </div>
+        </OverviewSection>
       </Card.Content>
     </Card>
   );
