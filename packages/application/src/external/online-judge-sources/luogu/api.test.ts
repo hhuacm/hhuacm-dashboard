@@ -326,6 +326,24 @@ describe("luoguSource", () => {
     });
   });
 
+  it("accepts Luogu user page data with date-indexed daily counts", async () => {
+    const dateIndexedDailyCountsUserData = {
+      ...userData,
+      dailyCounts: {
+        "2026-05-26": [1, 1],
+      },
+    };
+
+    mockFetchResponses([
+      createUserRedirectResponse("C3VK=daily-counts"),
+      Response.json({ data: dateIndexedDailyCountsUserData, status: 200 }),
+    ]);
+
+    await expect(luoguSource.user({ uid: 97_238 })).resolves.toEqual(
+      dateIndexedDailyCountsUserData
+    );
+  });
+
   it("loads problem page data", async () => {
     const problemData = {
       problem: {

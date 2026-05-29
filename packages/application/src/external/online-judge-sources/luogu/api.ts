@@ -113,7 +113,7 @@ const luoguGuScoresSchema = z.looseObject({
 });
 
 const luoguUserPageDataSchema = z.looseObject({
-  dailyCounts: z.array(z.unknown()),
+  dailyCounts: z.unknown(),
   elo: z.array(luoguEloRatingSchema),
   gu: z.looseObject({
     scores: luoguGuScoresSchema,
