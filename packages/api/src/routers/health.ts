@@ -1,5 +1,7 @@
 import { arch, platform, release } from "node:os";
 
+import { getNodeEnv } from "@hhuacm-dashboard/env/runtime";
+
 import { publicProcedure } from "../index";
 
 const serverStartedAt = new Date();
@@ -46,7 +48,7 @@ export const healthProcedure = publicProcedure.query(() => {
     service: "hhuacm-dashboard API",
     checkedAt: checkedAt.toISOString(),
     uptimeMs: checkedAt.getTime() - serverStartedAt.getTime(),
-    environment: process.env.NODE_ENV ?? "development",
+    environment: getNodeEnv(),
     runtime: {
       name: getRuntimeName(),
       version: getRuntimeVersion(),

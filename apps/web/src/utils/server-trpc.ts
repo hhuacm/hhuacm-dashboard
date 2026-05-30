@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
-import { env } from "@hhuacm-dashboard/env/web";
+import { getServerTrpcUrl } from "@hhuacm-dashboard/env/web";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { headers } from "next/headers";
 
@@ -16,7 +16,7 @@ export async function createServerCaller() {
             cookie: requestHeaders.get("cookie") ?? "",
           };
         },
-        url: `${env.NEXT_PUBLIC_SERVER_URL}/trpc`,
+        url: getServerTrpcUrl(),
       }),
     ],
   });

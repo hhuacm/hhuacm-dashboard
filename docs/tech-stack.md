@@ -44,10 +44,10 @@ hhuacm-dashboard/
     |-- env/          # Runtime environment validation
 ```
 
-The main request flow is:
+The main browser request flow is:
 
 ```text
-Next.js app -> TanStack Query -> tRPC client -> Hono /trpc -> tRPC router
+Next.js app -> TanStack Query -> same-origin /trpc -> Hono /trpc -> tRPC router
 ```
 
 The package boundaries are lightly inspired by clean and hexagonal architecture. `apps/*` act as process entrypoints and runtime composition roots, `packages/api` adapts HTTP/tRPC transport to use cases, `packages/application` owns application use cases and background workflows, and `packages/domain` keeps pure domain facts. Infrastructure packages such as `db`, `auth`, and `env` remain explicit dependencies at the edges instead of becoming hidden global context.
@@ -60,12 +60,14 @@ Some read procedures use a read-through refresh pattern: they return cached data
 
 - Web app: `http://localhost:3001`
 - API server: `http://localhost:3000`
-- tRPC endpoint: `http://localhost:3000/trpc`
-- Auth endpoint: `http://localhost:3000/api/auth`
+- Browser tRPC endpoint: `/trpc`
+- Browser auth endpoint: `/api/auth`
+- API server tRPC endpoint: `http://localhost:3000/trpc`
+- API server auth endpoint: `http://localhost:3000/api/auth`
 - Refresh worker: background process with no HTTP port
 - Local libSQL server: `http://127.0.0.1:8080`
 
-The web app reads `NEXT_PUBLIC_SERVER_URL` from `apps/web/.env`. The server reads HTTP, auth, and database variables from `apps/server/.env`. The refresh worker reads only `DATABASE_URL` and `DATABASE_AUTH_TOKEN` from `apps/refresh-worker/.env`. For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATABASE_AUTH_TOKEN` empty. The refresh queue currently assumes a single worker instance.
+Browser-side web requests use same-origin paths so the production build is not tied to a public API URL. In local development, Next.js rewrites `/trpc/*` and `/api/auth/*` to `SERVER_INTERNAL_URL`, which defaults to `http://localhost:3000` in the web environment module. Production routing should be handled by the deployment proxy, while server-rendered web routes use `SERVER_INTERNAL_URL` for container-internal API calls and require it in production. The server reads HTTP, auth, and database variables from `apps/server/.env`. The refresh worker reads only `DATABASE_URL` and `DATABASE_AUTH_TOKEN` from `apps/refresh-worker/.env`. For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATABASE_AUTH_TOKEN` empty. The refresh queue currently assumes a single worker instance.
 
 ## Common Scripts
 

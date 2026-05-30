@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./db": "./src/db.ts",
+    "./runtime": "./src/runtime.ts",
     "./server": "./src/server.ts",
     "./web": "./src/web.ts"
   },
@@ -12,7 +13,6 @@
   },
   "dependencies": {
     "@t3-oss/env-core": "0.13",
-    "@t3-oss/env-nextjs": "0.13",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

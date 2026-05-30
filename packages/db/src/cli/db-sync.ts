@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
+import { resolveLibsqlAuthToken } from "../libsql-auth-token";
 
 type DbClient = ReturnType<typeof createClient>;
 
@@ -15,6 +16,16 @@ dotenv.config({ path: serverEnvPath });
 
 const fail = (message: string): never => {
   throw new Error(`[db:sync] ${message}`);
+};
+
+const readDatabaseUrl = (): string => {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (databaseUrl) {
+    return databaseUrl;
+  }
+
+  return fail(`DATABASE_URL is missing. Expected it in ${serverEnvPath}.`);
 };
 
 const quoteIdentifier = (identifier: string) =>
@@ -151,28 +162,14 @@ const deleteRetiredRefreshRequests = async (client: DbClient) => {
   );
 };
 
-const getLocalAuthToken = (databaseUrl: string) => {
-  if (
-    databaseUrl.startsWith("file:") ||
-    databaseUrl.startsWith("http://127.0.0.1") ||
-    databaseUrl.startsWith("http://localhost")
-  ) {
-    return "local";
-  }
-
-  return "";
-};
-
 const createDbClient = () => {
-  const databaseUrl = process.env.DATABASE_URL ?? "";
-
-  if (!databaseUrl) {
-    fail(`DATABASE_URL is missing. Expected it in ${serverEnvPath}.`);
-  }
+  const databaseUrl = readDatabaseUrl();
 
   return createClient({
-    authToken:
-      process.env.DATABASE_AUTH_TOKEN || getLocalAuthToken(databaseUrl),
+    authToken: resolveLibsqlAuthToken({
+      databaseAuthToken: process.env.DATABASE_AUTH_TOKEN,
+      databaseUrl,
+    }),
     url: databaseUrl,
   });
 };

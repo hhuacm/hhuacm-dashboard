@@ -1,15 +1,16 @@
 import dotenv from "dotenv";
 import { defineConfig } from "drizzle-kit";
+import { resolveLibsqlAuthToken } from "./src/libsql-auth-token";
 
 dotenv.config({
   path: "../../apps/server/.env",
 });
 
-const databaseUrl = process.env.DATABASE_URL || "";
-const isLocalLibsqlDatabase =
-  databaseUrl.startsWith("file:") ||
-  databaseUrl.startsWith("http://127.0.0.1") ||
-  databaseUrl.startsWith("http://localhost");
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required for Drizzle config.");
+}
 
 export default defineConfig({
   schema: [
@@ -30,7 +31,9 @@ export default defineConfig({
   dialect: "turso",
   dbCredentials: {
     url: databaseUrl,
-    authToken:
-      process.env.DATABASE_AUTH_TOKEN || (isLocalLibsqlDatabase ? "local" : ""),
+    authToken: resolveLibsqlAuthToken({
+      databaseAuthToken: process.env.DATABASE_AUTH_TOKEN,
+      databaseUrl,
+    }),
   },
 });
