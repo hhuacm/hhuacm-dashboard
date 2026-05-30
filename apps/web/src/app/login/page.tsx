@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -67,7 +67,23 @@ const getSafeRedirectPath = (redirect: null | string): Route => {
 const getUserProfilePath = (username: null | string | undefined): Route =>
   username ? (`/profile/${username}` as Route) : "/profile";
 
-export default function LoginPage() {
+function LoginPageFallback() {
+  return (
+    <AppShell
+      description="账号与个人资料入口"
+      icon={<UserRound className="size-4" />}
+      maxWidth="4xl"
+      title="账号"
+    >
+      <div className="mx-auto flex w-full max-w-xl items-center gap-2 text-muted text-sm">
+        <Spinner color="current" size="sm" />
+        加载登录入口
+      </div>
+    </AppShell>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = getSafeRedirectPath(searchParams.get("redirect"));
@@ -250,5 +266,13 @@ export default function LoginPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

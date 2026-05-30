@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UsersRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
@@ -31,7 +31,22 @@ import {
   redirectDelayMs,
 } from "./helpers";
 
-export default function AdminUsersPage() {
+function AdminUsersPageFallback() {
+  return (
+    <AppShell
+      description="管理员控制台"
+      icon={<UsersRound className="size-4" />}
+      title="用户列表"
+    >
+      <div className="flex items-center gap-2 text-muted text-sm">
+        <Spinner color="current" size="sm" />
+        加载用户列表
+      </div>
+    </AppShell>
+  );
+}
+
+function AdminUsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -273,5 +288,13 @@ export default function AdminUsersPage() {
         />
       </div>
     </AppShell>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<AdminUsersPageFallback />}>
+      <AdminUsersPageContent />
+    </Suspense>
   );
 }
