@@ -283,6 +283,7 @@ describe("profile awards", () => {
         contest: "Cached Contest",
         event: null,
         level: "铜牌",
+        sortOrder: 0,
         source: "luogu",
         year: 2020,
       },

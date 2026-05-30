@@ -12,7 +12,7 @@
     "@hhuacm-dashboard/env": "workspace:*",
     "@hono/trpc-server": "0.4",
     "@trpc/server": "catalog:",
-    "hono": "catalog:"
+    "hono": "4"
   },
   "devDependencies": {
     "@hhuacm-dashboard/config": "workspace:*",

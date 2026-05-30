@@ -72,10 +72,10 @@ export function ProfileAwardsSection({
       </Card.Header>
       <Card.Content>
         <div className="grid gap-2">
-          {awards.items.map((award, index) => (
+          {awards.items.map((award) => (
             <ProfileAwardRow
               award={award}
-              key={`${award.source}-${award.year}-${award.contest}-${award.level}-${index}`}
+              key={`${award.source}-${award.sortOrder}`}
             />
           ))}
         </div>

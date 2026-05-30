@@ -48,6 +48,7 @@ export interface PublicProfileAward {
   contest: string;
   event: null | string;
   level: string;
+  sortOrder: number;
   source: "luogu";
   year: number;
 }

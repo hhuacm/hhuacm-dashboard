@@ -66,13 +66,8 @@ export function ProblemPidPreview({
 
       {hasProblemPids ? (
         <div className="flex max-h-48 flex-wrap gap-2 overflow-auto">
-          {visiblePids.map((pid, index) => (
-            <Chip
-              className="font-mono"
-              key={`${pid}-${index}`}
-              size="sm"
-              variant="soft"
-            >
+          {visiblePids.map((pid) => (
+            <Chip className="font-mono" key={pid} size="sm" variant="soft">
               {pid}
             </Chip>
           ))}

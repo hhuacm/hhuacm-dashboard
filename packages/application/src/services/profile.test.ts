@@ -145,6 +145,7 @@ describe("getPublicProfile", () => {
           contest: "ICPC Regional",
           event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
           level: "铜牌",
+          sortOrder: 0,
           source: "luogu",
           year: 2023,
         },

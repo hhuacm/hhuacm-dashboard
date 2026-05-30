@@ -22,6 +22,7 @@ export interface PublicProfileAward {
   contest: string;
   event: null | string;
   level: string;
+  sortOrder: number;
   source: typeof userAwardSource;
   year: number;
 }
@@ -246,6 +247,7 @@ export const getAwardsForPublicProfile = async (
       contest: award.contest,
       event: award.event,
       level: award.level,
+      sortOrder: award.sortOrder,
       source: userAwardSource,
       year: award.year,
     })),
