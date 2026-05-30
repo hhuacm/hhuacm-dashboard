@@ -1,0 +1,46 @@
+name: hhuacm-dashboard
+
+x-app-service: &app-service
+  image: hhuacm-dashboard:${IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+
+x-db-host-access: &db-host-access
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  web:
+    <<: *app-service
+    command: ["bun", "run", "--cwd", "apps/web", "start"]
+    depends_on:
+      - server
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SERVER_INTERNAL_URL: http://server:3000
+    ports:
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-3001}:3000"
+
+  server:
+    <<: [*app-service, *db-host-access]
+    command: ["bun", "run", "--cwd", "apps/server", "start"]
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      DATABASE_AUTH_TOKEN: ${DATABASE_AUTH_TOKEN:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set BETTER_AUTH_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN}
+    ports:
+      - "${SERVER_HOST:-127.0.0.1}:${SERVER_PORT:-3000}:3000"
+
+  refresh-worker:
+    <<: [*app-service, *db-host-access]
+    command: ["bun", "run", "--cwd", "apps/refresh-worker", "start"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      DATABASE_AUTH_TOKEN: ${DATABASE_AUTH_TOKEN:-}

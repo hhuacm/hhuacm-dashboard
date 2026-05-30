@@ -107,6 +107,33 @@ DATABASE_AUTH_TOKEN=
 bun run db:sync
 ```
 
+## Docker 部署
+
+仓库提供一个应用镜像和一份 Compose 编排。默认启动 Web、API 和刷新进程，并将 Web/API 绑定到宿主机 `127.0.0.1`，便于接入服务器上已有的 Nginx / 1Panel 反向代理：
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Nginx 侧按路径分流即可：
+
+```nginx
+location ^~ /trpc {
+  proxy_pass http://127.0.0.1:3000;
+}
+
+location ^~ /api/auth {
+  proxy_pass http://127.0.0.1:3000;
+}
+
+location / {
+  proxy_pass http://127.0.0.1:3001;
+}
+```
+
+`refresh-worker` 当前只应运行一个实例；如果已经部署在别处，不要同时启动 Compose 中的 `refresh-worker` 服务。
+
 ## 代码检查与测试
 
 提交前运行完整验证：
