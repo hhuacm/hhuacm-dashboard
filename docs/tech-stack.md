@@ -98,12 +98,12 @@ For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATAB
 The Docker deployment uses one application image with different commands per process:
 
 ```text
-web            hhuacm-dashboard image, bun run --cwd apps/web start
-server         hhuacm-dashboard image, bun run --cwd apps/server start
-refresh-worker hhuacm-dashboard image, bun run --cwd apps/refresh-worker start
+web            ghcr.io/hhuacm/hhuacm-dashboard image, bun run --cwd apps/web start
+server         ghcr.io/hhuacm/hhuacm-dashboard image, bun run --cwd apps/server start
+refresh-worker ghcr.io/hhuacm/hhuacm-dashboard image, bun run --cwd apps/refresh-worker start
 ```
 
-Compose starts web, server, and refresh-worker, and binds `web` and `server` to `127.0.0.1` on the Docker host so an existing host Nginx or 1Panel reverse proxy can route public traffic. Host Nginx should route `/trpc/*` and `/api/auth/*` to the server port and all other paths to the web port. The web container uses `SERVER_INTERNAL_URL=http://server:3000` for server-rendered tRPC calls. The refresh worker should still only have one running instance across the whole deployment.
+Compose starts web, server, and refresh-worker from `ghcr.io/hhuacm/hhuacm-dashboard:${IMAGE_TAG:-main}`, and binds `web` and `server` to `127.0.0.1` on the Docker host so an existing host Nginx or 1Panel reverse proxy can route public traffic. Host Nginx should route `/trpc/*` and `/api/auth/*` to the server port and all other paths to the web port. The web container uses `SERVER_INTERNAL_URL=http://server:3000` for server-rendered tRPC calls. The refresh worker should still only have one running instance across the whole deployment.
 
 ## Common Scripts
 

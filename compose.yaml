@@ -1,7 +1,7 @@
 name: hhuacm-dashboard
 
 x-app-service: &app-service
-  image: hhuacm-dashboard:${IMAGE_TAG:-local}
+  image: ghcr.io/hhuacm/hhuacm-dashboard:${IMAGE_TAG:-main}
   build:
     context: .
     dockerfile: Dockerfile

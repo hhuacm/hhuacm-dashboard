@@ -113,8 +113,11 @@ bun run db:sync
 
 ```bash
 cp .env.example .env
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+Compose 默认使用 `ghcr.io/hhuacm/hhuacm-dashboard:${IMAGE_TAG:-main}`。需要回滚或锁定版本时，在 `.env` 中调整 `IMAGE_TAG`。
 
 Nginx 侧按路径分流即可：
 
