@@ -67,7 +67,31 @@ Some read procedures use a read-through refresh pattern: they return cached data
 - Refresh worker: background process with no HTTP port
 - Local libSQL server: `http://127.0.0.1:8080`
 
-Browser-side web requests use same-origin paths so the production build is not tied to a public API URL. In local development, Next.js rewrites `/trpc/*` and `/api/auth/*` to `SERVER_INTERNAL_URL`, which defaults to `http://localhost:3000` in the web environment module. Production routing should be handled by the deployment proxy, while server-rendered web routes use `SERVER_INTERNAL_URL` for container-internal API calls and require it in production. The server reads HTTP, auth, and database variables from `apps/server/.env`. The refresh worker reads only `DATABASE_URL` and `DATABASE_AUTH_TOKEN` from `apps/refresh-worker/.env`. For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATABASE_AUTH_TOKEN` empty. The refresh queue currently assumes a single worker instance.
+Browser-side web requests use same-origin paths so the production build is not tied to a public API URL. In local development, Next.js rewrites `/trpc/*` and `/api/auth/*` to `SERVER_INTERNAL_URL`, which defaults to `http://localhost:3000` in the web environment module. Production routing should be handled by the deployment proxy, while server-rendered web routes use `SERVER_INTERNAL_URL` for container-internal API calls and require it in production. Each app directory includes a `.env.example` file for the variables it reads. The refresh queue currently assumes a single worker instance.
+
+Production environment variables by process:
+
+```text
+web:
+  NODE_ENV=production
+  PORT=3000
+  SERVER_INTERNAL_URL=http://server:3000
+
+server:
+  NODE_ENV=production
+  PORT=3000
+  DATABASE_URL=...
+  DATABASE_AUTH_TOKEN=...
+  BETTER_AUTH_SECRET=...
+  BETTER_AUTH_URL=https://dashboard.example.com
+  CORS_ORIGIN=https://dashboard.example.com
+
+refresh-worker:
+  DATABASE_URL=...
+  DATABASE_AUTH_TOKEN=...
+```
+
+For local `turso dev`, use `DATABASE_URL=http://127.0.0.1:8080` and leave `DATABASE_AUTH_TOKEN` empty.
 
 ## Common Scripts
 

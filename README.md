@@ -70,6 +70,12 @@ bun run dev:server
 bun run dev:refresh-worker
 ```
 
+各应用目录提供 `.env.example` 作为本地配置参考。Web 应用的浏览器端请求使用同源 `/trpc` 和 `/api/auth`，本地开发时由 Next.js rewrite 转发到 API 服务；如需覆盖这个内部地址，在 `apps/web/.env` 中配置：
+
+```bash
+SERVER_INTERNAL_URL=http://localhost:3000
+```
+
 ## 数据库
 
 本地开发使用 libSQL / Turso。需要本地数据库时，先安装 Turso CLI：
@@ -90,6 +96,8 @@ bun run db:local
 DATABASE_URL=http://127.0.0.1:8080
 DATABASE_AUTH_TOKEN=
 ```
+
+生产部署时，Web 容器需要通过 `SERVER_INTERNAL_URL` 访问 API 容器，例如 `http://server:3000`；API 服务的 `BETTER_AUTH_URL` 和 `CORS_ORIGIN` 应指向用户访问的同一个站点域名。前端生产构建不需要公网 API URL。
 
 当前刷新队列按单个 worker 实例设计。本地开发和部署时只应运行一个 `refresh-worker` 进程。
 
