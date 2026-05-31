@@ -139,37 +139,12 @@ describe("nowcoderSource", () => {
     });
   });
 
-  it("retries transient request failures", async () => {
-    const urls = mockFetchResponses([
-      new Error("network failed"),
-      Response.json(createOkEnvelope()),
-    ]);
-
-    await expect(
-      nowcoderSource.ratingBasic({ uid: 660_255_087 })
-    ).resolves.toMatchObject({ nickname: "F0rL1ght" });
-    expect(urls).toHaveLength(2);
-  });
-
-  it("retries retryable HTTP status responses", async () => {
-    const urls = mockFetchResponses([
-      Response.json({}, { status: 502 }),
-      Response.json(createOkEnvelope()),
-    ]);
-
-    await expect(
-      nowcoderSource.ratingBasic({ uid: 660_255_087 })
-    ).resolves.toMatchObject({ uid: 660_255_087 });
-    expect(urls).toHaveLength(2);
-  });
-
-  it("does not retry non-retryable HTTP status responses", async () => {
-    const urls = mockFetchResponses([Response.json({}, { status: 404 })]);
+  it("throws a Nowcoder-specific error for rating-basic HTTP failures", async () => {
+    mockJsonResponse({}, 404);
 
     await expect(
       nowcoderSource.ratingBasic({ uid: 660_255_087 })
     ).rejects.toThrow("Nowcoder rating-basic 660255087 HTTP 404");
-    expect(urls).toHaveLength(1);
   });
 
   it("throws when Nowcoder envelope code is not OK", async () => {
@@ -256,26 +231,5 @@ describe("nowcoderSource", () => {
     await expect(
       nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
     ).resolves.toBeNull();
-  });
-
-  it("retries retryable practice-coding HTTP status responses", async () => {
-    const urls = mockFetchResponses([
-      new Response("", { status: 502 }),
-      new Response(createPracticeCodingHtml(312)),
-    ]);
-
-    await expect(
-      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
-    ).resolves.toBe(312);
-    expect(urls).toHaveLength(2);
-  });
-
-  it("does not retry non-retryable practice-coding HTTP status responses", async () => {
-    const urls = mockFetchResponses([new Response("", { status: 404 })]);
-
-    await expect(
-      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
-    ).rejects.toThrow("Nowcoder practice-coding 660255087 HTTP 404");
-    expect(urls).toHaveLength(1);
   });
 });

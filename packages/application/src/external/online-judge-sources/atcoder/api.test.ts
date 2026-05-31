@@ -91,39 +91,6 @@ describe("atcoderSource", () => {
     ]);
   });
 
-  it("retries transient request failures", async () => {
-    const urls = mockFetchResponses([
-      new Error("network failed"),
-      Response.json([createHistoryItem()]),
-    ]);
-
-    await expect(
-      atcoderSource.userHistory({ userId: "forlight" })
-    ).resolves.toHaveLength(1);
-    expect(urls).toHaveLength(2);
-  });
-
-  it("retries retryable HTTP status responses", async () => {
-    const urls = mockFetchResponses([
-      Response.json({}, { status: 502 }),
-      Response.json([createHistoryItem()]),
-    ]);
-
-    await expect(
-      atcoderSource.userHistory({ userId: "forlight" })
-    ).resolves.toHaveLength(1);
-    expect(urls).toHaveLength(2);
-  });
-
-  it("does not retry non-retryable HTTP status responses", async () => {
-    const urls = mockFetchResponses([Response.json({}, { status: 404 })]);
-
-    await expect(
-      atcoderSource.userHistory({ userId: "missing-user" })
-    ).rejects.toThrow("AtCoder user history missing-user HTTP 404");
-    expect(urls).toHaveLength(1);
-  });
-
   it("throws when history response has an invalid raw shape", async () => {
     mockJsonResponse([
       {

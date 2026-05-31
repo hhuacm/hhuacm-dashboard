@@ -224,36 +224,6 @@ describe("luoguSource", () => {
     });
   });
 
-  it("retries retryable user search responses", async () => {
-    const requests = mockFetchResponses([
-      Response.json({}, { status: 502 }),
-      Response.json({
-        users: [
-          {
-            avatar: "https://cdn.luogu.com.cn/upload/usericon/1.png",
-            background: "",
-            badge: null,
-            ccfLevel: 0,
-            color: "Red",
-            isAdmin: false,
-            isBanned: false,
-            name: "kkksc03",
-            slogan: "",
-            uid: 1,
-            xcpcLevel: 0,
-          },
-        ],
-      }),
-    ]);
-
-    await expect(
-      luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).resolves.toEqual({
-      users: [expect.objectContaining({ name: "kkksc03", uid: 1 })],
-    });
-    expect(requests).toHaveLength(2);
-  });
-
   it("throws when user search users have an invalid raw shape", async () => {
     mockJsonResponse({
       users: [

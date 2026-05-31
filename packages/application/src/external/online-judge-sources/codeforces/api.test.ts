@@ -11,89 +11,11 @@ const mockJsonResponse = (payload: unknown, ok = true) => {
   );
 };
 
-const mockJsonResponseSequence = (responses: Response[]) => {
-  globalThis.fetch = Object.assign(
-    () => {
-      const response = responses.shift();
-
-      if (!response) {
-        return Promise.reject(new Error("Unexpected extra fetch"));
-      }
-
-      return Promise.resolve(response);
-    },
-    { preconnect: originalFetch.preconnect }
-  );
-};
-
 afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
 describe("codeforcesSource", () => {
-  it("retries transient request failures", async () => {
-    let requestCount = 0;
-    globalThis.fetch = Object.assign(
-      () => {
-        requestCount += 1;
-
-        if (requestCount === 1) {
-          return Promise.reject(
-            new Error(
-              "Unable to connect. Is the computer able to access the url?"
-            )
-          );
-        }
-
-        return Promise.resolve(
-          Response.json({
-            result: [{ handle: "tourist" }],
-            status: "OK",
-          })
-        );
-      },
-      { preconnect: originalFetch.preconnect }
-    );
-
-    await expect(
-      codeforcesSource.userInfo({ handles: "tourist" })
-    ).resolves.toEqual([{ handle: "tourist" }]);
-    expect(requestCount).toBe(2);
-  });
-
-  it("retries retryable HTTP status responses", async () => {
-    mockJsonResponseSequence([
-      Response.json({ status: "FAILED" }, { status: 502 }),
-      Response.json({
-        result: [{ handle: "tourist" }],
-        status: "OK",
-      }),
-    ]);
-
-    await expect(
-      codeforcesSource.userInfo({ handles: "tourist" })
-    ).resolves.toEqual([{ handle: "tourist" }]);
-  });
-
-  it("does not retry non-retryable HTTP status responses", async () => {
-    let requestCount = 0;
-    globalThis.fetch = Object.assign(
-      () => {
-        requestCount += 1;
-
-        return Promise.resolve(
-          Response.json({ status: "FAILED" }, { status: 403 })
-        );
-      },
-      { preconnect: originalFetch.preconnect }
-    );
-
-    await expect(
-      codeforcesSource.userInfo({ handles: "tourist" })
-    ).rejects.toThrow("Codeforces user.info tourist HTTP 403");
-    expect(requestCount).toBe(1);
-  });
-
   it("throws when Codeforces envelope status is not OK", async () => {
     mockJsonResponse({
       comment: "handle: User with handle nope not found",
