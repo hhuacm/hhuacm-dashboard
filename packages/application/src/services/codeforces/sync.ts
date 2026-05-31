@@ -2,13 +2,21 @@ import type { Database } from "@hhuacm-dashboard/db";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
-import type { CodeforcesUserInfoResult } from "../../external/online-judge-sources/codeforces/api";
+import type {
+  CodeforcesSubmissionResult,
+  CodeforcesUserInfoResult,
+} from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
 import { truncateRefreshError } from "../../refresh/policy";
 import { summarizeAcceptedProblems } from "./summary";
 import type { CodeforcesAccount } from "./types";
 
 const oneMonthSeconds = 30 * 24 * 60 * 60;
+
+interface CodeforcesStatsLoaders {
+  loadUserInfo?: typeof codeforcesSource.userInfo;
+  loadUserStatus?: typeof codeforcesSource.userStatus;
+}
 
 const codeforcesStatsFields = {
   acceptedProblemCount: codeforcesAccountStats.acceptedProblemCount,
@@ -42,16 +50,19 @@ const selectCodeforcesUserInfo = (
 export const syncCodeforcesAccountStats = async (
   db: Database,
   account: CodeforcesAccount,
-  now = new Date()
+  now = new Date(),
+  loaders: CodeforcesStatsLoaders = {}
 ) => {
+  const loadUserInfo = loaders.loadUserInfo ?? codeforcesSource.userInfo;
+  const loadUserStatus = loaders.loadUserStatus ?? codeforcesSource.userStatus;
   const userInfo = selectCodeforcesUserInfo(
-    await codeforcesSource.userInfo({
+    await loadUserInfo({
       handles: account.externalId,
     }),
     account.externalId
   );
 
-  const submissions = await codeforcesSource.userStatus({
+  const submissions: CodeforcesSubmissionResult = await loadUserStatus({
     handle: userInfo.handle,
   });
   const nowSeconds = Math.floor(now.getTime() / 1000);
