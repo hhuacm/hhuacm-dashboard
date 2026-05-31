@@ -15,10 +15,12 @@
   "dependencies": {
     "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
-    "better-auth": "catalog:"
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@hhuacm-dashboard/config": "workspace:*",
+    "@libsql/client": "catalog:",
     "typescript": "catalog:"
   }
 }

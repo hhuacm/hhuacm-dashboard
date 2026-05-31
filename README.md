@@ -107,6 +107,8 @@ DATABASE_AUTH_TOKEN=
 bun run db:sync
 ```
 
+空数据库初始化后，第一个成功注册的用户会自动成为管理员。后续需要手动调整权限时，可以继续使用 `bun run system:grant-admin -- --username <username>`。
+
 ## Docker 部署
 
 仓库提供一个应用镜像和一份 Compose 编排。默认启动 Web、API 和刷新进程，并将 Web/API 绑定到宿主机 `127.0.0.1`，便于接入服务器上已有的 Nginx / 1Panel 反向代理：

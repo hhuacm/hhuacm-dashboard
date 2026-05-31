@@ -12,6 +12,7 @@ import { env } from "@hhuacm-dashboard/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { username } from "better-auth/plugins";
+import { ensureFirstUserIsAdmin } from "./bootstrap-admin";
 
 const authSchema = {
   account,
@@ -33,6 +34,15 @@ export function createAuth() {
 
       schema: authSchema,
     }),
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (createdUser) => {
+            await ensureFirstUserIsAdmin(db, { userId: createdUser.id });
+          },
+        },
+      },
+    },
     trustedOrigins: [env.CORS_ORIGIN],
     emailAndPassword: {
       enabled: true,
