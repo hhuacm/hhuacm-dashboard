@@ -116,7 +116,8 @@ bun run db:sync
 ```bash
 cp .env.example .env
 docker compose pull
-docker compose up -d
+docker compose run --rm server bun run --cwd packages/db db:sync
+docker compose up -d --no-build
 ```
 
 Compose 默认使用 `ghcr.io/hhuacm/hhuacm-dashboard:${IMAGE_TAG:-main}`。需要回滚或锁定版本时，在 `.env` 中调整 `IMAGE_TAG`。
@@ -161,3 +162,4 @@ bun run fix
 
 - `AGENTS.md`：面向 AI / LLM 协作者的项目协作准则、架构取舍和编码要求。
 - `DESIGN.md`：前端设计准则，描述产品气质、布局、颜色、组件和交互规则。
+- `docs/vps-deployment.md`：从 GHCR 镜像部署到 VPS、初始化 Turso 数据库和接入 Nginx 的生产流程。
