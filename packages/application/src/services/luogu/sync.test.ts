@@ -57,7 +57,7 @@ const createLuoguAccount = async (
   });
   await db.insert(userOjAccount).values({
     externalId: "97238",
-    handle: "forlight",
+    handle: "97238",
     id: "account-luogu",
     platform: "luogu",
     userId: "user-luogu",
@@ -65,7 +65,7 @@ const createLuoguAccount = async (
 
   return {
     externalId: "97238",
-    handle: "forlight",
+    handle: "97238",
     id: "account-luogu",
   };
 };
@@ -93,6 +93,10 @@ describe("Luogu sync", () => {
     );
 
     const [stats] = await db.select().from(luoguAccountStats);
+    const [ojAccount] = await db
+      .select()
+      .from(userOjAccount)
+      .where(eq(userOjAccount.id, account.id));
     const problems = await db
       .select()
       .from(luoguAcceptedProblem)
@@ -103,6 +107,7 @@ describe("Luogu sync", () => {
     expect(stats?.averageAcceptedDifficulty).toBeCloseTo(8 / 3);
     expect(stats?.fetchedAt?.toISOString()).toBe(now.toISOString());
     expect(stats?.lastError).toBeNull();
+    expect(ojAccount?.handle).toBe("forlight");
     expect(problems).toHaveLength(3);
   });
 

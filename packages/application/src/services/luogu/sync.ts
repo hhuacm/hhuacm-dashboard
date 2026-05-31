@@ -3,6 +3,7 @@ import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
+import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
@@ -17,6 +18,7 @@ const acceptedProblemChunkSize = 300;
 interface LuoguPracticeStatsFields {
   passed: LuoguPracticePageData["passed"];
   passedProblemCount: LuoguPracticePageData["user"]["passedProblemCount"];
+  userName: LuoguPracticePageData["user"]["name"];
 }
 
 const luoguStatsFields = {
@@ -47,6 +49,7 @@ const selectLuoguPracticeStatsFields = (
 ): LuoguPracticeStatsFields => ({
   passed: practice.passed,
   passedProblemCount: practice.user.passedProblemCount,
+  userName: practice.user.name,
 });
 
 const parseLuoguExternalId = (externalId: string) => {
@@ -106,6 +109,13 @@ export const syncLuoguAccountStats = async (
 
   return await db.transaction(async (tx) => {
     await writeAcceptedProblems(tx, account, practice);
+
+    if (account.handle !== practice.userName) {
+      await tx
+        .update(userOjAccount)
+        .set({ handle: practice.userName })
+        .where(eq(userOjAccount.id, account.id));
+    }
 
     const [stats] = await tx
       .insert(luoguAccountStats)
