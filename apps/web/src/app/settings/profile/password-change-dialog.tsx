@@ -158,6 +158,7 @@ export function PasswordChangeDialog({
             text: getPasswordChangeErrorMessage(response.error),
             tone: "danger",
           });
+          setIsSubmitting(false);
           return;
         }
       } catch {
@@ -165,11 +166,11 @@ export function PasswordChangeDialog({
           text: "认证服务暂时不可用，请稍后再试。",
           tone: "danger",
         });
-        return;
-      } finally {
         setIsSubmitting(false);
+        return;
       }
 
+      setIsSubmitting(false);
       reset(emptyPasswordChangeFormValues);
       setMessage({
         text: "密码已更新，正在退出登录。",

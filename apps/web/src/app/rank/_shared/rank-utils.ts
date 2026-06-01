@@ -10,6 +10,14 @@ const monthSeconds = 30 * daySeconds;
 const yearSeconds = 365 * daySeconds;
 const dormantSeconds = 30 * daySeconds;
 const rankTableMinWidth = 720;
+const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  month: "2-digit",
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+});
 
 export const rankTableColumnClassName =
   "whitespace-nowrap text-center font-bold";
@@ -76,8 +84,8 @@ export const getRankFilterOptions = <Row extends Record<string, unknown>>(
     }
   }
 
-  return [...values]
-    .sort((left, right) =>
+  return Array.from(values)
+    .toSorted((left, right) =>
       left.localeCompare(right, "zh-CN", { numeric: true })
     )
     .map((value) => ({ label: value, value }));
@@ -138,14 +146,7 @@ export const formatDateTime = (value: null | string) => {
     return emptyText;
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-  }).format(new Date(value));
+  return dateTimeFormatter.format(new Date(value));
 };
 
 export const formatRelativeTime = (value: null | string) => {

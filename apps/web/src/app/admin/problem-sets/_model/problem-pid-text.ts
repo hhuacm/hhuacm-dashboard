@@ -10,10 +10,11 @@ export interface ProblemPidParseResult {
 const uniqueItems = (items: string[]) => [...new Set(items)];
 
 export const parseProblemPidText = (text: string): ProblemPidParseResult => {
-  const pids = text
-    .split(problemPidSeparatorPattern)
-    .map((pid) => pid.trim())
-    .filter(Boolean);
+  const pids = text.split(problemPidSeparatorPattern).flatMap((pid) => {
+    const trimmedPid = pid.trim();
+
+    return trimmedPid ? [trimmedPid] : [];
+  });
   const seenPids = new Set<string>();
   const duplicatePids: string[] = [];
   const invalidPids: string[] = [];

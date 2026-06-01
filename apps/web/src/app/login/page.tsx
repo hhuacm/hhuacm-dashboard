@@ -116,6 +116,7 @@ function LoginPageContent() {
 
         if (response.error) {
           setError(getLoginErrorMessage(response.error.message));
+          setSubmitting(false);
           return;
         }
 
@@ -129,9 +130,9 @@ function LoginPageContent() {
             : redirectPath
         );
         await session.refetch();
+        setSubmitting(false);
       } catch {
         setError("认证服务暂时不可用，请确认后端和数据库已启动。");
-      } finally {
         setSubmitting(false);
       }
     },

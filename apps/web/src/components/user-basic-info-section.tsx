@@ -22,8 +22,8 @@ import {
 } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save } from "lucide-react";
-import { type Key, type ReactNode, useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { type Key, type ReactNode, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import {
   buildProfileFormValues,
@@ -196,26 +196,21 @@ export function UserBasicInfoSection({
   profile,
 }: UserBasicInfoSectionProps) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [originalFormValues, setOriginalFormValues] =
-    useState<ProfileFormValues>(emptyProfileFormValues);
+  const [editorProfile, setEditorProfile] =
+    useState<null | UserBasicInfoProfile>(null);
   const [dialogMessage, setDialogMessage] =
     useState<null | UserBasicInfoMessage>(null);
   const form = useForm<ProfileFormValues>({
     defaultValues: emptyProfileFormValues,
     resolver: zodResolver(profileFormSchema),
   });
-  const { control, handleSubmit: handleFormSubmit, reset, watch } = form;
-  const formValues = watch();
-
-  useEffect(() => {
-    if (isEditorOpen) {
-      return;
-    }
-
-    const nextFormValues = buildProfileFormValues(profile);
-    reset(nextFormValues);
-    setOriginalFormValues(nextFormValues);
-  }, [isEditorOpen, profile, reset]);
+  const { control, handleSubmit: handleFormSubmit, reset } = form;
+  const watchedFormValues = useWatch({ control });
+  const formValues: ProfileFormValues = {
+    ...emptyProfileFormValues,
+    ...watchedFormValues,
+  };
+  const originalFormValues = buildProfileFormValues(editorProfile);
 
   const changedProfileValues = getChangedProfileValues(
     formValues,
@@ -229,7 +224,7 @@ export function UserBasicInfoSection({
   const openEditor = () => {
     const nextFormValues = buildProfileFormValues(profile);
     reset(nextFormValues);
-    setOriginalFormValues(nextFormValues);
+    setEditorProfile(profile ?? null);
     setDialogMessage(null);
     onClearMessage?.();
     setIsEditorOpen(true);
@@ -241,6 +236,7 @@ export function UserBasicInfoSection({
     }
 
     setIsEditorOpen(false);
+    setEditorProfile(null);
   };
 
   const handleInputChange = (
@@ -271,6 +267,7 @@ export function UserBasicInfoSection({
     try {
       await onSubmit(nextChangedProfileValues);
       setIsEditorOpen(false);
+      setEditorProfile(null);
     } catch (error) {
       setDialogMessage({
         text: getErrorMessage(error),

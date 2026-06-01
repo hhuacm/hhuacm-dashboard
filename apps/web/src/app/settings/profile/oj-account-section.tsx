@@ -20,8 +20,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { type Key, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { type Key, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import {
@@ -184,18 +184,18 @@ export function OjAccountSection({
     defaultValues: emptyOjAccountFormValues,
     resolver: zodResolver(ojAccountFormSchema),
   });
-  const { control, handleSubmit: handleFormSubmit, reset, watch } = form;
-  const formValues = watch();
+  const { control, handleSubmit: handleFormSubmit, reset } = form;
+  const watchedFormValues = useWatch({ control });
+  const formValues: OjAccountFormValues = {
+    ...emptyOjAccountFormValues,
+    ...watchedFormValues,
+  };
 
-  const accountsByPlatform = useMemo(() => {
-    const nextAccounts = new Map<OjPlatform, OjAccount>();
+  const accountsByPlatform = new Map<OjPlatform, OjAccount>();
 
-    for (const account of accounts) {
-      nextAccounts.set(account.platform, account);
-    }
-
-    return nextAccounts;
-  }, [accounts]);
+  for (const account of accounts) {
+    accountsByPlatform.set(account.platform, account);
+  }
 
   const availablePlatforms = ojPlatformConfigs.filter(
     (config) => !accountsByPlatform.has(config.key)

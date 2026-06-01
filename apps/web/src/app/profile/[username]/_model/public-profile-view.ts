@@ -98,6 +98,15 @@ const awardLevelClassNames = {
 export const getMemberStatusLabel = (status: MemberStatus) =>
   memberStatusLabels[status];
 
+const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  month: "2-digit",
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+});
+
 export function formatNumber(value: null | number) {
   return value === null ? "—" : value.toLocaleString("zh-CN");
 }
@@ -107,14 +116,7 @@ export function formatDateTime(value: null | string) {
     return "—";
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-  }).format(new Date(value));
+  return dateTimeFormatter.format(new Date(value));
 }
 
 export function getAwardLevelClassName(level: string) {

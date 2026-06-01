@@ -14,7 +14,6 @@ import {
   TextField,
 } from "@heroui/react";
 import {
-  defaultMemberStatus,
   getGradeOptionsWithCurrentValue,
   isMemberStatus,
   memberStatuses,
@@ -30,11 +29,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
-import { type FormEvent, type Key, useEffect, useState } from "react";
+import { type FormEvent, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import {
-  emptyProfileFormValues,
   type ProfileFieldKey,
   profileFieldConfigs,
 } from "@/utils/profile-fields";
@@ -99,6 +97,28 @@ const ojAccountExternalIdPlaceholders: Record<OjPlatform, string> = {
   nowcoder: "牛客 UID",
 };
 
+const getProfileSnapshotKey = (detail: AdminUserDetail | undefined) => {
+  if (!detail) {
+    return "loading";
+  }
+
+  const { grade, major, memberStatus, realName, studentId } = detail.profile;
+
+  return [
+    detail.id,
+    memberStatus,
+    grade ?? "",
+    major ?? "",
+    realName ?? "",
+    studentId ?? "",
+  ].join(":");
+};
+
+interface AdminProfileDraft {
+  sourceKey: string;
+  values: AdminProfileFormValues;
+}
+
 function AdminUserBasicInfoEditor({
   detail,
   isLoading,
@@ -106,23 +126,15 @@ function AdminUserBasicInfoEditor({
   userId,
 }: AdminUserBasicInfoEditorProps) {
   const queryClient = useQueryClient();
-  const [formValues, setFormValues] = useState<AdminProfileFormValues>({
-    ...emptyProfileFormValues,
-    memberStatus: defaultMemberStatus,
+  const profileSnapshotKey = getProfileSnapshotKey(detail);
+  const originalFormValues = buildAdminProfileFormValues(detail?.profile);
+  const [draft, setDraft] = useState<AdminProfileDraft>({
+    sourceKey: profileSnapshotKey,
+    values: originalFormValues,
   });
-  const [originalFormValues, setOriginalFormValues] =
-    useState<AdminProfileFormValues>({
-      ...emptyProfileFormValues,
-      memberStatus: defaultMemberStatus,
-    });
   const [message, setMessage] = useState<EditorMessage | null>(null);
-
-  useEffect(() => {
-    const nextValues = buildAdminProfileFormValues(detail?.profile);
-    setFormValues(nextValues);
-    setOriginalFormValues(nextValues);
-    setMessage(null);
-  }, [detail?.profile]);
+  const formValues =
+    draft.sourceKey === profileSnapshotKey ? draft.values : originalFormValues;
 
   const changedValues = getChangedAdminProfileValues(
     formValues,
@@ -157,9 +169,14 @@ function AdminUserBasicInfoEditor({
 
   const handleInputChange = (field: ProfileFieldKey, value: string) => {
     setMessage(null);
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
+    setDraft((currentDraft) => ({
+      sourceKey: profileSnapshotKey,
+      values: {
+        ...(currentDraft.sourceKey === profileSnapshotKey
+          ? currentDraft.values
+          : originalFormValues),
+        [field]: value,
+      },
     }));
   };
   const handleStatusChange = (key: Key | null) => {
@@ -168,9 +185,14 @@ function AdminUserBasicInfoEditor({
     }
 
     setMessage(null);
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      memberStatus: key,
+    setDraft((currentDraft) => ({
+      sourceKey: profileSnapshotKey,
+      values: {
+        ...(currentDraft.sourceKey === profileSnapshotKey
+          ? currentDraft.values
+          : originalFormValues),
+        memberStatus: key,
+      },
     }));
   };
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -409,11 +431,6 @@ function AdminUserOjAccountRow({
   const [deleteTargetPlatform, setDeleteTargetPlatform] =
     useState<OjPlatform | null>(null);
 
-  useEffect(() => {
-    setExternalId(account?.externalId ?? "");
-    setMessage(null);
-  }, [account?.externalId]);
-
   const invalidateUserData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -496,7 +513,7 @@ function AdminUserOjAccountRow({
   };
 
   return (
-    <div className="grid gap-2 rounded-md border border-border px-3 py-3">
+    <div className="grid gap-2 rounded-md border border-border p-3">
       <Form
         className="grid gap-3 md:grid-cols-[7rem_minmax(0,1fr)_auto]"
         onSubmit={handleSubmit}
@@ -592,16 +609,20 @@ function AdminUserOjAccountEditor({
         <h3 className="font-semibold text-base">OJ 账号</h3>
       </div>
       <div className="grid gap-3">
-        {ojPlatforms.map((platform) => (
-          <AdminUserOjAccountRow
-            account={getOjAccountByPlatform(accounts, platform)}
-            isLoading={isLoading}
-            key={platform}
-            listQueryKey={listQueryKey}
-            platform={platform}
-            userId={userId}
-          />
-        ))}
+        {ojPlatforms.map((platform) => {
+          const account = getOjAccountByPlatform(accounts, platform);
+
+          return (
+            <AdminUserOjAccountRow
+              account={account}
+              isLoading={isLoading}
+              key={`${platform}:${account?.externalId ?? ""}`}
+              listQueryKey={listQueryKey}
+              platform={platform}
+              userId={userId}
+            />
+          );
+        })}
       </div>
     </section>
   );
@@ -644,7 +665,7 @@ export function AdminUserEditDialog({
             <Modal.Heading>编辑用户</Modal.Heading>
           </Modal.Header>
           <Modal.Body className="grid max-h-[72vh] gap-5 overflow-y-auto px-0.5 pt-3 pb-0.5">
-            <div className="grid gap-2 rounded-md border border-border bg-surface px-3 py-3 text-sm sm:grid-cols-2">
+            <div className="grid gap-2 rounded-md border border-border bg-surface p-3 text-sm sm:grid-cols-2">
               <div>
                 <span className="text-muted">注册用户名</span>
                 <p className="mt-1 break-all font-mono">

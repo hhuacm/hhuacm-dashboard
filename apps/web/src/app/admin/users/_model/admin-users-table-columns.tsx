@@ -154,7 +154,7 @@ function OjAccountChips({ accounts }: { accounts: AdminUserOjAccount[] }) {
                 <a
                   className="inline-flex no-underline"
                   href={profileUrl}
-                  rel="noopener"
+                  rel="noreferrer"
                   target="_blank"
                 >
                   {chip}
@@ -373,15 +373,19 @@ const isConfigurableColumn = (
   visibility: Exclude<AdminUsersColumnVisibility, "fixed">;
 } => column.visibility !== "fixed";
 
-export const adminUsersColumns = adminUsersDisplayColumns
-  .filter(isConfigurableColumn)
-  .map((column) => ({
-    defaultVisible:
-      column.visibility === "default" || column.visibility === "required",
-    id: column.id,
-    label: column.label,
-    required: column.visibility === "required",
-  })) satisfies readonly AdminUsersColumnConfig[];
+export const adminUsersColumns = adminUsersDisplayColumns.flatMap((column) =>
+  isConfigurableColumn(column)
+    ? [
+        {
+          defaultVisible:
+            column.visibility === "default" || column.visibility === "required",
+          id: column.id,
+          label: column.label,
+          required: column.visibility === "required",
+        },
+      ]
+    : []
+) satisfies readonly AdminUsersColumnConfig[];
 
 export const getVisibleAdminUsersDisplayColumns = (
   visibleColumnIds: readonly AdminUsersColumnId[]

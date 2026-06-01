@@ -266,7 +266,7 @@ export const createRankRowsSorter = <
     getRankNameLabel(left).localeCompare(getRankNameLabel(right), "zh-CN");
 
   return (rows: Row[], sort: RankSortState<SortColumn>) =>
-    [...rows].sort((left, right) => {
+    rows.toSorted((left, right) => {
       const result = compareNullableNumbers(
         getSortValue(left, sort.column),
         getSortValue(right, sort.column),

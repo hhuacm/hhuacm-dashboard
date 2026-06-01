@@ -192,6 +192,7 @@ export default function RegisterPage() {
 
         if (response.error) {
           setError(getRegisterErrorMessage(response.error.message));
+          setSubmitting(false);
           return;
         }
 
@@ -208,15 +209,16 @@ export default function RegisterPage() {
               "账号已创建，但个人信息保存失败，可稍后在资料设置页补填。"
             );
             await session.refetch();
+            setSubmitting(false);
             return;
           }
         }
 
         await session.refetch();
         router.push(`/profile/${username}` as Route);
+        setSubmitting(false);
       } catch {
         setError("认证服务暂时不可用，请确认后端和数据库已启动。");
-      } finally {
         setSubmitting(false);
       }
     },

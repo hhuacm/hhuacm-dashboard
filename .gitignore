@@ -42,6 +42,11 @@ next-env.d.ts
 *~
 .DS_Store
 
+# Local AI agent files
+.agents/
+.claude/
+.qoder/
+
 # Logs
 logs
 *.log

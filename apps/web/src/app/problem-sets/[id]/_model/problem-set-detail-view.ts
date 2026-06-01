@@ -141,7 +141,7 @@ export const getProgressText = (problems: ProblemSetProblem[]) => {
 };
 
 export const sortCompletionRows = (rows: ProblemSetCompletion[]) =>
-  [...rows].sort((left, right) => {
+  rows.toSorted((left, right) => {
     if (left.completedProblemCount !== right.completedProblemCount) {
       return right.completedProblemCount - left.completedProblemCount;
     }
