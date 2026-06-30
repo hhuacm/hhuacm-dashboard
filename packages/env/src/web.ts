@@ -1,21 +1,20 @@
-import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
+import { parseEnv } from "./parse-env";
 import { nodeEnvSchema } from "./runtime";
 
 const localServerUrl = "http://localhost:3000";
 
 export const getWebServerEnv = () =>
-  createEnv({
-    server: {
+  parseEnv(
+    {
       NODE_ENV: nodeEnvSchema,
       SERVER_INTERNAL_URL: z.url().optional(),
     },
-    runtimeEnv: {
+    {
       NODE_ENV: process.env.NODE_ENV,
       SERVER_INTERNAL_URL: process.env.SERVER_INTERNAL_URL,
-    },
-    emptyStringAsUndefined: true,
-  });
+    }
+  );
 
 export const getServerInternalUrl = () => {
   const { NODE_ENV, SERVER_INTERNAL_URL } = getWebServerEnv();
