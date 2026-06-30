@@ -3,6 +3,7 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { atcoderAccountStatsJob } from "./jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import type { RefreshJobDefinition } from "./jobs/definition";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
 import { nowcoderAccountStatsJob } from "./jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
@@ -22,6 +23,14 @@ interface RefreshActivity {
   isRefreshing: boolean;
   requestedAt: Date | null;
 }
+
+interface RankRefreshStatusInput {
+  accountId: string;
+  fetchedAt: Date | null;
+  lastError: null | string;
+}
+
+type RefreshJobGetter = () => RefreshJobDefinition;
 
 const getRefreshActivityForTarget = async (
   db: Database,
@@ -66,162 +75,63 @@ const getRefreshingTargetIds = async (
   return new Set(requests.map((request) => request.targetId));
 };
 
-export const getCodeforcesAccountStatsRefreshActivity = (
+export const getRefreshActivityForJob = (
   db: Database,
-  accountId: string
+  job: RefreshJobDefinition,
+  targetId: string
 ) =>
   getRefreshActivityForTarget(db, {
-    kind: codeforcesAccountStatsJob.kind,
-    targetId: accountId,
+    kind: job.kind,
+    targetId,
   });
 
-export const getAtcoderAccountStatsRefreshActivity = (
-  db: Database,
-  accountId: string
-) =>
-  getRefreshActivityForTarget(db, {
-    kind: atcoderAccountStatsJob.kind,
-    targetId: accountId,
-  });
+const createAccountRefreshActivityGetter =
+  (getJob: RefreshJobGetter) => (db: Database, accountId: string) =>
+    getRefreshActivityForJob(db, getJob(), accountId);
 
-export const getLuoguAccountStatsRefreshActivity = (
-  db: Database,
-  accountId: string
-) =>
-  getRefreshActivityForTarget(db, {
-    kind: luoguAccountStatsJob.kind,
-    targetId: accountId,
-  });
+const createRankRefreshActivityGetter =
+  (getJob: RefreshJobGetter) => async (db: Database, accountIds: string[]) => {
+    const refreshingAccountIds = await getRefreshingTargetIds(db, {
+      kind: getJob().kind,
+      targetIds: accountIds,
+    });
 
-export const getNowcoderAccountStatsRefreshActivity = (
-  db: Database,
-  accountId: string
-) =>
-  getRefreshActivityForTarget(db, {
-    kind: nowcoderAccountStatsJob.kind,
-    targetId: accountId,
-  });
-
-export const getUserAwardsFromLuoguRefreshActivity = (
-  db: Database,
-  accountId: string
-) =>
-  getRefreshActivityForTarget(db, {
-    kind: userAwardsFromLuoguJob.kind,
-    targetId: accountId,
-  });
-
-const getRefreshingCodeforcesAccountIds = (
-  db: Database,
-  accountIds: string[]
-) =>
-  getRefreshingTargetIds(db, {
-    kind: codeforcesAccountStatsJob.kind,
-    targetIds: accountIds,
-  });
-
-const getRefreshingLuoguAccountIds = (db: Database, accountIds: string[]) =>
-  getRefreshingTargetIds(db, {
-    kind: luoguAccountStatsJob.kind,
-    targetIds: accountIds,
-  });
-
-const getRefreshingAtcoderAccountIds = (db: Database, accountIds: string[]) =>
-  getRefreshingTargetIds(db, {
-    kind: atcoderAccountStatsJob.kind,
-    targetIds: accountIds,
-  });
-
-const getRefreshingNowcoderAccountIds = (db: Database, accountIds: string[]) =>
-  getRefreshingTargetIds(db, {
-    kind: nowcoderAccountStatsJob.kind,
-    targetIds: accountIds,
-  });
-
-export const getCodeforcesRankRefreshActivity = async (
-  db: Database,
-  accountIds: string[]
-) => {
-  const refreshingAccountIds = await getRefreshingCodeforcesAccountIds(
-    db,
-    accountIds
-  );
-
-  return {
-    toStatusInput: (input: {
-      accountId: string;
-      fetchedAt: Date | null;
-      lastError: null | string;
-    }) => ({
-      fetchedAt: input.fetchedAt,
-      isQueued: refreshingAccountIds.has(input.accountId),
-      lastError: input.lastError,
-    }),
+    return {
+      toStatusInput: (input: RankRefreshStatusInput) => ({
+        fetchedAt: input.fetchedAt,
+        isQueued: refreshingAccountIds.has(input.accountId),
+        lastError: input.lastError,
+      }),
+    };
   };
-};
 
-export const getAtcoderRankRefreshActivity = async (
-  db: Database,
-  accountIds: string[]
-) => {
-  const refreshingAccountIds = await getRefreshingAtcoderAccountIds(
-    db,
-    accountIds
-  );
+export const getCodeforcesAccountStatsRefreshActivity =
+  createAccountRefreshActivityGetter(() => codeforcesAccountStatsJob);
 
-  return {
-    toStatusInput: (input: {
-      accountId: string;
-      fetchedAt: Date | null;
-      lastError: null | string;
-    }) => ({
-      fetchedAt: input.fetchedAt,
-      isQueued: refreshingAccountIds.has(input.accountId),
-      lastError: input.lastError,
-    }),
-  };
-};
+export const getAtcoderAccountStatsRefreshActivity =
+  createAccountRefreshActivityGetter(() => atcoderAccountStatsJob);
 
-export const getLuoguRankRefreshActivity = async (
-  db: Database,
-  accountIds: string[]
-) => {
-  const refreshingAccountIds = await getRefreshingLuoguAccountIds(
-    db,
-    accountIds
-  );
+export const getLuoguAccountStatsRefreshActivity =
+  createAccountRefreshActivityGetter(() => luoguAccountStatsJob);
 
-  return {
-    toStatusInput: (input: {
-      accountId: string;
-      fetchedAt: Date | null;
-      lastError: null | string;
-    }) => ({
-      fetchedAt: input.fetchedAt,
-      isQueued: refreshingAccountIds.has(input.accountId),
-      lastError: input.lastError,
-    }),
-  };
-};
+export const getNowcoderAccountStatsRefreshActivity =
+  createAccountRefreshActivityGetter(() => nowcoderAccountStatsJob);
 
-export const getNowcoderRankRefreshActivity = async (
-  db: Database,
-  accountIds: string[]
-) => {
-  const refreshingAccountIds = await getRefreshingNowcoderAccountIds(
-    db,
-    accountIds
-  );
+export const getUserAwardsFromLuoguRefreshActivity =
+  createAccountRefreshActivityGetter(() => userAwardsFromLuoguJob);
 
-  return {
-    toStatusInput: (input: {
-      accountId: string;
-      fetchedAt: Date | null;
-      lastError: null | string;
-    }) => ({
-      fetchedAt: input.fetchedAt,
-      isQueued: refreshingAccountIds.has(input.accountId),
-      lastError: input.lastError,
-    }),
-  };
-};
+export const getCodeforcesRankRefreshActivity = createRankRefreshActivityGetter(
+  () => codeforcesAccountStatsJob
+);
+
+export const getAtcoderRankRefreshActivity = createRankRefreshActivityGetter(
+  () => atcoderAccountStatsJob
+);
+
+export const getLuoguRankRefreshActivity = createRankRefreshActivityGetter(
+  () => luoguAccountStatsJob
+);
+
+export const getNowcoderRankRefreshActivity = createRankRefreshActivityGetter(
+  () => nowcoderAccountStatsJob
+);

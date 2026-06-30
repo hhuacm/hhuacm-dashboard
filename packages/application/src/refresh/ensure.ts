@@ -1,13 +1,8 @@
 import type { Database } from "@hhuacm-dashboard/db";
-import {
-  getAtcoderAccountStatsRefreshActivity,
-  getCodeforcesAccountStatsRefreshActivity,
-  getLuoguAccountStatsRefreshActivity,
-  getNowcoderAccountStatsRefreshActivity,
-  getUserAwardsFromLuoguRefreshActivity,
-} from "./activity";
+import { getRefreshActivityForJob } from "./activity";
 import { atcoderAccountStatsJob } from "./jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
+import type { RefreshJobDefinition } from "./jobs/definition";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
 import { nowcoderAccountStatsJob } from "./jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
@@ -29,6 +24,18 @@ interface RefreshRequestState {
 interface RefreshActivity {
   isRefreshing: boolean;
   requestedAt: Date | null;
+}
+
+interface EnsureRefreshJobInput {
+  canRefresh?: boolean;
+  fetchedAt: Date | null;
+  now: Date;
+  targetId: null | string;
+}
+
+interface EnsureRefreshJobOptions {
+  isFresh: FreshPolicy;
+  job: RefreshJobDefinition;
 }
 
 const toRequestState = (input: {
@@ -83,6 +90,43 @@ const ensureRefreshRequest = async (input: {
   });
 };
 
+const ensureRefreshJob = async (
+  db: Database,
+  input: EnsureRefreshJobInput,
+  options: EnsureRefreshJobOptions
+) =>
+  ensureRefreshRequest({
+    canRefresh: input.canRefresh,
+    fetchedAt: input.fetchedAt,
+    getActivity: async (targetId) =>
+      await getRefreshActivityForJob(db, options.job, targetId),
+    isFresh: options.isFresh,
+    now: input.now,
+    requestRefresh: async (targetId) => {
+      await options.job.enqueue(db, targetId);
+    },
+    targetId: input.targetId,
+  });
+
+const ensureAccountStatsRefresh = async (
+  db: Database,
+  input: {
+    accountId: string;
+    fetchedAt: Date | null;
+    now: Date;
+  },
+  options: EnsureRefreshJobOptions
+) =>
+  ensureRefreshJob(
+    db,
+    {
+      fetchedAt: input.fetchedAt,
+      now: input.now,
+      targetId: input.accountId,
+    },
+    options
+  );
+
 export const ensureCodeforcesAccountStatsRefresh = async (
   db: Database,
   input: {
@@ -91,16 +135,9 @@ export const ensureCodeforcesAccountStatsRefresh = async (
     now: Date;
   }
 ) =>
-  ensureRefreshRequest({
-    fetchedAt: input.fetchedAt,
-    getActivity: async (accountId) =>
-      await getCodeforcesAccountStatsRefreshActivity(db, accountId),
+  ensureAccountStatsRefresh(db, input, {
     isFresh: isCodeforcesStatsCacheFresh,
-    now: input.now,
-    requestRefresh: async (accountId) => {
-      await codeforcesAccountStatsJob.enqueue(db, accountId);
-    },
-    targetId: input.accountId,
+    job: codeforcesAccountStatsJob,
   });
 
 export const ensureAtcoderAccountStatsRefresh = async (
@@ -111,16 +148,9 @@ export const ensureAtcoderAccountStatsRefresh = async (
     now: Date;
   }
 ) =>
-  ensureRefreshRequest({
-    fetchedAt: input.fetchedAt,
-    getActivity: async (accountId) =>
-      await getAtcoderAccountStatsRefreshActivity(db, accountId),
+  ensureAccountStatsRefresh(db, input, {
     isFresh: isAtcoderStatsCacheFresh,
-    now: input.now,
-    requestRefresh: async (accountId) => {
-      await atcoderAccountStatsJob.enqueue(db, accountId);
-    },
-    targetId: input.accountId,
+    job: atcoderAccountStatsJob,
   });
 
 export const ensureLuoguAccountStatsRefresh = async (
@@ -131,16 +161,9 @@ export const ensureLuoguAccountStatsRefresh = async (
     now: Date;
   }
 ) =>
-  ensureRefreshRequest({
-    fetchedAt: input.fetchedAt,
-    getActivity: async (accountId) =>
-      await getLuoguAccountStatsRefreshActivity(db, accountId),
+  ensureAccountStatsRefresh(db, input, {
     isFresh: isLuoguStatsCacheFresh,
-    now: input.now,
-    requestRefresh: async (accountId) => {
-      await luoguAccountStatsJob.enqueue(db, accountId);
-    },
-    targetId: input.accountId,
+    job: luoguAccountStatsJob,
   });
 
 export const ensureNowcoderAccountStatsRefresh = async (
@@ -151,16 +174,9 @@ export const ensureNowcoderAccountStatsRefresh = async (
     now: Date;
   }
 ) =>
-  ensureRefreshRequest({
-    fetchedAt: input.fetchedAt,
-    getActivity: async (accountId) =>
-      await getNowcoderAccountStatsRefreshActivity(db, accountId),
+  ensureAccountStatsRefresh(db, input, {
     isFresh: isNowcoderStatsCacheFresh,
-    now: input.now,
-    requestRefresh: async (accountId) => {
-      await nowcoderAccountStatsJob.enqueue(db, accountId);
-    },
-    targetId: input.accountId,
+    job: nowcoderAccountStatsJob,
   });
 
 export const ensureUserAwardsFromLuoguRefresh = async (
@@ -172,15 +188,16 @@ export const ensureUserAwardsFromLuoguRefresh = async (
     now: Date;
   }
 ) =>
-  ensureRefreshRequest({
-    canRefresh: input.canRefresh,
-    fetchedAt: input.fetchedAt,
-    getActivity: async (accountId) =>
-      await getUserAwardsFromLuoguRefreshActivity(db, accountId),
-    isFresh: isUserAwardsCacheFresh,
-    now: input.now,
-    requestRefresh: async (accountId) => {
-      await userAwardsFromLuoguJob.enqueue(db, accountId);
+  ensureRefreshJob(
+    db,
+    {
+      canRefresh: input.canRefresh,
+      fetchedAt: input.fetchedAt,
+      now: input.now,
+      targetId: input.accountId,
     },
-    targetId: input.accountId,
-  });
+    {
+      isFresh: isUserAwardsCacheFresh,
+      job: userAwardsFromLuoguJob,
+    }
+  );
