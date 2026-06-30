@@ -9,9 +9,9 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
-import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "./_components/access-feedback";
+import { AccessFeedback } from "../_shared/access-feedback";
+import { useAdminAccess } from "../_shared/use-admin-access";
 import { AdminUserDeleteDialog } from "./_components/admin-user-delete-dialog";
 import { AdminUserEditDialog } from "./_components/admin-user-edit-dialog";
 import { AdminUsersTableSection } from "./_components/admin-users-table-section";
@@ -28,7 +28,6 @@ import {
   hasFilters,
   isMemberStatusFilterValue,
   isOjPlatformFilterValue,
-  redirectDelayMs,
 } from "./helpers";
 
 function AdminUsersPageFallback() {
@@ -50,8 +49,8 @@ function AdminUsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const session = authClient.useSession();
-  const user = session.data?.user ?? null;
+  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
+    useAdminAccess();
   const targetUsername = searchParams.get("username");
   const [filters, setFilters] = useState<AdminUsersFilters>(
     emptyAdminUsersFilters
@@ -68,40 +67,6 @@ function AdminUsersPageContent() {
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
     null
   );
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-      retry: false,
-    })
-  );
-  const isAdmin = accountMe.data?.role === "admin";
-  const isMember = Boolean(accountMe.data && !isAdmin);
-  const isCheckingAccess =
-    session.isPending || (Boolean(user) && accountMe.isPending);
-  const shouldPromptLogin = !(session.isPending || user);
-
-  useEffect(() => {
-    if (session.isPending) {
-      return;
-    }
-
-    if (!user) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/login?redirect=/admin/users");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    if (isMember) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [isMember, router, session.isPending, user]);
-
   const handleFilterChange = (
     key: keyof AdminUsersFilters,
     values: string[]
@@ -244,6 +209,7 @@ function AdminUsersPageContent() {
           isAccessError={accountMe.isError}
           isCheckingAccess={isCheckingAccess}
           isMember={isMember}
+          loginReturnLabel="用户列表"
           shouldPromptLogin={shouldPromptLogin}
         />
 

@@ -18,10 +18,9 @@ import { type FormEvent, use, useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
-import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../../../users/_components/access-feedback";
-import { redirectDelayMs } from "../../../users/helpers";
+import { AccessFeedback } from "../../../_shared/access-feedback";
+import { useAdminAccess } from "../../../_shared/use-admin-access";
 import { ProblemPidPreview } from "../../_components/problem-pid-preview";
 import { parseProblemPidText } from "../../_model/problem-pid-text";
 
@@ -88,8 +87,8 @@ export default function AdminProblemSetEditPage({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = use(params);
-  const session = authClient.useSession();
-  const user = session.data?.user ?? null;
+  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
+    useAdminAccess();
   const [title, setTitle] = useState("");
   const [descriptionMarkdown, setDescriptionMarkdown] = useState("");
   const [pidText, setPidText] = useState("");
@@ -99,17 +98,6 @@ export default function AdminProblemSetEditPage({
   const [originalValues, setOriginalValues] =
     useState<ProblemSetEditOriginalValues | null>(null);
   const [message, setMessage] = useState<EditMessage | null>(null);
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-      retry: false,
-    })
-  );
-  const isAdmin = accountMe.data?.role === "admin";
-  const isMember = Boolean(accountMe.data && !isAdmin);
-  const isCheckingAccess =
-    session.isPending || (Boolean(user) && accountMe.isPending);
-  const shouldPromptLogin = !(session.isPending || user);
   const problemSetQuery = useQuery(
     trpc.problemSet.get.queryOptions(
       { id },
@@ -145,30 +133,6 @@ export default function AdminProblemSetEditPage({
     hasChanges &&
     !updateProblemSet.isPending &&
     Boolean(problemSet);
-
-  useEffect(() => {
-    if (session.isPending) {
-      return;
-    }
-
-    if (!user) {
-      const timeoutId = window.setTimeout(() => {
-        router.push(
-          `/login?redirect=/admin/problem-sets/${encodeURIComponent(id)}/edit`
-        );
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    if (isMember) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [id, isMember, router, session.isPending, user]);
 
   useEffect(() => {
     if (!(problemSet && initializedProblemSetId !== problemSet.id)) {

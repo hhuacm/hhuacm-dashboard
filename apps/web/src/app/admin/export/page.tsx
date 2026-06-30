@@ -10,10 +10,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../users/_components/access-feedback";
-import { redirectDelayMs } from "../users/helpers";
+import { AccessFeedback } from "../_shared/access-feedback";
+import { useAdminAccess } from "../_shared/use-admin-access";
 
 const jsonIndent = 2;
 
@@ -105,20 +104,9 @@ function ExportResult({
 
 export default function AdminExportPage() {
   const router = useRouter();
-  const session = authClient.useSession();
-  const user = session.data?.user ?? null;
   const [isCopied, setIsCopied] = useState(false);
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-      retry: false,
-    })
-  );
-  const isAdmin = accountMe.data?.role === "admin";
-  const isMember = Boolean(accountMe.data && !isAdmin);
-  const isCheckingAccess =
-    session.isPending || (Boolean(user) && accountMe.isPending);
-  const shouldPromptLogin = !(session.isPending || user);
+  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
+    useAdminAccess();
   const exportQuery = useQuery(
     trpc.admin.export.queryOptions(undefined, {
       enabled: Boolean(isAdmin),
@@ -132,28 +120,6 @@ export default function AdminExportPage() {
         : "",
     [exportQuery.data]
   );
-  useEffect(() => {
-    if (session.isPending) {
-      return;
-    }
-
-    if (!user) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/login?redirect=/admin/export");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    if (isMember) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [isMember, router, session.isPending, user]);
-
   useEffect(() => {
     if (!isCopied) {
       return;

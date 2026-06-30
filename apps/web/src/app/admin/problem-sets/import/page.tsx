@@ -11,17 +11,16 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ListChecks, Save } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../../users/_components/access-feedback";
-import { redirectDelayMs } from "../../users/helpers";
+import { AccessFeedback } from "../../_shared/access-feedback";
+import { useAdminAccess } from "../../_shared/use-admin-access";
 import { ProblemPidPreview } from "../_components/problem-pid-preview";
 import { parseProblemPidText } from "../_model/problem-pid-text";
 
@@ -35,23 +34,12 @@ const getProblemSetImportErrorMessage = () => "导入失败，请检查内容后
 export default function AdminProblemSetImportPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const session = authClient.useSession();
-  const user = session.data?.user ?? null;
+  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
+    useAdminAccess();
   const [title, setTitle] = useState("");
   const [descriptionMarkdown, setDescriptionMarkdown] = useState("");
   const [pidText, setPidText] = useState("");
   const [message, setMessage] = useState<ImportMessage | null>(null);
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-      retry: false,
-    })
-  );
-  const isAdmin = accountMe.data?.role === "admin";
-  const isMember = Boolean(accountMe.data && !isAdmin);
-  const isCheckingAccess =
-    session.isPending || (Boolean(user) && accountMe.isPending);
-  const shouldPromptLogin = !(session.isPending || user);
   const parsedPids = useMemo(() => parseProblemPidText(pidText), [pidText]);
   const createProblemSet = useMutation(
     trpc.admin.problemSets.create.mutationOptions()
@@ -66,28 +54,6 @@ export default function AdminProblemSetImportPage() {
     hasProblemPids &&
     !hasParseErrors &&
     !createProblemSet.isPending;
-
-  useEffect(() => {
-    if (session.isPending) {
-      return;
-    }
-
-    if (!user) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/login?redirect=/admin/problem-sets/import");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    if (isMember) {
-      const timeoutId = window.setTimeout(() => {
-        router.push("/");
-      }, redirectDelayMs);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-  }, [isMember, router, session.isPending, user]);
 
   const clearMessage = () => setMessage(null);
 

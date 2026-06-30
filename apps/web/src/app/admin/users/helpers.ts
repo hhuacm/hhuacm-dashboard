@@ -16,8 +16,6 @@ import {
   type ProfileUpdateValues,
 } from "@/utils/profile-fields";
 
-export const redirectDelayMs = 3000;
-
 const sortableColumns = [
   "email",
   "grade",

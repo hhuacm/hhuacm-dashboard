@@ -12,7 +12,7 @@ export function AccessFeedback({
   isAccessError,
   isCheckingAccess,
   isMember,
-  loginReturnLabel = "用户列表",
+  loginReturnLabel = "管理面板",
   shouldPromptLogin,
 }: AccessFeedbackProps) {
   return (
