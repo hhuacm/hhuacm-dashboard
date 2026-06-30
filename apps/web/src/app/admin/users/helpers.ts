@@ -1,3 +1,4 @@
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import {
   defaultMemberStatus,
   isMemberStatus,
@@ -5,6 +6,7 @@ import {
   type MemberStatus,
   type OjPlatform,
 } from "@hhuacm-dashboard/domain";
+import type { inferRouterOutputs } from "@trpc/server";
 
 import {
   buildProfileFormValues,
@@ -26,14 +28,14 @@ const sortableColumns = [
   "username",
 ] as const;
 
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type AdminUsersRouter = RouterOutputs["admin"]["users"];
+
 export type SortColumn = (typeof sortableColumns)[number];
 export type SortDirection = "ascending" | "descending";
-export type UserRole = "admin" | "user";
+export type UserRole = AdminUsersRouter["get"]["role"];
 
-export interface FilterOption {
-  label: string;
-  value: string;
-}
+export type FilterOption = AdminUsersRouter["metadata"]["grades"][number];
 
 export interface AdminUsersFilters {
   grades: string[];
@@ -46,47 +48,11 @@ export interface AdminUsersSort {
   direction: SortDirection;
 }
 
-export interface AdminUserOjAccount {
-  externalId: string;
-  handle: string;
-  platform: OjPlatform;
-}
-
-export interface AdminUserProfile {
-  grade: null | string;
-  major: null | string;
-  memberStatus: MemberStatus;
-  realName: null | string;
-  studentId: null | string;
-}
-
-export interface AdminUserDetail {
-  email: string;
-  id: string;
-  ojAccounts: AdminUserOjAccount[];
-  profile: AdminUserProfile;
-  role: UserRole;
-  username: string;
-}
-
-export interface AdminUserTableRow {
-  email: string;
-  grade: null | string;
-  id: string;
-  major: null | string;
-  memberStatus: MemberStatus;
-  ojAccounts: AdminUserOjAccount[];
-  realName: null | string;
-  role: UserRole;
-  studentId: null | string;
-  username: string;
-}
-
-export interface AdminUsersMetadata {
-  grades: FilterOption[];
-  memberStatuses: FilterOption[];
-  ojPlatforms: FilterOption[];
-}
+export type AdminUserOjAccount = AdminUsersRouter["get"]["ojAccounts"][number];
+export type AdminUserProfile = AdminUsersRouter["get"]["profile"];
+export type AdminUserDetail = AdminUsersRouter["get"];
+export type AdminUserTableRow = AdminUsersRouter["list"]["items"][number];
+export type AdminUsersMetadata = AdminUsersRouter["metadata"];
 
 export type AdminProfileFormValues = ProfileFormValues & {
   memberStatus: MemberStatus;

@@ -1,16 +1,17 @@
 import { Alert, Card } from "@heroui/react";
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
+import type { inferRouterOutputs } from "@trpc/server";
 import { CheckCircle2, ChevronRight, ListChecks, Plus } from "lucide-react";
 import type { Route } from "next";
 
 import { ServerAppShell } from "@/components/server-app-shell";
 import { createServerCaller } from "@/utils/server-trpc";
 
-interface ProblemSetCardProps {
-  completedProblemCount: null | number;
-  id: string;
-  problemCount: number;
-  title: string;
-}
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type ProblemSetCardProps = Pick<
+  RouterOutputs["problemSet"]["list"][number],
+  "completedProblemCount" | "id" | "problemCount" | "title"
+>;
 
 export const dynamic = "force-dynamic";
 

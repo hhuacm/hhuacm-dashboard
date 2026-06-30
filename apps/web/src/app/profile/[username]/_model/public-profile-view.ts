@@ -1,63 +1,16 @@
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import {
   type MemberStatus,
   memberStatusLabels,
-  type OjPlatform,
-  type RefreshSyncStatus,
 } from "@hhuacm-dashboard/domain";
+import type { inferRouterOutputs } from "@trpc/server";
 
-export interface PublicOjAccount {
-  atcoder?: null | {
-    fetchedAt: null | string;
-    rating: null | number;
-    recentPerformanceAverage: null | number;
-    syncStatus: RefreshSyncStatus;
-  };
-  codeforces?: null | {
-    acceptedProblemCount: null | number;
-    acceptedProblemCountInMonth: null | number;
-    fetchedAt: null | string;
-    lastOnlineAt: null | string;
-    maxRating: null | number;
-    rating: null | number;
-    syncStatus: RefreshSyncStatus;
-  };
-  externalId: string;
-  handle: string;
-  luogu?: null | {
-    acceptedProblemCount: null | number;
-    acceptedWeightedScore: null | number;
-    averageAcceptedDifficulty: null | number;
-    difficultyCounts: {
-      count: number;
-      difficulty: number;
-      label: string;
-    }[];
-    fetchedAt: null | string;
-    syncStatus: RefreshSyncStatus;
-  };
-  nowcoder?: null | {
-    acceptedProblemCount: null | number;
-    fetchedAt: null | string;
-    rating: null | number;
-    syncStatus: RefreshSyncStatus;
-  };
-  platform: OjPlatform;
-}
+type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export interface PublicProfileAward {
-  contest: string;
-  event: null | string;
-  level: string;
-  sortOrder: number;
-  source: "luogu";
-  year: number;
-}
-
-export interface PublicProfileAwards {
-  fetchedAt: null | string;
-  items: PublicProfileAward[];
-  syncStatus: RefreshSyncStatus;
-}
+export type PublicProfile = RouterOutputs["profile"]["get"];
+export type PublicOjAccount = PublicProfile["ojAccounts"][number];
+export type PublicProfileAwards = PublicProfile["awards"];
+export type PublicProfileAward = PublicProfileAwards["items"][number];
 
 export const memberStatusConfig = {
   active: {

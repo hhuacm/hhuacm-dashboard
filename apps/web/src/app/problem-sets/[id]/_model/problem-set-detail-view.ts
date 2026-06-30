@@ -1,23 +1,16 @@
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import {
   type CurrentMemberStatus,
   getUserNameLabel,
 } from "@hhuacm-dashboard/domain";
+import type { inferRouterOutputs } from "@trpc/server";
 
-export interface ProblemSetProblem {
-  accepted: boolean | null;
-  difficulty: number | null;
-  pid: string;
-  title: string;
-}
+type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export interface ProblemSetCompletion {
-  completedProblemCount: number;
-  grade: null | string;
-  memberStatus: CurrentMemberStatus;
-  realName: null | string;
-  userId: string;
-  username: string;
-}
+export type ProblemSetProblem =
+  RouterOutputs["problemSet"]["get"]["problems"][number];
+export type ProblemSetCompletion =
+  RouterOutputs["problemSet"]["completions"][number];
 
 export interface CompletionGradeOption {
   label: string;

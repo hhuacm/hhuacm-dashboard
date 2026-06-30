@@ -3,25 +3,13 @@ import { LayoutDashboard, Settings, UserRound } from "lucide-react";
 import type { Route } from "next";
 
 import { getProfileDisplayValue } from "@/utils/profile-fields";
+import type { PublicProfile } from "../_model/public-profile-view";
 import { MemberStatusBadge } from "./member-status-badge";
 
-interface PublicProfileSummary {
-  permissions: {
-    isAdmin: boolean;
-    isOwner: boolean;
-  };
-  profile: {
-    grade: null | string;
-    major: null | string;
-    memberStatus: null | string;
-    realName: null | string;
-    studentId: null | string;
-  };
-  user: {
-    email: string;
-    username: string;
-  };
-}
+type PublicProfileSummary = Pick<
+  PublicProfile,
+  "permissions" | "profile" | "user"
+>;
 
 interface PublicInfoItemProps {
   label: string;

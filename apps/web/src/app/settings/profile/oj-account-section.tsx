@@ -15,9 +15,11 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import { isOjPlatform, type OjPlatform } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { type Key, useState } from "react";
@@ -31,11 +33,9 @@ import {
 } from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
 
-interface OjAccount {
-  externalId: string;
-  handle: string;
-  platform: OjPlatform;
-}
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type OjAccount =
+  RouterOutputs["settings"]["profile"]["get"]["ojAccounts"][number];
 
 interface OjAccountSectionProps {
   accounts: OjAccount[];

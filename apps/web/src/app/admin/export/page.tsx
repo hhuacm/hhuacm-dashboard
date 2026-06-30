@@ -1,7 +1,9 @@
 "use client";
 
 import { Alert, Button, Card, Spinner } from "@heroui/react";
+import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import { useQuery } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowLeft, Check, Clipboard, Download, FileJson } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -14,6 +16,9 @@ import { AccessFeedback } from "../users/_components/access-feedback";
 import { redirectDelayMs } from "../users/helpers";
 
 const jsonIndent = 2;
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type SystemExportData = RouterOutputs["admin"]["export"];
 
 const formatExportFileTimestamp = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, "0");
@@ -31,18 +36,6 @@ const formatExportFileTimestamp = (date: Date) => {
 
 const getExportFilename = (exportedAt: string) =>
   `hhuacm-system-export-${formatExportFileTimestamp(new Date(exportedAt))}.json`;
-
-interface SystemExportData {
-  exportedAt: string;
-  hash: string;
-  kind: string;
-  seed: {
-    problemSets: unknown[];
-    settings: Record<string, unknown>;
-    users: unknown[];
-  };
-  version: number;
-}
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
