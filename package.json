@@ -44,7 +44,7 @@
     "@hhuacm-dashboard/config": "workspace:*",
     "@types/bun": "^1.3.14",
     "lefthook": "latest",
-    "react-doctor": "^0.2.14",
+    "react-doctor": "^0.2.16",
     "turbo": "latest",
     "typescript": "^6.0.3",
     "ultracite": "latest"

@@ -6,17 +6,13 @@ import Image from "next/image";
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
 import { buildOjProfileUrl, getOjPlatformConfig } from "@/utils/oj-platforms";
 import {
+  codeforcesStatsStatusOptions,
   formatDateTime,
   formatNumber,
-  getAtcoderStatusClassName,
-  getAtcoderStatusText,
-  getCodeforcesStatusClassName,
-  getCodeforcesStatusText,
-  getLuoguStatusClassName,
-  getLuoguStatusText,
-  getNowcoderStatusClassName,
-  getNowcoderStatusText,
+  getStatsStatusClassName,
+  getStatsStatusText,
   luoguDifficultyClassNames,
+  luoguStatsStatusOptions,
   type PublicOjAccount,
 } from "../_model/public-profile-view";
 
@@ -100,10 +96,10 @@ function CodeforcesStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getCodeforcesStatusClassName(codeforces)
+            getStatsStatusClassName(codeforces, codeforcesStatsStatusOptions)
           )}
         >
-          {getCodeforcesStatusText(codeforces)}
+          {getStatsStatusText(codeforces, codeforcesStatsStatusOptions)}
         </dd>
       </div>
     </dl>
@@ -136,10 +132,10 @@ function AtcoderStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getAtcoderStatusClassName(atcoder)
+            getStatsStatusClassName(atcoder)
           )}
         >
-          {getAtcoderStatusText(atcoder)}
+          {getStatsStatusText(atcoder)}
         </dd>
       </div>
     </dl>
@@ -213,7 +209,7 @@ function LuoguStatsContent({
         <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
           <dt className="text-muted text-xs">读取状态</dt>
           <dd className="wrap-break-word mt-1 font-medium text-danger">
-            {getLuoguStatusText(luogu)}
+            {getStatsStatusText(luogu, luoguStatsStatusOptions)}
           </dd>
         </div>
       ) : null}
@@ -250,10 +246,10 @@ function NowcoderStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getNowcoderStatusClassName(nowcoder)
+            getStatsStatusClassName(nowcoder)
           )}
         >
-          {getNowcoderStatusText(nowcoder)}
+          {getStatsStatusText(nowcoder)}
         </dd>
       </div>
     </dl>
@@ -264,9 +260,9 @@ function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "atcoder") {
     return (
       <StatusLine
-        className={getAtcoderStatusClassName(account.atcoder)}
+        className={getStatsStatusClassName(account.atcoder)}
         isFailed={account.atcoder?.syncStatus === "failed"}
-        text={getAtcoderStatusText(account.atcoder)}
+        text={getStatsStatusText(account.atcoder)}
       />
     );
   }
@@ -274,9 +270,15 @@ function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "codeforces") {
     return (
       <StatusLine
-        className={getCodeforcesStatusClassName(account.codeforces)}
+        className={getStatsStatusClassName(
+          account.codeforces,
+          codeforcesStatsStatusOptions
+        )}
         isFailed={account.codeforces?.syncStatus === "failed"}
-        text={getCodeforcesStatusText(account.codeforces)}
+        text={getStatsStatusText(
+          account.codeforces,
+          codeforcesStatsStatusOptions
+        )}
       />
     );
   }
@@ -284,9 +286,12 @@ function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "luogu") {
     return (
       <StatusLine
-        className={getLuoguStatusClassName(account.luogu)}
+        className={getStatsStatusClassName(
+          account.luogu,
+          luoguStatsStatusOptions
+        )}
         isFailed={account.luogu?.syncStatus === "failed"}
-        text={getLuoguStatusText(account.luogu)}
+        text={getStatsStatusText(account.luogu, luoguStatsStatusOptions)}
       />
     );
   }
@@ -294,9 +299,9 @@ function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "nowcoder") {
     return (
       <StatusLine
-        className={getNowcoderStatusClassName(account.nowcoder)}
+        className={getStatsStatusClassName(account.nowcoder)}
         isFailed={account.nowcoder?.syncStatus === "failed"}
-        text={getNowcoderStatusText(account.nowcoder)}
+        text={getStatsStatusText(account.nowcoder)}
       />
     );
   }

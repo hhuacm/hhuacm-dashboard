@@ -12,6 +12,26 @@ export type PublicOjAccount = PublicProfile["ojAccounts"][number];
 export type PublicProfileAwards = PublicProfile["awards"];
 export type PublicProfileAward = PublicProfileAwards["items"][number];
 
+interface ProfileStats {
+  fetchedAt: null | string;
+  syncStatus: NonNullable<PublicOjAccount["codeforces"]>["syncStatus"];
+}
+
+interface StatsStatusOptions {
+  emptyClassName?: string;
+  emptyText?: string;
+  failedWithoutDataText?: string;
+}
+
+export const codeforcesStatsStatusOptions = {
+  emptyClassName: "text-muted",
+  emptyText: "等待刷新",
+} as const satisfies StatsStatusOptions;
+
+export const luoguStatsStatusOptions = {
+  failedWithoutDataText: "读取失败",
+} as const satisfies StatsStatusOptions;
+
 export const memberStatusConfig = {
   active: {
     className: "bg-success-soft text-success",
@@ -100,118 +120,40 @@ export function getAwardStatusText(awards: PublicProfileAwards) {
   return null;
 }
 
-export function getCodeforcesStatusText(
-  codeforces: PublicOjAccount["codeforces"] | undefined
+export function getStatsStatusText(
+  stats: null | ProfileStats | undefined,
+  options: StatsStatusOptions = {}
 ) {
-  if (!codeforces || codeforces.syncStatus === "empty") {
-    return "等待刷新";
+  const emptyText = options.emptyText ?? "等待数据";
+
+  if (!stats || stats.syncStatus === "empty") {
+    return emptyText;
   }
 
-  if (codeforces.syncStatus === "refreshing") {
-    return codeforces.fetchedAt ? "后台刷新中" : "等待刷新";
+  if (stats.syncStatus === "refreshing") {
+    return stats.fetchedAt ? "后台刷新中" : emptyText;
   }
 
-  if (codeforces.syncStatus === "failed") {
-    return codeforces.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
+  if (stats.syncStatus === "failed") {
+    return stats.fetchedAt
+      ? "刷新失败，显示旧数据"
+      : (options.failedWithoutDataText ?? "刷新失败");
   }
 
   return "数据已更新";
 }
 
-export function getCodeforcesStatusClassName(
-  codeforces: PublicOjAccount["codeforces"] | undefined
+export function getStatsStatusClassName(
+  stats: null | ProfileStats | undefined,
+  options: StatsStatusOptions = {}
 ) {
-  if (codeforces?.syncStatus === "failed") {
+  if (stats?.syncStatus === "failed") {
     return "text-danger";
   }
 
-  if (codeforces?.syncStatus === "refreshing") {
-    return "text-accent";
+  if (!stats || stats.syncStatus === "empty") {
+    return options.emptyClassName ?? "text-accent";
   }
 
-  return "text-muted";
-}
-
-export function getAtcoderStatusText(
-  atcoder: PublicOjAccount["atcoder"] | undefined
-) {
-  if (!atcoder || atcoder.syncStatus === "empty") {
-    return "等待数据";
-  }
-
-  if (atcoder.syncStatus === "refreshing") {
-    return atcoder.fetchedAt ? "后台刷新中" : "等待数据";
-  }
-
-  if (atcoder.syncStatus === "failed") {
-    return atcoder.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
-  }
-
-  return "数据已更新";
-}
-
-export function getAtcoderStatusClassName(
-  atcoder: PublicOjAccount["atcoder"] | undefined
-) {
-  if (atcoder?.syncStatus === "failed") {
-    return "text-danger";
-  }
-
-  return atcoder?.syncStatus === "ready" ? "text-muted" : "text-accent";
-}
-
-export function getLuoguStatusText(
-  luogu: PublicOjAccount["luogu"] | undefined
-) {
-  if (!luogu || luogu.syncStatus === "empty") {
-    return "等待数据";
-  }
-
-  if (luogu.syncStatus === "refreshing") {
-    return luogu.fetchedAt ? "后台刷新中" : "等待数据";
-  }
-
-  if (luogu.syncStatus === "failed") {
-    return luogu.fetchedAt ? "刷新失败，显示旧数据" : "读取失败";
-  }
-
-  return "数据已更新";
-}
-
-export function getLuoguStatusClassName(
-  luogu: PublicOjAccount["luogu"] | undefined
-) {
-  if (luogu?.syncStatus === "failed") {
-    return "text-danger";
-  }
-
-  return luogu?.syncStatus === "ready" ? "text-muted" : "text-accent";
-}
-
-export function getNowcoderStatusText(
-  nowcoder: PublicOjAccount["nowcoder"] | undefined
-) {
-  if (!nowcoder || nowcoder.syncStatus === "empty") {
-    return "等待数据";
-  }
-
-  if (nowcoder.syncStatus === "refreshing") {
-    return nowcoder.fetchedAt ? "后台刷新中" : "等待数据";
-  }
-
-  if (nowcoder.syncStatus === "failed") {
-    return nowcoder.fetchedAt ? "刷新失败，显示旧数据" : "刷新失败";
-  }
-
-  return "数据已更新";
-}
-
-export function getNowcoderStatusClassName(
-  nowcoder: PublicOjAccount["nowcoder"] | undefined
-) {
-  if (nowcoder?.syncStatus === "failed") {
-    return "text-danger";
-  }
-
-  return nowcoder?.syncStatus === "ready" ? "text-muted" : "text-accent";
+  return stats.syncStatus === "ready" ? "text-muted" : "text-accent";
 }
