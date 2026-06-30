@@ -9,7 +9,7 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../../refresh/sync-status";
-import type { LuoguAccount } from "./types";
+import type { OjAccountIdentity } from "../oj-account/queries";
 
 interface PublicLuoguDifficultyCount {
   count: number;
@@ -115,7 +115,7 @@ const getLuoguAcceptedProblems = async (db: Database, accountId: string) =>
 
 export const getLuoguStatsForProfile = async (
   db: Database,
-  account: LuoguAccount
+  account: OjAccountIdentity
 ): Promise<PublicLuoguStats | null> => {
   const uid = parseLuoguExternalId(account.externalId);
   const emptyDifficultyCounts = summarizeLuoguPractice({

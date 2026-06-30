@@ -6,7 +6,7 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../../refresh/sync-status";
-import type { NowcoderAccount } from "./types";
+import type { OjAccountIdentity } from "../oj-account/queries";
 
 export interface PublicNowcoderStats {
   acceptedProblemCount: null | number;
@@ -49,7 +49,7 @@ const serializeNowcoderStats = (
 
 export const getNowcoderStatsForProfile = async (
   db: Database,
-  account: NowcoderAccount
+  account: OjAccountIdentity
 ): Promise<PublicNowcoderStats | null> => {
   const now = new Date();
   const currentStats = await getNowcoderStats(db, account.id);

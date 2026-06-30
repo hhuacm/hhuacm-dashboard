@@ -8,6 +8,12 @@ interface OjAccountLookup {
   userId: string;
 }
 
+export interface OjAccountIdentity {
+  externalId: string;
+  handle: string;
+  id: string;
+}
+
 export const ojAccountFields = {
   externalId: userOjAccount.externalId,
   handle: userOjAccount.handle,

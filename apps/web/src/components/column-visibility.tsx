@@ -118,10 +118,6 @@ export function useColumnVisibility<
     () => columns.filter((column) => visibleColumnIdSet.has(column.id)),
     [columns, visibleColumnIdSet]
   );
-  const isColumnVisible = useCallback(
-    (columnId: ColumnIdOf<ColumnConfig>) => visibleColumnIdSet.has(columnId),
-    [visibleColumnIdSet]
-  );
   const setColumnVisible = useCallback(
     (columnId: ColumnIdOf<ColumnConfig>, isVisible: boolean) => {
       setVisibleColumnIds((currentColumnIds) => {
@@ -149,7 +145,6 @@ export function useColumnVisibility<
   }, [defaultVisibleColumnIds]);
 
   return {
-    isColumnVisible,
     resetColumns,
     setColumnVisible,
     visibleColumnIds,

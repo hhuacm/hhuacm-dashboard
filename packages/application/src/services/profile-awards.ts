@@ -12,7 +12,7 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../refresh/sync-status";
-import type { LuoguAccount } from "./luogu/types";
+import type { OjAccountIdentity } from "./oj-account/queries";
 
 type LuoguUserLoader = typeof luoguSource.user;
 
@@ -33,7 +33,7 @@ export interface PublicProfileAwards {
   syncStatus: RefreshSyncStatus;
 }
 
-interface LuoguAwardAccount extends LuoguAccount {
+interface LuoguAwardAccount extends OjAccountIdentity {
   userId: string;
 }
 

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import type { AtCoderUserHistory } from "../../external/online-judge-sources/atcoder/api";
 import { atcoderSource } from "../../external/online-judge-sources/atcoder/api";
 import { truncateRefreshError } from "../../refresh/policy";
-import type { AtcoderAccount } from "./types";
+import type { OjAccountIdentity } from "../oj-account/queries";
 
 type AtcoderHistoryLoader = typeof atcoderSource.userHistory;
 type AtcoderHistoryItem = AtCoderUserHistory[number];
@@ -51,7 +51,7 @@ const summarizeRatedHistory = (history: AtCoderUserHistory) => {
 
 export const syncAtcoderAccountStats = async (
   db: Database,
-  account: AtcoderAccount,
+  account: OjAccountIdentity,
   now = new Date(),
   loadHistory: AtcoderHistoryLoader = atcoderSource.userHistory
 ) => {
@@ -91,7 +91,7 @@ export const syncAtcoderAccountStats = async (
 
 export const markAtcoderAccountStatsRefreshFailed = async (
   db: Database,
-  account: AtcoderAccount,
+  account: OjAccountIdentity,
   error: unknown,
   now = new Date()
 ) => {

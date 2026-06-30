@@ -8,8 +8,8 @@ import { eq } from "drizzle-orm";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 import { truncateRefreshError } from "../../refresh/policy";
+import type { OjAccountIdentity } from "../oj-account/queries";
 import { summarizeLuoguPracticeStats } from "./summary";
-import type { LuoguAccount } from "./types";
 
 type LuoguPracticeLoader = typeof luoguSource.practice;
 
@@ -60,7 +60,7 @@ const parseLuoguExternalId = (externalId: string) => {
 
 const writeAcceptedProblems = async (
   tx: DatabaseTransaction,
-  account: LuoguAccount,
+  account: OjAccountIdentity,
   practice: LuoguPracticeStatsFields
 ) => {
   const problemsByPid = new Map(
@@ -93,7 +93,7 @@ const writeAcceptedProblems = async (
 
 export const syncLuoguAccountStats = async (
   db: Database,
-  account: LuoguAccount,
+  account: OjAccountIdentity,
   now = new Date(),
   loadPractice: LuoguPracticeLoader = luoguSource.practice
 ) => {
@@ -151,7 +151,7 @@ export const syncLuoguAccountStats = async (
 
 export const markLuoguAccountStatsRefreshFailed = async (
   db: Database,
-  account: LuoguAccount,
+  account: OjAccountIdentity,
   error: unknown,
   now = new Date()
 ) => {

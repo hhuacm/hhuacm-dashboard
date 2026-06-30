@@ -4,7 +4,7 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 import { nowcoderSource } from "../../external/online-judge-sources/nowcoder/api";
 import { truncateRefreshError } from "../../refresh/policy";
-import type { NowcoderAccount } from "./types";
+import type { OjAccountIdentity } from "../oj-account/queries";
 
 type NowcoderRatingBasicLoader = typeof nowcoderSource.ratingBasic;
 type NowcoderAcceptedCountLoader =
@@ -30,7 +30,7 @@ const parseNowcoderExternalId = (externalId: string) => {
 
 export const syncNowcoderAccountStats = async (
   db: Database,
-  account: NowcoderAccount,
+  account: OjAccountIdentity,
   now = new Date(),
   loaders: {
     loadAcceptedPracticeProblemCount?: NowcoderAcceptedCountLoader;
@@ -93,7 +93,7 @@ export const syncNowcoderAccountStats = async (
 
 export const markNowcoderAccountStatsRefreshFailed = async (
   db: Database,
-  account: NowcoderAccount,
+  account: OjAccountIdentity,
   error: unknown,
   now = new Date()
 ) => {

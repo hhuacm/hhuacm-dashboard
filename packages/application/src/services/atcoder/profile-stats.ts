@@ -6,7 +6,7 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../../refresh/sync-status";
-import type { AtcoderAccount } from "./types";
+import type { OjAccountIdentity } from "../oj-account/queries";
 
 export interface PublicAtcoderStats {
   fetchedAt: null | string;
@@ -49,7 +49,7 @@ const serializeAtcoderStats = (
 
 export const getAtcoderStatsForProfile = async (
   db: Database,
-  account: AtcoderAccount
+  account: OjAccountIdentity
 ): Promise<PublicAtcoderStats | null> => {
   const now = new Date();
   const currentStats = await getAtcoderStats(db, account.id);

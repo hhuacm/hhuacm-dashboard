@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 interface ExternalRequestOptions {
   label: string;
   maxAttempts: number;
@@ -6,11 +8,6 @@ interface ExternalRequestOptions {
   retryDelayMs: number;
   timeoutMs: number;
 }
-
-const sleep = (ms: number) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown external request error";
