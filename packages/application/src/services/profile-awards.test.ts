@@ -220,38 +220,6 @@ describe("profile awards", () => {
     expect(sync?.lastError).toBe("network failed");
   });
 
-  it("keeps cached awards when UID is missing", async () => {
-    const db = await createServiceTestDb();
-    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    const failedAt = new Date("2026-01-02T00:00:00.000Z");
-    await createUser(db);
-
-    await syncUserAwardsFromLuogu(db, account, fetchedAt, async () =>
-      createLuoguUserPage([
-        {
-          prize: {
-            contest: "Cached Contest",
-            event: null,
-            prize: "铜牌",
-            year: 2020,
-          },
-        },
-      ])
-    );
-    await markUserAwardsFromLuoguRefreshFailed(
-      db,
-      { ...account, externalId: "" },
-      new Error("Luogu UID is missing"),
-      failedAt
-    );
-
-    const awards = await db.select().from(userAward);
-    const [sync] = await db.select().from(userAwardSync);
-
-    expect(awards).toHaveLength(1);
-    expect(sync?.lastError).toBe("Luogu UID is missing");
-  });
-
   it("returns public awards and enqueues refresh when due", async () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");

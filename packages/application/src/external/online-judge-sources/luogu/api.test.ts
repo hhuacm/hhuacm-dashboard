@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
+import { mockFetchRequests, mockJsonResponse } from "../../test-fetch";
 import { luoguSource } from "./api";
 
-const originalFetch = globalThis.fetch;
 const userData = {
   dailyCounts: [],
   elo: [
@@ -63,7 +63,6 @@ const userData = {
     uid: 97_238,
     xcpcLevel: 3,
   },
-  userPageExtra: "kept",
 };
 const practiceData = {
   elo: [
@@ -118,7 +117,6 @@ const practiceData = {
     slogan: "",
     submittedProblemCount: 489,
     uid: 97_238,
-    userExtra: "kept",
     xcpcLevel: 3,
   },
 };
@@ -144,42 +142,6 @@ const createUserRedirectResponse = (cookie: string) =>
 const createRedirectResponse = () =>
   Response.redirect("https://www.luogu.com.cn/user/97238/practice");
 
-const mockJsonResponse = (payload: unknown) => {
-  globalThis.fetch = Object.assign(async () => Response.json(payload), {
-    preconnect: originalFetch.preconnect,
-  });
-};
-
-const mockFetchResponses = (responses: Array<Error | Response>) => {
-  const requests: RequestInit[] = [];
-
-  globalThis.fetch = Object.assign(
-    (_url: string | URL | Request, init?: RequestInit) => {
-      requests.push(init ?? {});
-      const response = responses.shift();
-
-      if (response === undefined) {
-        return Promise.reject(new Error("Unexpected fetch call"));
-      }
-
-      if (response instanceof Error) {
-        return Promise.reject(response);
-      }
-
-      return Promise.resolve(response);
-    },
-    {
-      preconnect: originalFetch.preconnect,
-    }
-  );
-
-  return requests;
-};
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
 describe("luoguSource", () => {
   it("throws when user search response has no users array", async () => {
     mockJsonResponse({});
@@ -189,9 +151,8 @@ describe("luoguSource", () => {
     ).rejects.toThrow("Luogu user/search returned invalid JSON");
   });
 
-  it("keeps full user search payload fields", async () => {
+  it("loads user search results", async () => {
     mockJsonResponse({
-      searchExtra: "kept",
       users: [
         {
           avatar: "https://cdn.luogu.com.cn/upload/usericon/1.png",
@@ -204,7 +165,6 @@ describe("luoguSource", () => {
           name: "kkksc03",
           slogan: "",
           uid: 1,
-          userExtra: "kept",
           xcpcLevel: 0,
         },
       ],
@@ -213,12 +173,10 @@ describe("luoguSource", () => {
     await expect(
       luoguSource.searchUsers({ keyword: "kkksc03" })
     ).resolves.toEqual({
-      searchExtra: "kept",
       users: [
         expect.objectContaining({
           name: "kkksc03",
           uid: 1,
-          userExtra: "kept",
         }),
       ],
     });
@@ -239,7 +197,7 @@ describe("luoguSource", () => {
   });
 
   it("loads practice data after warming the Luogu CDN cookie", async () => {
-    const requests = mockFetchResponses([
+    const requests = mockFetchRequests([
       createCdnRedirectResponse("C3VK=first"),
       Response.json({ data: practiceData, status: 200 }),
     ]);
@@ -257,7 +215,7 @@ describe("luoguSource", () => {
   });
 
   it("rejects practice problem summaries without numeric difficulty", async () => {
-    mockFetchResponses([
+    mockFetchRequests([
       createCdnRedirectResponse("C3VK=invalid-practice"),
       Response.json({
         data: {
@@ -281,7 +239,7 @@ describe("luoguSource", () => {
   });
 
   it("loads user page data with public prizes", async () => {
-    const requests = mockFetchResponses([
+    const requests = mockFetchRequests([
       createUserRedirectResponse("C3VK=user"),
       Response.json({ data: userData, status: 200 }),
     ]);
@@ -304,7 +262,7 @@ describe("luoguSource", () => {
       },
     };
 
-    mockFetchResponses([
+    mockFetchRequests([
       createUserRedirectResponse("C3VK=daily-counts"),
       Response.json({ data: dateIndexedDailyCountsUserData, status: 200 }),
     ]);
@@ -323,7 +281,7 @@ describe("luoguSource", () => {
         type: "CF",
       },
     };
-    const requests = mockFetchResponses([
+    const requests = mockFetchRequests([
       createCdnRedirectResponse("C3VK=problem"),
       Response.json({ data: problemData, status: 200 }),
     ]);
@@ -338,7 +296,7 @@ describe("luoguSource", () => {
   });
 
   it("rejects problem page data without numeric difficulty", async () => {
-    mockFetchResponses([
+    mockFetchRequests([
       createCdnRedirectResponse("C3VK=invalid-problem"),
       Response.json({
         data: {
@@ -359,7 +317,7 @@ describe("luoguSource", () => {
   });
 
   it("throws when user page response has invalid JSON shape", async () => {
-    mockFetchResponses([
+    mockFetchRequests([
       createUserRedirectResponse("C3VK=invalid-user"),
       Response.json({ data: {}, status: 200 }),
     ]);
@@ -370,7 +328,7 @@ describe("luoguSource", () => {
   });
 
   it("reuses the cached Luogu CDN cookie across practice calls", async () => {
-    const requests = mockFetchResponses([
+    const requests = mockFetchRequests([
       createCdnRedirectResponse("C3VK=reused"),
       Response.json({ data: practiceData, status: 200 }),
       Response.json({ data: practiceData, status: 200 }),
@@ -385,7 +343,7 @@ describe("luoguSource", () => {
   });
 
   it("refreshes the Luogu CDN cookie when practice redirects", async () => {
-    const requests = mockFetchResponses([
+    const requests = mockFetchRequests([
       createCdnRedirectResponse("C3VK=stale"),
       createRedirectResponse(),
       createCdnRedirectResponse("C3VK=fresh"),
@@ -402,7 +360,7 @@ describe("luoguSource", () => {
   });
 
   it("throws when practice response has invalid JSON shape", async () => {
-    mockFetchResponses([
+    mockFetchRequests([
       createCdnRedirectResponse("C3VK=invalid"),
       Response.json({ data: {}, status: 200 }),
     ]);

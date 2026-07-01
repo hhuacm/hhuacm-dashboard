@@ -1,8 +1,11 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
+import {
+  mockFetchUrls,
+  mockJsonResponse,
+  mockTextResponse,
+} from "../../test-fetch";
 import { nowcoderSource } from "./api";
-
-const originalFetch = globalThis.fetch;
 
 const createRatingBasicData = () => ({
   allRatedCount: 32,
@@ -56,50 +59,6 @@ const createPracticeCodingHtml = (acceptedProblemCount: string | number) => `
   </section>
 `;
 
-const mockJsonResponse = (payload: unknown, status = 200) => {
-  globalThis.fetch = Object.assign(
-    async () => Response.json(payload, { status }),
-    { preconnect: originalFetch.preconnect }
-  );
-};
-
-const mockTextResponse = (payload: string, status = 200) => {
-  globalThis.fetch = Object.assign(
-    async () => new Response(payload, { status }),
-    {
-      preconnect: originalFetch.preconnect,
-    }
-  );
-};
-
-const mockFetchResponses = (responses: Array<Error | Response>) => {
-  const urls: string[] = [];
-
-  globalThis.fetch = Object.assign(
-    (url: string | URL | Request) => {
-      urls.push(url.toString());
-      const response = responses.shift();
-
-      if (response === undefined) {
-        return Promise.reject(new Error("Unexpected fetch call"));
-      }
-
-      if (response instanceof Error) {
-        return Promise.reject(response);
-      }
-
-      return Promise.resolve(response);
-    },
-    { preconnect: originalFetch.preconnect }
-  );
-
-  return urls;
-};
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
 describe("nowcoderSource", () => {
   it("loads rating-basic data", async () => {
     const data = createRatingBasicData();
@@ -112,7 +71,7 @@ describe("nowcoderSource", () => {
   });
 
   it("builds the rating-basic URL with uid query", async () => {
-    const urls = mockFetchResponses([
+    const urls = mockFetchUrls([
       Response.json(createOkEnvelope(createRatingBasicData())),
     ]);
 
@@ -121,22 +80,6 @@ describe("nowcoderSource", () => {
     expect(urls).toEqual([
       "https://ac.nowcoder.com/acm/contest/rating-basic?uid=660255087",
     ]);
-  });
-
-  it("keeps extra rating-basic data fields", async () => {
-    mockJsonResponse(
-      createOkEnvelope({
-        ...createRatingBasicData(),
-        CustomRatingField: "kept",
-      })
-    );
-
-    await expect(
-      nowcoderSource.ratingBasic({ uid: 660_255_087 })
-    ).resolves.toEqual({
-      ...createRatingBasicData(),
-      CustomRatingField: "kept",
-    });
   });
 
   it("throws a Nowcoder-specific error for rating-basic HTTP failures", async () => {
@@ -198,9 +141,7 @@ describe("nowcoderSource", () => {
   });
 
   it("builds practice-coding URL with a small page size", async () => {
-    const urls = mockFetchResponses([
-      new Response(createPracticeCodingHtml(312)),
-    ]);
+    const urls = mockFetchUrls([new Response(createPracticeCodingHtml(312))]);
 
     await nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 });
 

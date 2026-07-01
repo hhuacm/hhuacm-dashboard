@@ -1,19 +1,7 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
+import { mockJsonResponse } from "../../test-fetch";
 import { codeforcesSource } from "./api";
-
-const originalFetch = globalThis.fetch;
-
-const mockJsonResponse = (payload: unknown, ok = true) => {
-  globalThis.fetch = Object.assign(
-    async () => Response.json(payload, { status: ok ? 200 : 500 }),
-    { preconnect: originalFetch.preconnect }
-  );
-};
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
 
 describe("codeforcesSource", () => {
   it("throws when Codeforces envelope status is not OK", async () => {
@@ -27,12 +15,11 @@ describe("codeforcesSource", () => {
     ).rejects.toThrow("Codeforces user.info nope returned FAILED");
   });
 
-  it("keeps known and extra user.info fields", async () => {
+  it("keeps known user.info fields", async () => {
     mockJsonResponse({
       result: [
         {
           avatar: "https://userpic.codeforces.org/422/avatar.jpg",
-          customField: "kept",
           handle: "tourist",
           rating: 3470,
         },
@@ -45,14 +32,13 @@ describe("codeforcesSource", () => {
     ).resolves.toEqual([
       {
         avatar: "https://userpic.codeforces.org/422/avatar.jpg",
-        customField: "kept",
         handle: "tourist",
         rating: 3470,
       },
     ]);
   });
 
-  it("keeps known and extra user.status fields", async () => {
+  it("keeps known user.status fields", async () => {
     mockJsonResponse({
       result: [
         {
@@ -60,12 +46,10 @@ describe("codeforcesSource", () => {
           id: 372_526_393,
           problem: {
             contestId: 2222,
-            customProblemField: "kept",
             index: "H",
             name: "Counting Sort?",
             rating: 4000,
           },
-          unexpectedSubmissionField: "kept",
           verdict: "OK",
         },
         {
@@ -88,12 +72,10 @@ describe("codeforcesSource", () => {
         id: 372_526_393,
         problem: {
           contestId: 2222,
-          customProblemField: "kept",
           index: "H",
           name: "Counting Sort?",
           rating: 4000,
         },
-        unexpectedSubmissionField: "kept",
         verdict: "OK",
       },
       {

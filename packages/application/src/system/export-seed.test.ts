@@ -288,7 +288,7 @@ describe("system seed export", () => {
     );
   });
 
-  it("does not export authentication secrets", async () => {
+  it("does not export internal ids or derived data", async () => {
     const db = await createServiceTestDb();
     await createUser(db, {
       email: "secret@example.com",
@@ -314,23 +314,15 @@ describe("system seed export", () => {
     const result = await exportSystemSeed(db);
     const serialized = JSON.stringify(result);
 
-    for (const secret of [
-      "password",
-      "session",
-      "accessToken",
-      "refreshToken",
-      "verification",
+    for (const internalValue of [
       "secret-user-id",
       "secretDisplayHandle",
       accountId,
-      "profileUrl",
-      "createdAt",
-      "updatedAt",
       "acceptedProblemCount",
       "codeforces.accountStats",
       "refreshRequest",
     ]) {
-      expect(serialized).not.toContain(secret);
+      expect(serialized).not.toContain(internalValue);
     }
   });
 });

@@ -68,7 +68,7 @@ describe("filterCompletionRows", () => {
     ).toEqual(["u3"]);
   });
 
-  it("returns all rows without active filters", () => {
+  it("keeps rows matching selected member statuses", () => {
     expect(
       filterCompletionRows(rows, {
         selectedGrades: [],

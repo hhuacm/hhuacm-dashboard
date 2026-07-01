@@ -58,7 +58,7 @@ const createLuoguUser = async (
   }
 
   await db.insert(userOjAccount).values({
-    externalId: "97238",
+    externalId: input.id,
     handle: input.id,
     id: `account-${input.id}`,
     platform: "luogu",

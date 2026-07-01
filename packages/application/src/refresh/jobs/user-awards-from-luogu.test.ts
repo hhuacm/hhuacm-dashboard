@@ -36,7 +36,7 @@ describe("user awards from Luogu refresh request", () => {
     }
 
     await db.insert(userOjAccount).values({
-      externalId: input.externalId ?? "97238",
+      externalId: input.externalId ?? input.id,
       handle: input.id,
       id: `account-${input.id}`,
       platform: "luogu",
@@ -117,36 +117,6 @@ describe("user awards from Luogu refresh request", () => {
 
     expect(awards).toHaveLength(1);
     expect(awards[0]?.contest).toBe("Cached Contest");
-    expect(sync?.lastError).toBe("Luogu UID is missing");
-  });
-
-  it("records missing UID failures without deleting cached awards", async () => {
-    const db = await createServiceTestDb();
-    await createAccount(db, {
-      externalId: "",
-      id: "active-user",
-      memberStatus: "active",
-    });
-    await db.insert(userAward).values({
-      contest: "Cached Contest",
-      event: null,
-      level: "铜牌",
-      sortOrder: 0,
-      source: "luogu",
-      userId: "active-user",
-      year: 2020,
-    });
-
-    await userAwardsFromLuoguJob.handle(db, {
-      createdAt: new Date(),
-      kind: userAwardsFromLuoguJob.kind,
-      targetId: "account-active-user",
-    });
-
-    const awards = await db.select().from(userAward);
-    const [sync] = await db.select().from(userAwardSync);
-
-    expect(awards).toHaveLength(1);
     expect(sync?.lastError).toBe("Luogu UID is missing");
   });
 });

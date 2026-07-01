@@ -1,12 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
-import { createClient } from "@libsql/client";
 import { asc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/libsql";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
 import {
@@ -14,45 +9,19 @@ import {
   enqueueRefreshRequest,
   getNextRefreshRequest,
 } from "./request-store";
-
-const createRefreshRequestTableSql = `
-create table refresh_request (
-	  kind text not null,
-	  target_id text not null,
-	  created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-    primary key (kind, target_id)
-	)
-	`;
+import { createRefreshRequestTestDb } from "./test-db";
 
 const createTestDb = async () => {
-  const directory = await mkdtemp(
-    path.join(tmpdir(), "refresh-request-store-")
-  );
-  const client = createClient({
-    url: `file:${path.join(directory, "test.db")}`,
-  });
-
-  await client.execute(createRefreshRequestTableSql);
-  await client.execute(
-    "create index refresh_request_created_at_idx on refresh_request (created_at)"
-  );
-
-  return {
-    db: drizzle({
-      client,
-      schema: { refreshRequest },
-    }) as unknown as Database,
-    directory,
-  };
+  const testDb = await createRefreshRequestTestDb("refresh-request-store-");
+  cleanupTestDb = testDb.cleanup;
+  return testDb.db;
 };
 
-let testDirectory: null | string = null;
+let cleanupTestDb: null | (() => Promise<void>) = null;
 
 afterEach(async () => {
-  if (testDirectory) {
-    await rm(testDirectory, { force: true, recursive: true });
-    testDirectory = null;
-  }
+  await cleanupTestDb?.();
+  cleanupTestDb = null;
 });
 
 const createTestRequest = (db: Database, targetId = "account-1") =>
@@ -70,8 +39,7 @@ const listRequests = (db: Database, targetId: string) =>
 
 describe("refresh request store", () => {
   it("keeps one request for a target and kind", async () => {
-    const { db, directory } = await createTestDb();
-    testDirectory = directory;
+    const db = await createTestDb();
 
     const firstRequestCreated = await createTestRequest(db);
     const secondRequestCreated = await enqueueRefreshRequest(db, {
@@ -86,8 +54,7 @@ describe("refresh request store", () => {
   });
 
   it("keeps separate requests for separate kinds", async () => {
-    const { db, directory } = await createTestDb();
-    testDirectory = directory;
+    const db = await createTestDb();
 
     await createTestRequest(db);
     await enqueueRefreshRequest(db, {
@@ -103,8 +70,7 @@ describe("refresh request store", () => {
   });
 
   it("takes requests by creation order", async () => {
-    const { db, directory } = await createTestDb();
-    testDirectory = directory;
+    const db = await createTestDb();
 
     await enqueueRefreshRequest(db, {
       kind: codeforcesAccountStatsJob.kind,
@@ -121,8 +87,7 @@ describe("refresh request store", () => {
   });
 
   it("deletes requests by kind and target", async () => {
-    const { db, directory } = await createTestDb();
-    testDirectory = directory;
+    const db = await createTestDb();
 
     await createTestRequest(db, "account-1");
     await createTestRequest(db, "account-1");
