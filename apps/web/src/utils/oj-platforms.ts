@@ -38,6 +38,13 @@ export const ojPlatformConfigs = ojPlatforms.map((platform) => {
   };
 });
 
+export const ojAccountExternalIdPlaceholders = {
+  atcoder: "AtCoder 用户名",
+  codeforces: "Codeforces Handle",
+  luogu: "洛谷 UID",
+  nowcoder: "牛客 UID",
+} satisfies Record<OjPlatform, string>;
+
 type OjPlatformConfig = (typeof ojPlatformConfigs)[number];
 
 export const getOjPlatformConfig = (platform: OjPlatform): OjPlatformConfig => {

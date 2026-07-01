@@ -29,6 +29,7 @@ import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import {
   buildOjProfileUrl,
   getOjPlatformConfig,
+  ojAccountExternalIdPlaceholders,
   ojPlatformConfigs,
 } from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
@@ -91,13 +92,6 @@ const isOjExternalIdChanged = (
   externalId: string,
   originalExternalId: string
 ) => dialog?.mode === "edit" && externalId !== originalExternalId;
-
-const ojAccountExternalIdPlaceholders: Record<OjPlatform, string> = {
-  atcoder: "AtCoder 用户名",
-  codeforces: "Codeforces Handle",
-  luogu: "洛谷 UID",
-  nowcoder: "牛客 UID",
-};
 
 const getErrorText = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("message" in error)) {

@@ -32,6 +32,7 @@ import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import { ojAccountExternalIdPlaceholders } from "@/utils/oj-platforms";
 import {
   type ProfileFieldKey,
   profileFieldConfigs,
@@ -89,13 +90,6 @@ interface EditorMessage {
   text: string;
   tone: "danger" | "success";
 }
-
-const ojAccountExternalIdPlaceholders: Record<OjPlatform, string> = {
-  atcoder: "AtCoder 用户名",
-  codeforces: "Codeforces Handle",
-  luogu: "洛谷 UID",
-  nowcoder: "牛客 UID",
-};
 
 const getProfileSnapshotKey = (detail: AdminUserDetail | undefined) => {
   if (!detail) {
