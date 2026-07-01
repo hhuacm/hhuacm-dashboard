@@ -32,7 +32,7 @@
     "verify": "bun run fix && bun run check && bun run test",
     "db:local": "turbo -F @hhuacm-dashboard/db db:local",
     "db:sync": "bun run --cwd packages/db db:sync",
-    "check": "bun run check-types && bun x ultracite check",
+    "check": "bun run --cwd packages/db check-migrations && bun run check-types && bun x ultracite check",
     "fix": "ultracite fix",
     "system:grant-admin": "bun run --cwd packages/application system:grant-admin",
     "system:import-users": "bun run --cwd packages/application system:import-users",

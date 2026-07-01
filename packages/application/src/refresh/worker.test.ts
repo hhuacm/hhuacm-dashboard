@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
+import { createTestDb } from "@hhuacm-dashboard/db/testing";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import type { RefreshJobDefinition } from "./jobs/definition";
 import { enqueueRefreshRequest } from "./request-store";
-import { createRefreshRequestTestDb } from "./test-db";
 import { runRefreshWorkerOnce } from "./worker";
 
-const createTestDb = async () => {
-  const testDb = await createRefreshRequestTestDb("refresh-runtime-");
+const createDb = async () => {
+  const testDb = await createTestDb();
   cleanupTestDb = testDb.cleanup;
   return testDb.db;
 };
@@ -28,7 +28,7 @@ const createTestRequest = (db: Database) =>
 
 describe("refresh worker", () => {
   it("deletes requests after successful handlers", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
     await createTestRequest(db);
     const handledTargetIds: string[] = [];
     const definitions = [
@@ -51,7 +51,7 @@ describe("refresh worker", () => {
   });
 
   it("deletes requests after failed handlers", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
     await createTestRequest(db);
     const definitions = [
       {
@@ -71,7 +71,7 @@ describe("refresh worker", () => {
   });
 
   it("returns null when there is no request", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
 
     const result = await runRefreshWorkerOnce(db, []);
 
@@ -79,7 +79,7 @@ describe("refresh worker", () => {
   });
 
   it("rejects unsupported request kinds", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
     const created = await enqueueRefreshRequest(db, {
       kind: codeforcesAccountStatsJob.kind,
       targetId: "account-1",

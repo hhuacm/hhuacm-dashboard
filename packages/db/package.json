@@ -10,6 +10,7 @@
     }
   },
   "scripts": {
+    "check-migrations": "drizzle-kit check",
     "check-types": "tsc --noEmit",
     "db:local": "turso dev --db-file local.db",
     "db:sync": "bun src/cli/db-sync.ts"

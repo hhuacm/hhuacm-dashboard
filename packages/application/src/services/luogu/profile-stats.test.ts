@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { user } from "@hhuacm-dashboard/db/schema/auth";
 import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
+import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 
 import { createServiceTestDb } from "../test-db";
@@ -52,6 +54,19 @@ describe("Luogu profile stats", () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date();
 
+    await db.insert(user).values({
+      email: "luogu@example.com",
+      id: "user-luogu",
+      name: "luogu",
+      username: "luogu",
+    });
+    await db.insert(userOjAccount).values({
+      externalId: "97238",
+      handle: "forlight",
+      id: "account-luogu",
+      platform: "luogu",
+      userId: "user-luogu",
+    });
     await db.insert(luoguAccountStats).values({
       acceptedProblemCount: 3,
       acceptedWeightedScore: 8,

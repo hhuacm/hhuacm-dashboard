@@ -6,11 +6,7 @@ dotenv.config({
   path: "../../apps/server/.env",
 });
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required for Drizzle config.");
-}
+const databaseUrl = process.env.DATABASE_URL ?? "file:local.db";
 
 export default defineConfig({
   schema: [

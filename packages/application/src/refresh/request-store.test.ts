@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
+import { createTestDb } from "@hhuacm-dashboard/db/testing";
 import { asc, eq } from "drizzle-orm";
 import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
@@ -9,10 +10,9 @@ import {
   enqueueRefreshRequest,
   getNextRefreshRequest,
 } from "./request-store";
-import { createRefreshRequestTestDb } from "./test-db";
 
-const createTestDb = async () => {
-  const testDb = await createRefreshRequestTestDb("refresh-request-store-");
+const createDb = async () => {
+  const testDb = await createTestDb();
   cleanupTestDb = testDb.cleanup;
   return testDb.db;
 };
@@ -39,7 +39,7 @@ const listRequests = (db: Database, targetId: string) =>
 
 describe("refresh request store", () => {
   it("keeps one request for a target and kind", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
 
     const firstRequestCreated = await createTestRequest(db);
     const secondRequestCreated = await enqueueRefreshRequest(db, {
@@ -54,7 +54,7 @@ describe("refresh request store", () => {
   });
 
   it("keeps separate requests for separate kinds", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
 
     await createTestRequest(db);
     await enqueueRefreshRequest(db, {
@@ -70,7 +70,7 @@ describe("refresh request store", () => {
   });
 
   it("takes requests by creation order", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
 
     await enqueueRefreshRequest(db, {
       kind: codeforcesAccountStatsJob.kind,
@@ -87,7 +87,7 @@ describe("refresh request store", () => {
   });
 
   it("deletes requests by kind and target", async () => {
-    const db = await createTestDb();
+    const db = await createDb();
 
     await createTestRequest(db, "account-1");
     await createTestRequest(db, "account-1");

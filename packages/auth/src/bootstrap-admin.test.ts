@@ -1,54 +1,27 @@
-import { describe, expect, it } from "bun:test";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { afterEach, describe, expect, it } from "bun:test";
 import type { Database } from "@hhuacm-dashboard/db";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { siteSetting } from "@hhuacm-dashboard/db/schema/site-setting";
-import { createClient } from "@libsql/client";
+import { createTestDb } from "@hhuacm-dashboard/db/testing";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/libsql";
 import {
   bootstrapAdminUserIdSettingKey,
   ensureFirstUserIsAdmin,
 } from "./bootstrap-admin";
 
+const cleanupTestDbs: Array<() => Promise<void>> = [];
+
+afterEach(async () => {
+  for (const cleanup of cleanupTestDbs.splice(0).reverse()) {
+    await cleanup();
+  }
+});
+
 const createAuthTestDb = async () => {
-  const client = createClient({
-    url: `file:${path.join(
-      tmpdir(),
-      `hhuacm-auth-test-${crypto.randomUUID()}.db`
-    )}`,
-  });
+  const testDb = await createTestDb();
+  cleanupTestDbs.push(testDb.cleanup);
 
-  await client.execute(`
-    create table user (
-      id text primary key not null,
-      name text not null,
-      email text not null unique,
-      email_verified integer default 0 not null,
-      image text,
-      username text not null unique,
-      display_username text,
-      role text default 'user' not null,
-      created_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null,
-      updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
-    )
-  `);
-  await client.execute(`
-    create table site_setting (
-      key text primary key not null,
-      value text not null,
-      updated_at integer default (cast(unixepoch('subsecond') * 1000 as integer)) not null
-    )
-  `);
-
-  return drizzle({
-    client,
-    schema: {
-      siteSetting,
-      user,
-    },
-  }) as unknown as Database;
+  return testDb.db as Database;
 };
 
 const createUser = async (
