@@ -10,6 +10,7 @@ import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 import { truncateRefreshError } from "../../refresh/policy";
 import type { OjAccountIdentity } from "../oj-account/queries";
 import { summarizeLuoguPracticeStats } from "./summary";
+import { parseLuoguUid } from "./uid";
 
 type LuoguPracticeLoader = typeof luoguSource.practice;
 
@@ -52,12 +53,6 @@ const selectLuoguPracticeStatsFields = (
   userName: practice.user.name,
 });
 
-const parseLuoguExternalId = (externalId: string) => {
-  const uid = Number(externalId);
-
-  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
-};
-
 const writeAcceptedProblems = async (
   tx: DatabaseTransaction,
   account: OjAccountIdentity,
@@ -97,7 +92,7 @@ export const syncLuoguAccountStats = async (
   now = new Date(),
   loadPractice: LuoguPracticeLoader = luoguSource.practice
 ) => {
-  const uid = parseLuoguExternalId(account.externalId);
+  const uid = parseLuoguUid(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");

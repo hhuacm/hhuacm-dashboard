@@ -12,6 +12,7 @@ import {
   getRefreshSyncStatus,
   type RefreshSyncStatus,
 } from "../refresh/sync-status";
+import { parseLuoguUid } from "./luogu/uid";
 import type { OjAccountIdentity } from "./oj-account/queries";
 
 type LuoguUserLoader = typeof luoguSource.user;
@@ -67,12 +68,6 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown user award sync error";
 
-const parseLuoguExternalId = (externalId: string) => {
-  const uid = Number(externalId);
-
-  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
-};
-
 export const selectLuoguUserAwards = (
   userPage: LuoguUserPageData
 ): SelectedLuoguUserAward[] =>
@@ -121,7 +116,7 @@ export const syncUserAwardsFromLuogu = async (
   now = new Date(),
   loadUser: LuoguUserLoader = luoguSource.user
 ) => {
-  const uid = parseLuoguExternalId(account.externalId);
+  const uid = parseLuoguUid(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");

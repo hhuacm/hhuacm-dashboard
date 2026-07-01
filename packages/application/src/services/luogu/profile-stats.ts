@@ -10,6 +10,7 @@ import {
   type RefreshSyncStatus,
 } from "../../refresh/sync-status";
 import type { OjAccountIdentity } from "../oj-account/queries";
+import { parseLuoguUid } from "./uid";
 
 interface PublicLuoguDifficultyCount {
   count: number;
@@ -26,9 +27,8 @@ export interface PublicLuoguStats {
   syncStatus: RefreshSyncStatus;
 }
 
-interface LuoguPracticeSummaryInput {
-  passed: { difficulty: null | number }[];
-  passedProblemCount?: null | number;
+interface LuoguAcceptedProblemDifficultyInput {
+  difficulty: null | number;
 }
 
 export const luoguDifficultyLabels = [
@@ -42,49 +42,24 @@ export const luoguDifficultyLabels = [
   "NOI/NOI+/CTSC",
 ] as const;
 
-const parseLuoguExternalId = (externalId: string) => {
-  const uid = Number(externalId);
-
-  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
-};
-
-export const summarizeLuoguPractice = (
-  input: LuoguPracticeSummaryInput
-): Pick<
-  PublicLuoguStats,
-  | "acceptedProblemCount"
-  | "acceptedWeightedScore"
-  | "averageAcceptedDifficulty"
-  | "difficultyCounts"
-> => {
+export const summarizeLuoguDifficultyCounts = (
+  problems: LuoguAcceptedProblemDifficultyInput[]
+): PublicLuoguStats["difficultyCounts"] => {
   const counts = new Map<number, number>();
-  let acceptedWeightedScore = 0;
-  let difficultySum = 0;
-  let difficultyCount = 0;
 
-  for (const problem of input.passed) {
-    acceptedWeightedScore += problem.difficulty ?? 0;
-
+  for (const problem of problems) {
     if (problem.difficulty === null) {
       continue;
     }
 
     counts.set(problem.difficulty, (counts.get(problem.difficulty) ?? 0) + 1);
-    difficultySum += problem.difficulty;
-    difficultyCount += 1;
   }
 
-  return {
-    acceptedProblemCount: input.passedProblemCount ?? input.passed.length,
-    acceptedWeightedScore,
-    averageAcceptedDifficulty:
-      difficultyCount === 0 ? null : difficultySum / difficultyCount,
-    difficultyCounts: luoguDifficultyLabels.map((label, difficulty) => ({
-      count: counts.get(difficulty) ?? 0,
-      difficulty,
-      label,
-    })),
-  };
+  return luoguDifficultyLabels.map((label, difficulty) => ({
+    count: counts.get(difficulty) ?? 0,
+    difficulty,
+    label,
+  }));
 };
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
@@ -117,10 +92,8 @@ export const getLuoguStatsForProfile = async (
   db: Database,
   account: OjAccountIdentity
 ): Promise<PublicLuoguStats | null> => {
-  const uid = parseLuoguExternalId(account.externalId);
-  const emptyDifficultyCounts = summarizeLuoguPractice({
-    passed: [],
-  }).difficultyCounts;
+  const uid = parseLuoguUid(account.externalId);
+  const emptyDifficultyCounts = summarizeLuoguDifficultyCounts([]);
 
   if (uid === null) {
     return {
@@ -158,16 +131,13 @@ export const getLuoguStatsForProfile = async (
   }
 
   const acceptedProblems = await getLuoguAcceptedProblems(db, account.id);
-  const summary = summarizeLuoguPractice({
-    passed: acceptedProblems,
-    passedProblemCount: currentStats.acceptedProblemCount,
-  });
+  const difficultyCounts = summarizeLuoguDifficultyCounts(acceptedProblems);
 
   return {
     acceptedProblemCount: currentStats.acceptedProblemCount,
     acceptedWeightedScore: currentStats.acceptedWeightedScore,
     averageAcceptedDifficulty: currentStats.averageAcceptedDifficulty,
-    difficultyCounts: summary.difficultyCounts,
+    difficultyCounts,
     fetchedAt: toIsoString(currentStats.fetchedAt),
     syncStatus,
   };

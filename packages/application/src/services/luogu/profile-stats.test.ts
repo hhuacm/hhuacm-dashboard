@@ -8,26 +8,20 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createServiceTestDb } from "../test-db";
 import {
   getLuoguStatsForProfile,
-  summarizeLuoguPractice,
+  summarizeLuoguDifficultyCounts,
 } from "./profile-stats";
 
 describe("Luogu profile stats", () => {
   it("summarizes all accepted Luogu practice problems by difficulty", () => {
-    const summary = summarizeLuoguPractice({
-      passed: [
+    expect(
+      summarizeLuoguDifficultyCounts([
         { difficulty: 0 },
         { difficulty: 1 },
         { difficulty: 1 },
         { difficulty: 6 },
         { difficulty: null },
-      ],
-      passedProblemCount: 9,
-    });
-
-    expect(summary.acceptedProblemCount).toBe(9);
-    expect(summary.acceptedWeightedScore).toBe(8);
-    expect(summary.averageAcceptedDifficulty).toBe(2);
-    expect(summary.difficultyCounts).toEqual([
+      ])
+    ).toEqual([
       { count: 1, difficulty: 0, label: "暂无评定" },
       { count: 2, difficulty: 1, label: "入门" },
       { count: 0, difficulty: 2, label: "普及-" },
