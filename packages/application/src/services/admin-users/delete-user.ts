@@ -4,7 +4,7 @@ import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { ApplicationError } from "../../errors";
 
-import { clearCodeforcesStatsForUserAccounts } from "../oj-account/stats-effects";
+import { clearOjAccountRefreshRequestsForUser } from "../oj-account/stats-effects";
 import { getTargetUser } from "../profile";
 import type { Database } from "./types";
 
@@ -50,19 +50,12 @@ const assertAdminUserCanBeDeleted = async (
   return targetUser;
 };
 
-const clearStatsBeforeDeletingAdminUser = async (
-  db: Database,
-  userId: string
-) => {
-  await clearCodeforcesStatsForUserAccounts(db, userId);
-};
-
 export const deleteAdminUser = async (
   db: Database,
   input: { userId: string; usernameConfirmation: string }
 ) => {
   await assertAdminUserCanBeDeleted(db, input);
-  await clearStatsBeforeDeletingAdminUser(db, input.userId);
+  await clearOjAccountRefreshRequestsForUser(db, input.userId);
 
   const [deletedUser] = await db
     .delete(user)

@@ -4,9 +4,11 @@ import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { atcoderAccountStatsJob } from "../../refresh/jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "../../refresh/jobs/codeforces-account-stats";
+import type { RefreshJobDefinition } from "../../refresh/jobs/definition";
 import { luoguAccountStatsJob } from "../../refresh/jobs/luogu-account-stats";
 import { nowcoderAccountStatsJob } from "../../refresh/jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "../../refresh/jobs/user-awards-from-luogu";
+import type { RefreshQueueDatabase } from "../../refresh/request-store";
 import { deleteAtcoderStats } from "../atcoder/sync";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
@@ -21,49 +23,35 @@ export interface AccountStatsEffectTarget {
 type AccountStatsEffect = (db: Database, accountId: string) => Promise<unknown>;
 
 interface AccountStatsEffects {
-  clear: AccountStatsEffect[];
-  enqueue: AccountStatsEffect[];
+  clearStats: AccountStatsEffect[];
+  refreshJobs: RefreshJobDefinition[];
 }
 
 const accountStatsEffects = {
   atcoder: {
-    clear: [deleteAtcoderStats, atcoderAccountStatsJob.clear],
-    enqueue: [atcoderAccountStatsJob.enqueue],
+    clearStats: [deleteAtcoderStats],
+    refreshJobs: [atcoderAccountStatsJob],
   },
   codeforces: {
-    clear: [deleteCodeforcesStats, codeforcesAccountStatsJob.clear],
-    enqueue: [codeforcesAccountStatsJob.enqueue],
+    clearStats: [deleteCodeforcesStats],
+    refreshJobs: [codeforcesAccountStatsJob],
   },
   luogu: {
-    clear: [
-      deleteLuoguStats,
-      luoguAccountStatsJob.clear,
-      userAwardsFromLuoguJob.clear,
-    ],
-    enqueue: [luoguAccountStatsJob.enqueue, userAwardsFromLuoguJob.enqueue],
+    clearStats: [deleteLuoguStats],
+    refreshJobs: [luoguAccountStatsJob, userAwardsFromLuoguJob],
   },
   nowcoder: {
-    clear: [deleteNowcoderStats, nowcoderAccountStatsJob.clear],
-    enqueue: [nowcoderAccountStatsJob.enqueue],
+    clearStats: [deleteNowcoderStats],
+    refreshJobs: [nowcoderAccountStatsJob],
   },
 } satisfies Record<OjPlatform, AccountStatsEffects>;
 
-const runAccountStatsEffects = async (
-  db: Database,
-  account: AccountStatsEffectTarget,
-  kind: keyof AccountStatsEffects
-) => {
-  for (const effect of accountStatsEffects[account.platform][kind]) {
-    await effect(db, account.id);
-  }
-};
-
-export const clearCodeforcesStatsIfNeeded = async (
-  db: Database,
+const clearOjAccountRefreshRequests = async (
+  db: RefreshQueueDatabase,
   account: AccountStatsEffectTarget
 ) => {
-  if (account.platform === "codeforces") {
-    await runAccountStatsEffects(db, account, "clear");
+  for (const job of accountStatsEffects[account.platform].refreshJobs) {
+    await job.clear(db, account.id);
   }
 };
 
@@ -71,21 +59,25 @@ export const resetOjAccountStatsEffects = async (
   db: Database,
   account: AccountStatsEffectTarget
 ) => {
-  await runAccountStatsEffects(db, account, "clear");
+  for (const clearStats of accountStatsEffects[account.platform].clearStats) {
+    await clearStats(db, account.id);
+  }
+
+  await clearOjAccountRefreshRequests(db, account);
 };
 
-export const clearCodeforcesStatsForUserAccounts = async (
+export const clearOjAccountRefreshRequestsForUser = async (
   db: Database,
   userId: string
 ) => {
   const accounts = await listInternalOjAccountsByUserId(db, userId);
 
   for (const account of accounts) {
-    await clearCodeforcesStatsIfNeeded(db, account);
+    await clearOjAccountRefreshRequests(db, account);
   }
 };
 
-const isCurrentMember = async (db: Database, userId: string) => {
+const isCurrentMember = async (db: RefreshQueueDatabase, userId: string) => {
   const [currentMemberRow] = await db
     .select({ userId: currentMember.userId })
     .from(currentMember)
@@ -96,15 +88,23 @@ const isCurrentMember = async (db: Database, userId: string) => {
 };
 
 export const requestOjAccountRefreshEffectsIfNeeded = async (
-  db: Database,
+  db: RefreshQueueDatabase,
   account: AccountStatsEffectTarget,
   userId: string
 ) => {
   if (!(await isCurrentMember(db, userId))) {
-    return;
+    return 0;
   }
 
-  await runAccountStatsEffects(db, account, "enqueue");
+  let refreshRequestCount = 0;
+
+  for (const job of accountStatsEffects[account.platform].refreshJobs) {
+    if (await job.enqueue(db, account.id)) {
+      refreshRequestCount += 1;
+    }
+  }
+
+  return refreshRequestCount;
 };
 
 export const replaceOjAccountStatsEffectsIfNeeded = async (

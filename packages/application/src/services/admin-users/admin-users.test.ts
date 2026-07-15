@@ -279,25 +279,55 @@ describe("admin users", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  it("deletes frozen users and clears Codeforces stats", async () => {
+  it("deletes frozen users and clears all OJ refresh requests", async () => {
     const db = await createServiceTestDb();
     await createUser(db, {
       id: "frozen-user",
       memberStatus: "frozen",
       username: "frozen-user",
     });
-    const accountId = await createOjAccount(db, {
+    const atcoderAccountId = await createOjAccount(db, {
+      platform: "atcoder",
+      userId: "frozen-user",
+    });
+    const codeforcesAccountId = await createOjAccount(db, {
       platform: "codeforces",
       userId: "frozen-user",
     });
+    const luoguAccountId = await createOjAccount(db, {
+      platform: "luogu",
+      userId: "frozen-user",
+    });
+    const nowcoderAccountId = await createOjAccount(db, {
+      platform: "nowcoder",
+      userId: "frozen-user",
+    });
     await db.insert(codeforcesAccountStats).values({
-      accountId,
+      accountId: codeforcesAccountId,
       lastAttemptedAt: new Date("2026-01-01T00:00:00.000Z"),
     });
-    await db.insert(refreshRequest).values({
-      kind: "codeforces.accountStats",
-      targetId: accountId,
-    });
+    await db.insert(refreshRequest).values([
+      {
+        kind: "atcoder.accountStats",
+        targetId: atcoderAccountId,
+      },
+      {
+        kind: "codeforces.accountStats",
+        targetId: codeforcesAccountId,
+      },
+      {
+        kind: "luogu.accountStats",
+        targetId: luoguAccountId,
+      },
+      {
+        kind: "user.awardsFromLuogu",
+        targetId: luoguAccountId,
+      },
+      {
+        kind: "nowcoder.accountStats",
+        targetId: nowcoderAccountId,
+      },
+    ]);
 
     const deleted = await deleteAdminUser(db, {
       userId: "frozen-user",

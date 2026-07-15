@@ -3,17 +3,9 @@ import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  isCurrentMemberStatus,
-  type OjPlatform,
-} from "@hhuacm-dashboard/domain";
+import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
-import { atcoderAccountStatsJob } from "../refresh/jobs/atcoder-account-stats";
-import { codeforcesAccountStatsJob } from "../refresh/jobs/codeforces-account-stats";
-import { luoguAccountStatsJob } from "../refresh/jobs/luogu-account-stats";
-import { nowcoderAccountStatsJob } from "../refresh/jobs/nowcoder-account-stats";
-import { userAwardsFromLuoguJob } from "../refresh/jobs/user-awards-from-luogu";
+import { requestOjAccountRefreshEffectsIfNeeded } from "../services/oj-account/stats-effects";
 import { parseSystemSeedFile, type SystemSeedUser } from "./seed-format";
 
 type Transaction = DatabaseTransaction;
@@ -125,55 +117,6 @@ const validateSeedUsers = (users: SystemSeedUser[]) => {
   }
 };
 
-const isCurrentMemberSeedUser = (seedUser: SystemSeedUser) => {
-  const memberStatus = seedUser.profile?.memberStatus ?? defaultMemberStatus;
-
-  return isCurrentMemberStatus(memberStatus);
-};
-
-const countCreatedRefreshRequest = async (created: Promise<boolean>) =>
-  (await created) ? 1 : 0;
-
-const enqueueImportedOjAccountRefreshJobs = async (
-  db: UserImportDatabase,
-  input: {
-    accountId: string;
-    isCurrentMember: boolean;
-    platform: OjPlatform;
-  }
-) => {
-  let count = 0;
-
-  if (input.platform === "atcoder" && input.isCurrentMember) {
-    count += await countCreatedRefreshRequest(
-      atcoderAccountStatsJob.enqueue(db, input.accountId)
-    );
-  }
-
-  if (input.platform === "codeforces" && input.isCurrentMember) {
-    count += await countCreatedRefreshRequest(
-      codeforcesAccountStatsJob.enqueue(db, input.accountId)
-    );
-  }
-
-  if (input.platform === "luogu" && input.isCurrentMember) {
-    count += await countCreatedRefreshRequest(
-      luoguAccountStatsJob.enqueue(db, input.accountId)
-    );
-    count += await countCreatedRefreshRequest(
-      userAwardsFromLuoguJob.enqueue(db, input.accountId)
-    );
-  }
-
-  if (input.platform === "nowcoder" && input.isCurrentMember) {
-    count += await countCreatedRefreshRequest(
-      nowcoderAccountStatsJob.enqueue(db, input.accountId)
-    );
-  }
-
-  return count;
-};
-
 const createImportedUser = async (
   db: UserImportDatabase,
   input: {
@@ -208,7 +151,6 @@ const createImportedUser = async (
   }
 
   let refreshRequestCount = 0;
-  const shouldRefreshAccounts = isCurrentMemberSeedUser(input.seedUser);
 
   for (const accountSeed of input.seedUser.ojAccounts ?? []) {
     const [createdOjAccount] = await db
@@ -228,11 +170,11 @@ const createImportedUser = async (
       continue;
     }
 
-    refreshRequestCount += await enqueueImportedOjAccountRefreshJobs(db, {
-      accountId: createdOjAccount.id,
-      isCurrentMember: shouldRefreshAccounts,
-      platform: createdOjAccount.platform,
-    });
+    refreshRequestCount += await requestOjAccountRefreshEffectsIfNeeded(
+      db,
+      createdOjAccount,
+      userId
+    );
   }
 
   return { refreshRequestCount };
