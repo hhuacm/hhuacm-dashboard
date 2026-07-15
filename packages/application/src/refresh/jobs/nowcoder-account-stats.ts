@@ -8,39 +8,8 @@ import {
   syncNowcoderAccountStats,
 } from "../../services/nowcoder/sync";
 import { refreshDefaults } from "../policy";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
-
-const nowcoderAccountFields = {
-  externalId: userOjAccount.externalId,
-  handle: userOjAccount.handle,
-  id: userOjAccount.id,
-} as const;
-
-const handleNowcoderAccountStatsRequest = async (
-  db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1]
-) => {
-  const [account] = await db
-    .select(nowcoderAccountFields)
-    .from(userOjAccount)
-    .where(
-      and(
-        eq(userOjAccount.id, request.targetId),
-        eq(userOjAccount.platform, "nowcoder")
-      )
-    )
-    .limit(1);
-
-  if (!account) {
-    throw new Error(`Nowcoder account does not exist: ${request.targetId}`);
-  }
-
-  try {
-    await syncNowcoderAccountStats(db, account);
-  } catch (error) {
-    await markNowcoderAccountStatsRefreshFailed(db, account, error);
-  }
-};
+import { createAccountStatsRefreshHandler } from "./account-stats-handler";
+import { defineRefreshJob } from "./definition";
 
 const enqueueDueNowcoderAccountStatsTargets = async (
   db: Database,
@@ -50,7 +19,7 @@ const enqueueDueNowcoderAccountStatsTargets = async (
     now.getTime() - refreshDefaults.nowcoderStatsTtlMs
   );
   const dueAccounts = await db
-    .select(nowcoderAccountFields)
+    .select({ id: userOjAccount.id })
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
@@ -77,6 +46,10 @@ const enqueueDueNowcoderAccountStatsTargets = async (
 
 export const nowcoderAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueNowcoderAccountStatsTargets,
-  handle: handleNowcoderAccountStatsRequest,
+  handle: createAccountStatsRefreshHandler({
+    markFailed: markNowcoderAccountStatsRefreshFailed,
+    platform: "nowcoder",
+    sync: syncNowcoderAccountStats,
+  }),
   kind: "nowcoder.accountStats",
 });

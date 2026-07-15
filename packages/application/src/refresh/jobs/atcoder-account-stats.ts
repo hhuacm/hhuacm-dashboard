@@ -8,39 +8,8 @@ import {
   syncAtcoderAccountStats,
 } from "../../services/atcoder/sync";
 import { refreshDefaults } from "../policy";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
-
-const atcoderAccountFields = {
-  externalId: userOjAccount.externalId,
-  handle: userOjAccount.handle,
-  id: userOjAccount.id,
-} as const;
-
-const handleAtcoderAccountStatsRequest = async (
-  db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1]
-) => {
-  const [account] = await db
-    .select(atcoderAccountFields)
-    .from(userOjAccount)
-    .where(
-      and(
-        eq(userOjAccount.id, request.targetId),
-        eq(userOjAccount.platform, "atcoder")
-      )
-    )
-    .limit(1);
-
-  if (!account) {
-    throw new Error(`AtCoder account does not exist: ${request.targetId}`);
-  }
-
-  try {
-    await syncAtcoderAccountStats(db, account);
-  } catch (error) {
-    await markAtcoderAccountStatsRefreshFailed(db, account, error);
-  }
-};
+import { createAccountStatsRefreshHandler } from "./account-stats-handler";
+import { defineRefreshJob } from "./definition";
 
 const enqueueDueAtcoderAccountStatsTargets = async (
   db: Database,
@@ -48,7 +17,7 @@ const enqueueDueAtcoderAccountStatsTargets = async (
 ) => {
   const dueBefore = new Date(now.getTime() - refreshDefaults.atcoderStatsTtlMs);
   const dueAccounts = await db
-    .select(atcoderAccountFields)
+    .select({ id: userOjAccount.id })
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
@@ -75,6 +44,10 @@ const enqueueDueAtcoderAccountStatsTargets = async (
 
 export const atcoderAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueAtcoderAccountStatsTargets,
-  handle: handleAtcoderAccountStatsRequest,
+  handle: createAccountStatsRefreshHandler({
+    markFailed: markAtcoderAccountStatsRefreshFailed,
+    platform: "atcoder",
+    sync: syncAtcoderAccountStats,
+  }),
   kind: "atcoder.accountStats",
 });

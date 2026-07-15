@@ -4,7 +4,7 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
-import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
+import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../services/test-db";
 import { atcoderAccountStatsJob } from "./atcoder-account-stats";
@@ -16,7 +16,6 @@ describe("AtCoder account stats refresh request", () => {
       fetchedAt?: Date | null;
       id: string;
       memberStatus?: MemberStatus;
-      platform?: OjPlatform;
     }
   ) => {
     await db.insert(user).values({
@@ -37,7 +36,7 @@ describe("AtCoder account stats refresh request", () => {
       externalId: input.id,
       handle: input.id,
       id: `account-${input.id}`,
-      platform: input.platform ?? "atcoder",
+      platform: "atcoder",
       userId: input.id,
     });
 
@@ -88,25 +87,5 @@ describe("AtCoder account stats refresh request", () => {
     expect(targetIds).not.toContain("account-retired-user");
     expect(targetIds).not.toContain("account-frozen-user");
     expect(targetIds).not.toContain("account-fresh-user");
-  });
-
-  it("rejects refresh requests for non-AtCoder account targets", async () => {
-    const db = await createServiceTestDb();
-
-    await createAccount(db, {
-      id: "wrong-platform-user",
-      memberStatus: "active",
-      platform: "codeforces",
-    });
-
-    await expect(
-      atcoderAccountStatsJob.handle(db, {
-        createdAt: new Date(),
-        kind: atcoderAccountStatsJob.kind,
-        targetId: "account-wrong-platform-user",
-      })
-    ).rejects.toThrow(
-      "AtCoder account does not exist: account-wrong-platform-user"
-    );
   });
 });

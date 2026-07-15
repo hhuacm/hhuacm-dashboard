@@ -8,44 +8,13 @@ import {
   syncLuoguAccountStats,
 } from "../../services/luogu/sync";
 import { refreshDefaults } from "../policy";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
-
-const luoguAccountFields = {
-  externalId: userOjAccount.externalId,
-  handle: userOjAccount.handle,
-  id: userOjAccount.id,
-} as const;
-
-const handleLuoguAccountStatsRequest = async (
-  db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1]
-) => {
-  const [account] = await db
-    .select(luoguAccountFields)
-    .from(userOjAccount)
-    .where(
-      and(
-        eq(userOjAccount.id, request.targetId),
-        eq(userOjAccount.platform, "luogu")
-      )
-    )
-    .limit(1);
-
-  if (!account) {
-    throw new Error(`Luogu account does not exist: ${request.targetId}`);
-  }
-
-  try {
-    await syncLuoguAccountStats(db, account);
-  } catch (error) {
-    await markLuoguAccountStatsRefreshFailed(db, account, error);
-  }
-};
+import { createAccountStatsRefreshHandler } from "./account-stats-handler";
+import { defineRefreshJob } from "./definition";
 
 const enqueueDueLuoguAccountStatsTargets = async (db: Database, now: Date) => {
   const dueBefore = new Date(now.getTime() - refreshDefaults.luoguStatsTtlMs);
   const dueAccounts = await db
-    .select(luoguAccountFields)
+    .select({ id: userOjAccount.id })
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
@@ -72,6 +41,10 @@ const enqueueDueLuoguAccountStatsTargets = async (db: Database, now: Date) => {
 
 export const luoguAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueLuoguAccountStatsTargets,
-  handle: handleLuoguAccountStatsRequest,
+  handle: createAccountStatsRefreshHandler({
+    markFailed: markLuoguAccountStatsRefreshFailed,
+    platform: "luogu",
+    sync: syncLuoguAccountStats,
+  }),
   kind: "luogu.accountStats",
 });

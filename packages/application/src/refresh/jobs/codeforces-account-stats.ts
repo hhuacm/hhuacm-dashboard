@@ -8,39 +8,8 @@ import {
   syncCodeforcesAccountStats,
 } from "../../services/codeforces/sync";
 import { refreshDefaults } from "../policy";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
-
-const codeforcesAccountFields = {
-  externalId: userOjAccount.externalId,
-  handle: userOjAccount.handle,
-  id: userOjAccount.id,
-} as const;
-
-const handleCodeforcesAccountStatsRequest = async (
-  db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1]
-) => {
-  const [account] = await db
-    .select(codeforcesAccountFields)
-    .from(userOjAccount)
-    .where(
-      and(
-        eq(userOjAccount.id, request.targetId),
-        eq(userOjAccount.platform, "codeforces")
-      )
-    )
-    .limit(1);
-
-  if (!account) {
-    throw new Error(`Codeforces account does not exist: ${request.targetId}`);
-  }
-
-  try {
-    await syncCodeforcesAccountStats(db, account);
-  } catch (error) {
-    await markCodeforcesAccountStatsRefreshFailed(db, account, error);
-  }
-};
+import { createAccountStatsRefreshHandler } from "./account-stats-handler";
+import { defineRefreshJob } from "./definition";
 
 const enqueueDueCodeforcesAccountStatsTargets = async (
   db: Database,
@@ -50,7 +19,7 @@ const enqueueDueCodeforcesAccountStatsTargets = async (
     now.getTime() - refreshDefaults.codeforcesStatsTtlMs
   );
   const dueAccounts = await db
-    .select(codeforcesAccountFields)
+    .select({ id: userOjAccount.id })
     .from(userOjAccount)
     .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .leftJoin(
@@ -77,6 +46,10 @@ const enqueueDueCodeforcesAccountStatsTargets = async (
 
 export const codeforcesAccountStatsJob = defineRefreshJob({
   enqueueDueTargets: enqueueDueCodeforcesAccountStatsTargets,
-  handle: handleCodeforcesAccountStatsRequest,
+  handle: createAccountStatsRefreshHandler({
+    markFailed: markCodeforcesAccountStatsRefreshFailed,
+    platform: "codeforces",
+    sync: syncCodeforcesAccountStats,
+  }),
   kind: "codeforces.accountStats",
 });
