@@ -108,13 +108,6 @@ export const refreshSyncStatuses = [
 
 export type RefreshSyncStatus = (typeof refreshSyncStatuses)[number];
 
-const refreshSyncStatusSet = new Set<string>(refreshSyncStatuses);
-
-export const isRefreshSyncStatus = (
-  value: unknown
-): value is RefreshSyncStatus =>
-  typeof value === "string" && refreshSyncStatusSet.has(value);
-
 const gradeOtherOption = "其他";
 
 const gradeLookbackYears = 7;

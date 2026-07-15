@@ -6,7 +6,6 @@ import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
 import type { RefreshJobDefinition } from "./jobs/definition";
 import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
 import { nowcoderAccountStatsJob } from "./jobs/nowcoder-account-stats";
-import { userAwardsFromLuoguJob } from "./jobs/user-awards-from-luogu";
 import type { RefreshRequestKind } from "./request-store";
 
 interface RefreshActivityTarget {
@@ -85,10 +84,6 @@ export const getRefreshActivityForJob = (
     targetId,
   });
 
-const createAccountRefreshActivityGetter =
-  (getJob: RefreshJobGetter) => (db: Database, accountId: string) =>
-    getRefreshActivityForJob(db, getJob(), accountId);
-
 const createRankRefreshActivityGetter =
   (getJob: RefreshJobGetter) => async (db: Database, accountIds: string[]) => {
     const refreshingAccountIds = await getRefreshingTargetIds(db, {
@@ -104,21 +99,6 @@ const createRankRefreshActivityGetter =
       }),
     };
   };
-
-export const getCodeforcesAccountStatsRefreshActivity =
-  createAccountRefreshActivityGetter(() => codeforcesAccountStatsJob);
-
-export const getAtcoderAccountStatsRefreshActivity =
-  createAccountRefreshActivityGetter(() => atcoderAccountStatsJob);
-
-export const getLuoguAccountStatsRefreshActivity =
-  createAccountRefreshActivityGetter(() => luoguAccountStatsJob);
-
-export const getNowcoderAccountStatsRefreshActivity =
-  createAccountRefreshActivityGetter(() => nowcoderAccountStatsJob);
-
-export const getUserAwardsFromLuoguRefreshActivity =
-  createAccountRefreshActivityGetter(() => userAwardsFromLuoguJob);
 
 export const getCodeforcesRankRefreshActivity = createRankRefreshActivityGetter(
   () => codeforcesAccountStatsJob

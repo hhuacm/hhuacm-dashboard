@@ -4,7 +4,6 @@ import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { atcoderAccountStatsJob } from "../../refresh/jobs/atcoder-account-stats";
 import { codeforcesAccountStatsJob } from "../../refresh/jobs/codeforces-account-stats";
-import type { RefreshJobDefinition } from "../../refresh/jobs/definition";
 import { luoguAccountStatsJob } from "../../refresh/jobs/luogu-account-stats";
 import { nowcoderAccountStatsJob } from "../../refresh/jobs/nowcoder-account-stats";
 import { userAwardsFromLuoguJob } from "../../refresh/jobs/user-awards-from-luogu";
@@ -26,49 +25,26 @@ interface AccountStatsEffects {
   enqueue: AccountStatsEffect[];
 }
 
-type RefreshJobGetter = () => RefreshJobDefinition;
-
-const clearRefreshJob =
-  (getJob: RefreshJobGetter): AccountStatsEffect =>
-  async (db, accountId) => {
-    await getJob().clear(db, accountId);
-  };
-
-const enqueueRefreshJob =
-  (getJob: RefreshJobGetter): AccountStatsEffect =>
-  async (db, accountId) => {
-    await getJob().enqueue(db, accountId);
-  };
-
 const accountStatsEffects = {
   atcoder: {
-    clear: [deleteAtcoderStats, clearRefreshJob(() => atcoderAccountStatsJob)],
-    enqueue: [enqueueRefreshJob(() => atcoderAccountStatsJob)],
+    clear: [deleteAtcoderStats, atcoderAccountStatsJob.clear],
+    enqueue: [atcoderAccountStatsJob.enqueue],
   },
   codeforces: {
-    clear: [
-      deleteCodeforcesStats,
-      clearRefreshJob(() => codeforcesAccountStatsJob),
-    ],
-    enqueue: [enqueueRefreshJob(() => codeforcesAccountStatsJob)],
+    clear: [deleteCodeforcesStats, codeforcesAccountStatsJob.clear],
+    enqueue: [codeforcesAccountStatsJob.enqueue],
   },
   luogu: {
     clear: [
       deleteLuoguStats,
-      clearRefreshJob(() => luoguAccountStatsJob),
-      clearRefreshJob(() => userAwardsFromLuoguJob),
+      luoguAccountStatsJob.clear,
+      userAwardsFromLuoguJob.clear,
     ],
-    enqueue: [
-      enqueueRefreshJob(() => luoguAccountStatsJob),
-      enqueueRefreshJob(() => userAwardsFromLuoguJob),
-    ],
+    enqueue: [luoguAccountStatsJob.enqueue, userAwardsFromLuoguJob.enqueue],
   },
   nowcoder: {
-    clear: [
-      deleteNowcoderStats,
-      clearRefreshJob(() => nowcoderAccountStatsJob),
-    ],
-    enqueue: [enqueueRefreshJob(() => nowcoderAccountStatsJob)],
+    clear: [deleteNowcoderStats, nowcoderAccountStatsJob.clear],
+    enqueue: [nowcoderAccountStatsJob.enqueue],
   },
 } satisfies Record<OjPlatform, AccountStatsEffects>;
 

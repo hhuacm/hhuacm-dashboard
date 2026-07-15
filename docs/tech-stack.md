@@ -1,6 +1,6 @@
 # Technical Stack
 
-This project was scaffolded with Better-T-Stack and uses a TypeScript monorepo architecture. The scaffold choices are recorded in `bts.jsonc`, including the reproducible creation command.
+This project uses a TypeScript monorepo architecture.
 
 ## Stack
 

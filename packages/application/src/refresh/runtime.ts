@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshJobDefinitions } from "./jobs";
 import type { RefreshJobDefinition } from "./jobs/definition";
@@ -7,11 +8,6 @@ import { runRefreshWorkerOnce } from "./worker";
 interface RefreshRuntimeOptions {
   db: Database;
 }
-
-const sleep = (ms: number) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 
 export const enqueueDueRefreshTargets = async (
   db: Database,
