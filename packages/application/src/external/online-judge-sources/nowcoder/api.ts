@@ -1,14 +1,8 @@
 import { z } from "zod";
 
-import {
-  isCommonRetryableHttpStatus,
-  requestExternalResource,
-} from "../../request";
+import { requestExternalResource } from "../../request";
 
 const nowcoderBaseUrl = "https://ac.nowcoder.com";
-const requestMaxAttempts = 3;
-const requestRetryDelayMs = 500;
-const requestTimeoutMs = 10_000;
 
 const nowcoderRatingBasicDataSchema = z.looseObject({
   allRatedCount: z.number(),
@@ -84,12 +78,8 @@ const ratingBasic = async (params: {
 }): Promise<NowcoderRatingBasic> => {
   const response = await requestExternalResource({
     label: `Nowcoder rating-basic ${params.uid}`,
-    maxAttempts: requestMaxAttempts,
     request: async (signal) =>
       await fetch(buildNowcoderRatingBasicUrl(params.uid), { signal }),
-    retryDelayMs: requestRetryDelayMs,
-    retryableStatus: isCommonRetryableHttpStatus,
-    timeoutMs: requestTimeoutMs,
   });
 
   if (!response.ok) {
@@ -127,12 +117,8 @@ const acceptedPracticeProblemCount = async (params: {
 }): Promise<null | number> => {
   const response = await requestExternalResource({
     label: `Nowcoder practice-coding ${params.uid}`,
-    maxAttempts: requestMaxAttempts,
     request: async (signal) =>
       await fetch(buildNowcoderPracticeCodingUrl(params.uid), { signal }),
-    retryDelayMs: requestRetryDelayMs,
-    retryableStatus: isCommonRetryableHttpStatus,
-    timeoutMs: requestTimeoutMs,
   });
 
   if (!response.ok) {

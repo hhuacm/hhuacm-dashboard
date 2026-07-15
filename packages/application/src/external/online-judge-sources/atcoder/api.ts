@@ -1,14 +1,8 @@
 import { z } from "zod";
 
-import {
-  isCommonRetryableHttpStatus,
-  requestExternalResource,
-} from "../../request";
+import { requestExternalResource } from "../../request";
 
 const atcoderBaseUrl = "https://atcoder.jp";
-const requestMaxAttempts = 3;
-const requestRetryDelayMs = 500;
-const requestTimeoutMs = 10_000;
 
 const atcoderUserHistoryItemSchema = z.looseObject({
   ContestName: z.string(),
@@ -35,12 +29,8 @@ const userHistory = async (params: {
 }): Promise<AtCoderUserHistory> => {
   const response = await requestExternalResource({
     label: `AtCoder user history ${params.userId}`,
-    maxAttempts: requestMaxAttempts,
     request: async (signal) =>
       await fetch(buildAtCoderUserHistoryUrl(params.userId), { signal }),
-    retryDelayMs: requestRetryDelayMs,
-    retryableStatus: isCommonRetryableHttpStatus,
-    timeoutMs: requestTimeoutMs,
   });
 
   if (!response.ok) {

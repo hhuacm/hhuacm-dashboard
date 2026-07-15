@@ -1,13 +1,8 @@
 import { z } from "zod";
 
-import {
-  isCommonRetryableHttpStatus,
-  requestExternalResource,
-} from "../../request";
+import { requestExternalResource } from "../../request";
 
 const luoguBaseUrl = "https://www.luogu.com.cn";
-const requestMaxAttempts = 3;
-const requestRetryDelayMs = 500;
 const requestTimeoutMs = 2000;
 const luoguCdnCookieTtlMs = 270_000;
 
@@ -206,7 +201,6 @@ const getLuoguCdnCookie = async (url: URL, forceRefresh = false) => {
 
   luoguCdnCookieRequest = requestExternalResource({
     label: "Luogu CDN cookie",
-    maxAttempts: requestMaxAttempts,
     request: async (signal) =>
       await fetch(url, {
         headers: {
@@ -219,8 +213,6 @@ const getLuoguCdnCookie = async (url: URL, forceRefresh = false) => {
         redirect: "manual",
         signal,
       }),
-    retryDelayMs: requestRetryDelayMs,
-    retryableStatus: isCommonRetryableHttpStatus,
     timeoutMs: requestTimeoutMs,
   })
     .then((response) => {
@@ -246,7 +238,6 @@ const fetchLuoguPageData = async (url: URL) => {
   const request = async (cookie: string) =>
     await requestExternalResource({
       label: "Luogu page data",
-      maxAttempts: requestMaxAttempts,
       request: async (signal) =>
         await fetch(url, {
           headers: {
@@ -260,8 +251,6 @@ const fetchLuoguPageData = async (url: URL) => {
           redirect: "manual",
           signal,
         }),
-      retryDelayMs: requestRetryDelayMs,
-      retryableStatus: isCommonRetryableHttpStatus,
       timeoutMs: requestTimeoutMs,
     });
 
@@ -291,10 +280,7 @@ const searchUsers = async (params: {
 
   const response = await requestExternalResource({
     label: "Luogu user/search",
-    maxAttempts: requestMaxAttempts,
     request: async (signal) => await fetch(url, { signal }),
-    retryDelayMs: requestRetryDelayMs,
-    retryableStatus: isCommonRetryableHttpStatus,
     timeoutMs: requestTimeoutMs,
   });
 

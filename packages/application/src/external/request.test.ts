@@ -19,7 +19,7 @@ const requestResource = (
     requests,
     response: requestExternalResource({
       label: input.label ?? "Contest source",
-      maxAttempts: input.maxAttempts ?? 3,
+      maxAttempts: input.maxAttempts,
       request: (signal) => {
         requests.push(signal);
         const response = responses.shift();
@@ -35,8 +35,7 @@ const requestResource = (
         return Promise.resolve(response);
       },
       retryDelayMs: 0,
-      retryableStatus: input.retryableStatus ?? isCommonRetryableHttpStatus,
-      timeoutMs: 1000,
+      retryableStatus: input.retryableStatus,
     }),
   };
 };
