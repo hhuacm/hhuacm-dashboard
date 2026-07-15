@@ -15,7 +15,6 @@
     "hono": "4"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

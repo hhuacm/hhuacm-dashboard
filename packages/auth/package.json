@@ -19,7 +19,6 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "@libsql/client": "catalog:",
     "typescript": "catalog:"
   }

@@ -10,7 +10,6 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

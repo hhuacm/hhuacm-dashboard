@@ -23,7 +23,6 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "drizzle-kit": "catalog:",
     "typescript": "catalog:"
   }

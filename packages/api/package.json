@@ -23,7 +23,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

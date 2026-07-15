@@ -41,7 +41,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "latest",
-    "@hhuacm-dashboard/config": "workspace:*",
     "@types/bun": "^1.3.14",
     "lefthook": "latest",
     "react-doctor": "^0.2.16",

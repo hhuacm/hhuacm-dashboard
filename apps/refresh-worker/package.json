@@ -11,7 +11,6 @@
     "@hhuacm-dashboard/db": "workspace:*"
   },
   "devDependencies": {
-    "@hhuacm-dashboard/config": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }

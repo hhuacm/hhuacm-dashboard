@@ -20,7 +20,7 @@ This project uses a TypeScript monorepo architecture.
 
 ## TypeScript Baseline
 
-Shared packages and the API/server workspaces use the shared TypeScript base config from `packages/config`. The project is written as modern ESM TypeScript with `strict`, `isolatedModules`, `verbatimModuleSyntax`, `moduleResolution: "bundler"`, and `noUncheckedIndexedAccess` enabled.
+Shared packages and the API/server workspaces extend the repository-level `tsconfig.base.json`. The project is written as modern ESM TypeScript with `strict`, `isolatedModules`, `verbatimModuleSyntax`, `moduleResolution: "bundler"`, and `noUncheckedIndexedAccess` enabled.
 
 The preferred style is to keep runtime facts in plain constants and derive types from them. Use `as const`, `satisfies`, `import type`, Zod schemas, and domain guards to keep boundaries explicit while letting local implementation details rely on inference. Avoid TypeScript-only runtime constructs or deep generic type machinery unless they clearly make the surrounding business flow easier to read.
 
