@@ -38,7 +38,6 @@ hhuacm-dashboard/
     |-- api/          # tRPC routers, procedures, and API context
     |-- application/  # Application services, refresh use cases, system tasks, and OJ sync
     |-- auth/         # Better Auth configuration
-    |-- config/       # Shared TypeScript configuration
     |-- db/           # Drizzle database client and schema
     |-- domain/       # Shared domain constants, labels, and pure business rules
     |-- env/          # Runtime environment validation

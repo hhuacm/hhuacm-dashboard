@@ -1,68 +1,93 @@
 # HHUACM Dashboard
 
-HHUACM Dashboard 是面向河海大学 ACM 队内部使用的成员与数据管理系统，用于整理队员基础信息、维护 OJ 账号、统计公开榜单、沉淀获奖记录，并承载后续队内事务管理能力。
+HHUACM Dashboard 是面向河海大学 ACM 队的成员与数据管理系统，用于维护成员资料与 OJ 账号、展示公开榜单和个人主页、管理训练题单，并在后台同步外部 OJ 数据与获奖记录。
 
-项目当前仍以测试与快速演进为主，代码组织优先追求清晰、可读和容易继续调整。
+项目目前处于持续测试和快速演进阶段，优先保证业务流程清楚、数据状态可靠，并让后续修改容易定位和验证。
 
-## 技术栈
+## 系统概览
 
-本项目是 Bun workspace monorepo，主要使用：
+仓库采用 Bun workspace monorepo。常规请求与后台刷新分别沿两条主流程运行：
 
-- Bun
-- Turborepo
-- Next.js
-- Hono
-- tRPC
-- Drizzle ORM
-- libSQL / Turso
-- React
-- Tailwind CSS v4
-- HeroUI V3
-- Better Auth
-- React Hook Form
-- Zod
+```text
+Browser
+  -> Next.js Web
+  -> Hono / tRPC
+  -> application use case
+  -> libSQL / Turso
 
-## 目录结构
+application read use case
+  -> refresh_request queue
+  -> refresh-worker
+  -> external OJ source
+  -> cached stats in libSQL / Turso
+```
+
+页面读取本地缓存；当 OJ 数据或题目元数据缺失、过期时，应用用例只写入刷新请求，由独立 worker 完成外部请求和缓存更新。当前队列按单个 worker 实例设计。
+
+主要技术包括 Bun、Turborepo、Next.js、React、Hono、tRPC、Drizzle ORM、libSQL / Turso、Better Auth、Tailwind CSS v4、HeroUI V3、React Hook Form 和 Zod。
+
+## 仓库结构
 
 ```text
 apps/
-  web/             前端应用，负责页面、交互和 UI 组件
-  server/          HTTP API 服务，负责 Hono 入口、tRPC 接入和认证端点
-  refresh-worker/  后台刷新进程，负责消费 OJ 数据刷新请求
+  web/             Next.js 页面、交互与 UI
+  server/          Hono 进程入口、tRPC 与认证端点
+  refresh-worker/  后台刷新进程
 
 packages/
-  api/          tRPC router、procedure 和 HTTP 适配边界
-  application/  应用服务、后台刷新用例、系统任务和外部 OJ 同步
-  auth/         认证配置与认证相关逻辑
-  db/           数据库 schema、迁移和本地数据库命令
-  domain/       领域常量、枚举和纯业务规则
+  api/          tRPC router、procedure 与 transport 适配
+  application/  应用用例、后台刷新、系统任务与外部 OJ 同步
+  auth/         Better Auth 配置与首位管理员初始化
+  db/           Drizzle schema、迁移、数据库连接与测试数据库
+  domain/       共享业务事实、枚举与纯规则
   env/          环境变量读取与校验
-  config/       共享 TypeScript 配置
 ```
 
-包边界采用受整洁架构 / 六边形架构启发的轻量形式：应用入口负责组装进程，API 负责 transport 适配，核心业务流程放在 `packages/application`，纯业务常量和规则放在 `packages/domain`。
+`apps/*` 负责进程入口和运行时组装，`packages/api` 负责 transport 语义，主要业务流程位于 `packages/application`。`packages/application` 当前直接接收 Drizzle `Database` 并使用 schema；测试通过本地 libSQL 数据库跨这一接口验证行为，因此没有额外的 repository 抽象。
 
 ## 本地开发
 
-安装依赖：
+需要 Bun（版本以 `package.json` 的 `packageManager` 为准）和 Turso CLI。macOS 可使用 Homebrew 安装 Turso CLI：
+
+```bash
+brew install tursodatabase/tap/turso
+```
+
+安装依赖并准备各进程的本地环境变量：
 
 ```bash
 bun install
+cp apps/server/.env.example apps/server/.env
+cp apps/refresh-worker/.env.example apps/refresh-worker/.env
 ```
 
-启动完整开发环境：
+`apps/web/.env` 通常不需要创建；本地开发默认把服务端请求转发到 `http://localhost:3000`。需要覆盖时，再复制 `apps/web/.env.example` 并修改 `SERVER_INTERNAL_URL`。
+
+在一个终端启动本地 libSQL 服务：
+
+```bash
+bun run db:local
+```
+
+首次启动或数据库结构变化后，在另一个终端同步数据库：
+
+```bash
+bun run db:sync
+```
+
+随后启动 Web、API 和刷新 worker：
 
 ```bash
 bun run dev
 ```
 
-默认服务与进程：
+默认地址：
 
-- Web 应用：[http://localhost:3001](http://localhost:3001)
-- API 服务：[http://localhost:3000](http://localhost:3000)
-- Refresh Worker：无 HTTP 端口，消费数据库中的刷新请求
+- Web：<http://localhost:3001>
+- API：<http://localhost:3000>
+- 本地 libSQL：<http://127.0.0.1:8080>
 
-也可以单独启动某一侧：
+浏览器使用同源 `/trpc` 和 `/api/auth`；本地由 Next.js rewrite 转发到 API。也可以只启动某个进程：
 
 ```bash
 bun run dev:web
@@ -70,48 +95,27 @@ bun run dev:server
 bun run dev:refresh-worker
 ```
 
-各应用目录提供 `.env.example` 作为本地配置参考。Web 应用的浏览器端请求使用同源 `/trpc` 和 `/api/auth`，本地开发时由 Next.js rewrite 转发到 API 服务；如需覆盖这个内部地址，在 `apps/web/.env` 中配置：
+`db:sync` 会识别空库、已纳入迁移管理的数据库，以及与初始基线兼容的既有数据库；随后执行 Drizzle 迁移，并检查数据库完整性、外键和视图。
+
+## 验证
+
+提交前运行完整验证：
 
 ```bash
-SERVER_INTERNAL_URL=http://localhost:3000
+bun run verify
 ```
 
-## 数据库
-
-本地开发使用 libSQL / Turso。需要本地数据库时，先安装 Turso CLI：
+该命令会先执行 Ultracite 自动修复，再检查数据库迁移、TypeScript、代码风格和全部测试。定位问题时可拆开运行：
 
 ```bash
-brew install tursodatabase/tap/turso
+bun run fix
+bun run check
+bun run test
 ```
 
-启动本地数据库服务：
+## 部署
 
-```bash
-bun run db:local
-```
-
-在 `apps/server/.env` 中配置 HTTP API、认证和数据库连接；在 `apps/refresh-worker/.env` 中只需要数据库连接：
-
-```bash
-DATABASE_URL=http://127.0.0.1:8080
-DATABASE_AUTH_TOKEN=
-```
-
-生产部署时，Web 容器需要通过 `SERVER_INTERNAL_URL` 访问 API 容器，例如 `http://server:3000`；API 服务的 `BETTER_AUTH_URL` 和 `CORS_ORIGIN` 应指向用户访问的同一个站点域名。前端生产构建不需要公网 API URL。
-
-当前刷新队列按单个 worker 实例设计。本地开发和部署时只应运行一个 `refresh-worker` 进程。
-
-将当前 Drizzle schema 同步到数据库：
-
-```bash
-bun run db:sync
-```
-
-空数据库初始化后，第一个成功注册的用户会自动成为管理员。后续需要手动调整权限时，可以继续使用 `bun run system:grant-admin -- --username <username>`。
-
-## Docker 部署
-
-仓库提供一个应用镜像和一份 Compose 编排。默认启动 Web、API 和刷新进程，并将 Web/API 绑定到宿主机 `127.0.0.1`，便于接入服务器上已有的 Nginx / 1Panel 反向代理：
+仓库提供统一应用镜像和 Compose 编排。默认启动 Web、API 与刷新 worker，并将 Web/API 绑定到宿主机 `127.0.0.1`，供 Nginx 或 1Panel 反向代理接入。
 
 ```bash
 cp .env.example .env
@@ -120,46 +124,18 @@ docker compose run --rm server bun run --cwd packages/db db:sync
 docker compose up -d --no-build
 ```
 
-Compose 默认使用 `ghcr.io/hhuacm/hhuacm-dashboard:${IMAGE_TAG:-main}`。需要回滚或锁定版本时，在 `.env` 中调整 `IMAGE_TAG`。
+生产环境还需注意：
 
-Nginx 侧按路径分流即可：
+- `BETTER_AUTH_URL` 与 `CORS_ORIGIN` 应使用用户访问的同一站点 origin。
+- Web 容器通过 `SERVER_INTERNAL_URL` 访问 API 容器，例如 `http://server:3000`。
+- 同一数据库只运行一个 `refresh-worker`。
+- 空数据库中的第一个成功注册用户会成为管理员；部署前应确认注册策略和公开页面的成员字段可见范围符合实际需求。
 
-```nginx
-location ^~ /trpc {
-  proxy_pass http://127.0.0.1:3000;
-}
+完整流程见 [`docs/vps-deployment.md`](docs/vps-deployment.md)。
 
-location ^~ /api/auth {
-  proxy_pass http://127.0.0.1:3000;
-}
+## 项目文档
 
-location / {
-  proxy_pass http://127.0.0.1:3001;
-}
-```
-
-`refresh-worker` 当前只应运行一个实例；如果已经部署在别处，不要同时启动 Compose 中的 `refresh-worker` 服务。
-
-## 代码检查与测试
-
-提交前运行完整验证：
-
-```bash
-bun run verify
-```
-
-它会自动修复可安全处理的格式和静态问题，然后执行类型检查、风格检查和全部测试。
-
-需要拆开排查时，可以分别运行：
-
-```bash
-bun run check
-bun run test
-bun run fix
-```
-
-## 协作文档
-
-- `AGENTS.md`：面向 AI / LLM 协作者的项目协作准则、架构取舍和编码要求。
-- `DESIGN.md`：前端设计准则，描述产品气质、布局、颜色、组件和交互规则。
-- `docs/vps-deployment.md`：从 GHCR 镜像部署到 VPS、初始化 Turso 数据库和接入 Nginx 的生产流程。
+- [`AGENTS.md`](AGENTS.md)：项目特有的协作规则、系统模型和架构约束。
+- [`DESIGN.md`](DESIGN.md)：前端产品气质、布局、颜色、组件和交互规则。
+- [`docs/tech-stack.md`](docs/tech-stack.md)：技术栈、运行时拓扑和 TypeScript 基线。
+- [`docs/vps-deployment.md`](docs/vps-deployment.md)：VPS、Turso、Compose 与 Nginx 部署流程。

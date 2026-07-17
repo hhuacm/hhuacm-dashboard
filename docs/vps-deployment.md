@@ -147,9 +147,9 @@ docker compose pull
 docker compose run --rm server bun run --cwd packages/db db:sync
 ```
 
-这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，把当前 Drizzle schema 推送到 Turso，并执行完整性检查。
+这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，识别数据库状态，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。
 
-当前项目使用的是 `drizzle-kit push` 形态，不是迁移文件逐条回放形态。因此生产库初始化应以空库加 `db:sync` 为主。已有生产数据后，执行结构变更前应先确认变更内容并做好备份。
+空数据库会直接执行迁移；与初始 schema 完整匹配但尚未记录迁移的既有数据库会先接管为基线；不完整或无法识别的既有 schema 会拒绝同步。已有生产数据后，执行结构变更前仍应检查迁移内容并做好备份。
 
 ## 启动容器
 
