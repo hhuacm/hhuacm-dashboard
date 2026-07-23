@@ -232,25 +232,14 @@ docker compose run --rm server bun run system:revoke-admin -- --username <userna
 
 ## 更新版本
 
-GitHub Actions 发布新镜像后，VPS 更新流程：
+先拉取镜像，再停止旧版本并迁移数据库。涉及不可逆迁移时，应先备份生产数据库。
 
 ```bash
-docker compose pull
-docker compose run --rm server bun run --cwd packages/db db:sync
-docker compose up -d --no-build
-```
-
-如果需要锁定版本或回滚，在 `.env` 中修改：
-
-```env
-IMAGE_TAG=sha-xxxx
-```
-
-然后重新执行：
-
-```bash
-docker compose pull
-docker compose up -d --no-build
+cd /path/to/hhuacm-dashboard-config &&
+  sudo docker compose pull &&
+  sudo docker compose down &&
+  sudo docker compose run --rm server bun run --cwd packages/db db:sync &&
+  sudo docker compose up -d --no-build
 ```
 
 ## 常用排查
