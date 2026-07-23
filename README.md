@@ -120,7 +120,7 @@ bun run test
 ```bash
 cp .env.example .env
 docker compose pull
-docker compose run --rm server bun run --cwd packages/db db:sync
+docker compose run --rm server bun dist/db-sync.js
 docker compose up -d --no-build
 ```
 

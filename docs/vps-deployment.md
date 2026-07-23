@@ -141,10 +141,10 @@ chmod 600 .env
 docker compose pull
 ```
 
-第一次启动应用前，使用镜像内的项目命令同步数据库 schema：
+第一次启动应用前，使用镜像内的数据库同步命令同步 schema：
 
 ```bash
-docker compose run --rm server bun run --cwd packages/db db:sync
+docker compose run --rm server bun dist/db-sync.js
 ```
 
 这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，识别数据库状态，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。
@@ -221,13 +221,13 @@ location / {
 如果需要手动修复权限，可以在 VPS 上执行：
 
 ```bash
-docker compose run --rm server bun run system:grant-admin -- --username <username>
+docker compose run --rm server bun dist/set-user-role.js --role admin --username <username>
 ```
 
 撤销管理员：
 
 ```bash
-docker compose run --rm server bun run system:revoke-admin -- --username <username>
+docker compose run --rm server bun dist/set-user-role.js --role user --username <username>
 ```
 
 ## 更新版本
@@ -238,7 +238,7 @@ docker compose run --rm server bun run system:revoke-admin -- --username <userna
 cd /path/to/hhuacm-dashboard-config &&
   sudo docker compose pull &&
   sudo docker compose down &&
-  sudo docker compose run --rm server bun run --cwd packages/db db:sync &&
+  sudo docker compose run --rm server bun dist/db-sync.js &&
   sudo docker compose up -d --no-build
 ```
 

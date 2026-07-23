@@ -14,10 +14,11 @@ x-db-host-access: &db-host-access
 services:
   web:
     <<: *app-service
-    command: ["bun", "run", "--cwd", "apps/web", "start"]
+    command: ["bun", "apps/web/server.js"]
     depends_on:
       - server
     environment:
+      HOSTNAME: 0.0.0.0
       NODE_ENV: production
       PORT: 3000
       SERVER_INTERNAL_URL: http://server:3000
@@ -26,7 +27,7 @@ services:
 
   server:
     <<: [*app-service, *db-host-access]
-    command: ["bun", "run", "--cwd", "apps/server", "start"]
+    command: ["bun", "dist/server.js"]
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -40,7 +41,7 @@ services:
 
   refresh-worker:
     <<: [*app-service, *db-host-access]
-    command: ["bun", "run", "--cwd", "apps/refresh-worker", "start"]
+    command: ["bun", "dist/refresh-worker.js"]
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
       DATABASE_AUTH_TOKEN: ${DATABASE_AUTH_TOKEN:-}
