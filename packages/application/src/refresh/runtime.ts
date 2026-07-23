@@ -5,10 +5,6 @@ import type { RefreshJobDefinition } from "./jobs/definition";
 import { refreshDefaults } from "./policy";
 import { runRefreshWorkerOnce } from "./worker";
 
-interface RefreshRuntimeOptions {
-  db: Database;
-}
-
 export const enqueueDueRefreshTargets = async (
   db: Database,
   definitions: readonly RefreshJobDefinition[] = refreshJobDefinitions,
@@ -27,7 +23,7 @@ export const enqueueDueRefreshTargets = async (
   return enqueuedCount;
 };
 
-export const startRefreshRuntime = ({ db }: RefreshRuntimeOptions) => {
+export const startRefreshRuntime = (db: Database) => {
   let isStopped = false;
 
   const stop = () => {

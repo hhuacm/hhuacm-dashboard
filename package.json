@@ -37,13 +37,12 @@
     "system:grant-admin": "bun run --cwd packages/application system:grant-admin",
     "system:import-users": "bun run --cwd packages/application system:import-users",
     "system:revoke-admin": "bun run --cwd packages/application system:revoke-admin",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "bunx react-doctor@latest"
   },
   "devDependencies": {
     "@biomejs/biome": "latest",
     "@types/bun": "^1.3.14",
     "lefthook": "latest",
-    "react-doctor": "^0.2.16",
     "turbo": "latest",
     "typescript": "^6.0.3",
     "ultracite": "latest"

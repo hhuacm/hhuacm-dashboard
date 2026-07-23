@@ -6,6 +6,6 @@ const runtimeStore = globalThis as typeof globalThis & {
 };
 
 runtimeStore.__hhuacmRefreshRuntime?.stop();
-runtimeStore.__hhuacmRefreshRuntime = startRefreshRuntime({ db });
+runtimeStore.__hhuacmRefreshRuntime = startRefreshRuntime(db);
 
 console.log("Started refresh worker");
