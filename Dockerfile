@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM oven/bun:1.3.13 AS build
+FROM oven/bun:1.3.14 AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY . .
@@ -16,7 +16,7 @@ RUN bun build apps/server/src/index.ts --target=bun --outfile dist/server.js \
   && mkdir -p runtime-node-modules/@libsql \
   && cp -RL node_modules/.bun/@libsql+linux-x64-gnu@*/node_modules/@libsql/linux-x64-gnu runtime-node-modules/@libsql/
 
-FROM oven/bun:1.3.13 AS runtime
+FROM oven/bun:1.3.14 AS runtime
 ARG APP_COMMITTED_AT
 ARG APP_REVISION=local
 WORKDIR /app
