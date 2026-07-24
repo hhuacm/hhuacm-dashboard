@@ -50,9 +50,18 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Resolve build metadata
+        id: build_metadata
+        run: |
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "committed_at=$(git show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Build and publish image
         uses: docker/build-push-action@v6
         with:
+          build-args: |
+            APP_COMMITTED_AT=${{ steps.build_metadata.outputs.committed_at }}
+            APP_REVISION=${{ steps.build_metadata.outputs.revision }}
           context: .
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}

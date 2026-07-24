@@ -2,7 +2,6 @@
 
 import { Alert, Button, Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import clsx from "clsx";
 import { ListChecks, Sparkles, Trophy, UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -12,23 +11,25 @@ import { AppShell } from "@/components/app-shell";
 import { MarkdownContent } from "@/components/markdown-content";
 import { trpc } from "@/utils/trpc";
 
-const healthChipColor = {
-  danger: "danger",
-  default: "default",
-  success: "success",
-  warning: "warning",
-} as const;
+type HealthTone = "danger" | "success" | "warning";
 
-type HealthTone = keyof typeof healthChipColor;
+interface HealthPresentation {
+  label: string;
+  tone: HealthTone;
+}
 
 interface OverviewDetail {
   label: string;
-  mono?: boolean;
   value: ReactNode;
 }
 
 interface HomeNoticeCardProps {
   markdown: string;
+}
+
+interface BuildRevisionProps {
+  committedAt: null | string;
+  revision: string;
 }
 
 interface OverviewSectionProps {
@@ -38,49 +39,71 @@ interface OverviewSectionProps {
 
 interface SystemOverviewCardProps {
   activeUsers: number;
+  health: HealthPresentation;
   healthDetails: OverviewDetail[];
   healthMessage?: string;
-  healthStatus: string;
-  healthTone: HealthTone;
   isError: boolean;
   isLoading: boolean;
   selectionUsers: number;
   totalUsers: number;
 }
 
-const getHealthStatus = (isLoading: boolean, isError: boolean) => {
+const getHealthPresentation = (
+  isLoading: boolean,
+  isError: boolean
+): HealthPresentation => {
   if (isLoading) {
-    return "连接中";
+    return {
+      label: "连接中",
+      tone: "warning",
+    };
   }
 
   if (isError) {
-    return "不可用";
+    return {
+      label: "不可用",
+      tone: "danger",
+    };
   }
 
-  return "在线";
+  return {
+    label: "在线",
+    tone: "success",
+  };
 };
 
-const getHealthTone = (isLoading: boolean, isError: boolean) => {
-  if (isLoading) {
-    return "warning" as const;
-  }
-
-  if (isError) {
-    return "danger" as const;
-  }
-
-  return "success" as const;
-};
-
-const formatCheckedAt = (checkedAt: string | undefined) => {
-  if (!checkedAt) {
+const formatDateTime = (value: null | string | undefined) => {
+  if (!value) {
     return "-";
   }
 
-  return new Date(checkedAt).toLocaleString("zh-CN", {
+  return new Date(value).toLocaleString("zh-CN", {
     hour12: false,
   });
 };
+
+function BuildRevision({ committedAt, revision }: BuildRevisionProps) {
+  const label = revision === "local" ? revision : revision.slice(0, 7);
+  const title = committedAt
+    ? `${revision}\n提交时间：${formatDateTime(committedAt)}`
+    : revision;
+
+  if (revision === "local") {
+    return <span title={title}>{label}</span>;
+  }
+
+  return (
+    <a
+      className="text-accent underline-offset-4 hover:underline focus-visible:underline"
+      href={`https://github.com/hhuacm/hhuacm-dashboard/commit/${revision}`}
+      rel="noreferrer"
+      target="_blank"
+      title={title}
+    >
+      {label}
+    </a>
+  );
+}
 
 const formatUptime = (uptimeMs: number | undefined) => {
   if (typeof uptimeMs !== "number") {
@@ -132,10 +155,9 @@ function OverviewSection({ children, title }: OverviewSectionProps) {
 
 function SystemOverviewCard({
   activeUsers,
+  health,
   healthDetails,
   healthMessage,
-  healthStatus,
-  healthTone,
   isError,
   isLoading,
   selectionUsers,
@@ -155,8 +177,8 @@ function SystemOverviewCard({
       <Card.Header>
         <div className="flex items-center justify-between gap-4">
           <Card.Title className="text-xl">系统概览</Card.Title>
-          <Chip color={healthChipColor[healthTone]} size="md" variant="soft">
-            {healthStatus}
+          <Chip color={health.tone} size="md" variant="soft">
+            {health.label}
           </Chip>
         </div>
       </Card.Header>
@@ -195,12 +217,7 @@ function SystemOverviewCard({
                 key={detail.label}
               >
                 <dt className="text-muted text-sm">{detail.label}</dt>
-                <dd
-                  className={clsx(
-                    "break-all font-medium text-foreground",
-                    detail.mono ? "font-mono text-sm" : "text-sm"
-                  )}
-                >
+                <dd className="break-all font-medium text-foreground text-sm">
                   {detail.value}
                 </dd>
               </div>
@@ -209,7 +226,7 @@ function SystemOverviewCard({
         </OverviewSection>
 
         {healthMessage ? (
-          <Alert status={healthTone === "danger" ? "danger" : "default"}>
+          <Alert status={health.tone === "danger" ? "danger" : "default"}>
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>{healthMessage}</Alert.Description>
@@ -304,8 +321,10 @@ export default function Home() {
   const health = useQuery(trpc.health.queryOptions());
   const homeNotice = useQuery(trpc.dashboard.homeNotice.queryOptions());
   const dashboardSummary = useQuery(trpc.dashboard.summary.queryOptions());
-  const status = getHealthStatus(health.isLoading, health.isError);
-  const healthTone = getHealthTone(health.isLoading, health.isError);
+  const healthPresentation = getHealthPresentation(
+    health.isLoading,
+    health.isError
+  );
 
   return (
     <AppShell
@@ -321,8 +340,17 @@ export default function Home() {
 
         <SystemOverviewCard
           activeUsers={dashboardSummary.data?.activeUsers ?? 0}
+          health={healthPresentation}
           healthDetails={[
             { label: "服务名称", value: health.data?.service ?? "-" },
+            {
+              label: "代码版本",
+              value: health.data ? (
+                <BuildRevision {...health.data.build} />
+              ) : (
+                "-"
+              ),
+            },
             {
               label: "运行时",
               value: health.data
@@ -339,19 +367,12 @@ export default function Home() {
               label: "运行时长",
               value: formatUptime(health.data?.uptimeMs),
             },
-            {
-              label: "检查时间",
-              mono: true,
-              value: formatCheckedAt(health.data?.checkedAt),
-            },
           ]}
           healthMessage={
             health.isError
               ? "后端暂时不可用。启动 API 服务后这里会自动恢复。"
               : undefined
           }
-          healthStatus={status}
-          healthTone={healthTone}
           isError={dashboardSummary.isError}
           isLoading={dashboardSummary.isLoading}
           selectionUsers={dashboardSummary.data?.selectionUsers ?? 0}

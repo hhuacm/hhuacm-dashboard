@@ -17,8 +17,10 @@ RUN bun build apps/server/src/index.ts --target=bun --outfile dist/server.js \
   && cp -RL node_modules/.bun/@libsql+linux-x64-gnu@*/node_modules/@libsql/linux-x64-gnu runtime-node-modules/@libsql/
 
 FROM oven/bun:1.3.13 AS runtime
+ARG APP_COMMITTED_AT
+ARG APP_REVISION=local
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+ENV APP_COMMITTED_AT=$APP_COMMITTED_AT APP_REVISION=$APP_REVISION NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 COPY --chown=bun:bun --from=build /app/apps/web/.next/standalone/node_modules /app/node_modules
 COPY --chown=bun:bun --from=build /app/runtime-node-modules /app/node_modules
 COPY --chown=bun:bun --from=build /app/apps/web/.next/standalone/apps/web /app/apps/web
