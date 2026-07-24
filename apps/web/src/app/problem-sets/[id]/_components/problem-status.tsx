@@ -1,13 +1,9 @@
 import { Chip } from "@heroui/react";
 import clsx from "clsx";
 import { CheckCircle2, CircleMinus, CircleX } from "lucide-react";
-import type { ReactNode } from "react";
 
-import {
-  getDifficultyLabel,
-  luoguDifficultyClassNames,
-  type ProblemSetProblem,
-} from "../_model/problem-set-detail-view";
+import { getLuoguDifficultyPresentation } from "@/utils/luogu-difficulty";
+import type { ProblemSetProblem } from "../_model/problem-set-detail-view";
 
 export function ProblemStatusChip({
   accepted,
@@ -52,22 +48,20 @@ export function ProblemStatusChip({
   );
 }
 
-export function CenteredTableChip({ children }: { children: ReactNode }) {
-  return <div className="flex justify-center">{children}</div>;
-}
-
 export function DifficultyChip({ difficulty }: { difficulty: null | number }) {
   if (difficulty === null) {
     return <span className="text-muted">-</span>;
   }
 
-  const className =
-    luoguDifficultyClassNames[difficulty] ?? luoguDifficultyClassNames[0];
-  const label = getDifficultyLabel(difficulty);
+  const presentation = getLuoguDifficultyPresentation(difficulty);
 
   return (
-    <Chip className={clsx(className, "font-semibold")} size="md" variant="soft">
-      {label}
+    <Chip
+      className={clsx(presentation.className, "font-semibold")}
+      size="md"
+      variant="soft"
+    >
+      {presentation.label}
     </Chip>
   );
 }

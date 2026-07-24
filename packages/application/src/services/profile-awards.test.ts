@@ -7,6 +7,7 @@ import {
 
 import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/api";
 import {
+  classifyAwardLevel,
   getAwardsForPublicProfile,
   markUserAwardsFromLuoguRefreshFailed,
   selectLuoguUserAwards,
@@ -74,6 +75,13 @@ const account = {
 };
 
 describe("profile awards", () => {
+  it("classifies award tiers from source labels", () => {
+    expect(classifyAwardLevel("金牌")).toBe("gold");
+    expect(classifyAwardLevel("二等奖")).toBe("silver");
+    expect(classifyAwardLevel("铜牌")).toBe("bronze");
+    expect(classifyAwardLevel("优胜奖")).toBe("default");
+  });
+
   it("selects public awards from Luogu user page data", () => {
     const awards = selectLuoguUserAwards(
       createLuoguUserPage([
@@ -253,6 +261,7 @@ describe("profile awards", () => {
         level: "铜牌",
         sortOrder: 0,
         source: "luogu",
+        tier: "bronze",
         year: 2020,
       },
     ]);

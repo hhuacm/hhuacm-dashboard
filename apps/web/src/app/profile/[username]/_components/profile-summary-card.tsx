@@ -2,36 +2,21 @@ import { Card } from "@heroui/react";
 import { LayoutDashboard, Settings, UserRound } from "lucide-react";
 import type { Route } from "next";
 
+import { InfoItem } from "@/components/info-item";
+import { MemberStatusChip } from "@/components/member-status-chip";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import type { PublicProfile } from "../_model/public-profile-view";
-import { MemberStatusBadge } from "./member-status-badge";
 
 type PublicProfileSummary = Pick<
   PublicProfile,
   "permissions" | "profile" | "user"
 >;
 
-interface PublicInfoItemProps {
-  label: string;
-  value: string;
-}
-
 interface ProfileSummaryCardProps {
   adminHref?: Route;
   profile: PublicProfileSummary;
   settingsHref?: Route;
   usernameLabel: string;
-}
-
-function PublicInfoItem({ label, value }: PublicInfoItemProps) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <dt className="text-muted text-sm">{label}</dt>
-      <dd className="mt-2 break-all font-medium text-base text-foreground">
-        {value}
-      </dd>
-    </div>
-  );
 }
 
 export function ProfileSummaryCard({
@@ -78,27 +63,25 @@ export function ProfileSummaryCard({
       </Card.Header>
       <Card.Content>
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <PublicInfoItem label="用户名" value={profile.user.username} />
-          <PublicInfoItem label="邮箱" value={profile.user.email} />
-          <div className="rounded-lg border border-border bg-surface p-4">
-            <dt className="text-muted text-sm">状态</dt>
-            <dd className="mt-2">
-              <MemberStatusBadge status={profile.profile.memberStatus} />
-            </dd>
-          </div>
-          <PublicInfoItem
+          <InfoItem label="用户名" value={profile.user.username} />
+          <InfoItem label="邮箱" value={profile.user.email} />
+          <InfoItem
+            label="状态"
+            value={<MemberStatusChip status={profile.profile.memberStatus} />}
+          />
+          <InfoItem
             label="姓名"
             value={getProfileDisplayValue(profile.profile.realName)}
           />
-          <PublicInfoItem
+          <InfoItem
             label="学号"
             value={getProfileDisplayValue(profile.profile.studentId)}
           />
-          <PublicInfoItem
+          <InfoItem
             label="年级"
             value={getProfileDisplayValue(profile.profile.grade)}
           />
-          <PublicInfoItem
+          <InfoItem
             label="专业"
             value={getProfileDisplayValue(profile.profile.major)}
           />

@@ -2,7 +2,7 @@
 
 import { Button, Checkbox, CheckboxGroup, Label, Popover } from "@heroui/react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface TableColumnVisibilityConfig<ColumnId extends string> {
   defaultVisible: boolean;
@@ -58,32 +58,24 @@ const sanitizeVisibleColumnIds = <
 export function useColumnVisibility<
   ColumnConfig extends TableColumnVisibilityConfig<string>,
 >({ columns, storageKey }: UseColumnVisibilityOptions<ColumnConfig>) {
-  const defaultVisibleColumnIds = useMemo(
-    () => getDefaultVisibleColumnIds(columns),
-    [columns]
+  const defaultVisibleColumnIds = getDefaultVisibleColumnIds(columns);
+  const [storedColumnIds, setStoredColumnIds] = useState<
+    ColumnIdOf<ColumnConfig>[] | null
+  >(() => (storageKey ? null : defaultVisibleColumnIds));
+  const visibleColumnIds = sanitizeVisibleColumnIds(
+    storedColumnIds ?? defaultVisibleColumnIds,
+    columns
   );
-  const [visibleColumnIds, setVisibleColumnIds] = useState<
-    ColumnIdOf<ColumnConfig>[]
-  >(defaultVisibleColumnIds);
-  const [isStorageLoaded, setIsStorageLoaded] = useState(!storageKey);
-
-  useEffect(() => {
-    setVisibleColumnIds((currentColumnIds) =>
-      sanitizeVisibleColumnIds(currentColumnIds, columns)
-    );
-  }, [columns]);
 
   useEffect(() => {
     if (!storageKey) {
-      setIsStorageLoaded(true);
       return;
     }
 
     const storedValue = window.localStorage.getItem(storageKey);
 
     if (!storedValue) {
-      setVisibleColumnIds(defaultVisibleColumnIds);
-      setIsStorageLoaded(true);
+      setStoredColumnIds(getDefaultVisibleColumnIds(columns));
       return;
     }
 
@@ -91,58 +83,46 @@ export function useColumnVisibility<
       const parsedValue: unknown = JSON.parse(storedValue);
 
       if (Array.isArray(parsedValue)) {
-        setVisibleColumnIds(sanitizeVisibleColumnIds(parsedValue, columns));
+        setStoredColumnIds(sanitizeVisibleColumnIds(parsedValue, columns));
       } else {
-        setVisibleColumnIds(defaultVisibleColumnIds);
+        setStoredColumnIds(getDefaultVisibleColumnIds(columns));
       }
     } catch {
-      setVisibleColumnIds(defaultVisibleColumnIds);
+      setStoredColumnIds(getDefaultVisibleColumnIds(columns));
+    }
+  }, [columns, storageKey]);
+
+  const visibleColumnIdSet = new Set(visibleColumnIds);
+  const visibleColumns = columns.filter((column) =>
+    visibleColumnIdSet.has(column.id)
+  );
+  const saveVisibleColumnIds = (nextColumnIds: ColumnIdOf<ColumnConfig>[]) => {
+    setStoredColumnIds(nextColumnIds);
+
+    if (storageKey) {
+      window.localStorage.setItem(storageKey, JSON.stringify(nextColumnIds));
+    }
+  };
+  const setColumnVisible = (
+    columnId: ColumnIdOf<ColumnConfig>,
+    isVisible: boolean
+  ) => {
+    const nextColumnIdSet = new Set(visibleColumnIds);
+    const column = columns.find((item) => item.id === columnId);
+
+    if (column?.required || (column && isVisible)) {
+      nextColumnIdSet.add(columnId);
+    } else {
+      nextColumnIdSet.delete(columnId);
     }
 
-    setIsStorageLoaded(true);
-  }, [columns, defaultVisibleColumnIds, storageKey]);
-
-  useEffect(() => {
-    if (!(storageKey && isStorageLoaded)) {
-      return;
-    }
-
-    window.localStorage.setItem(storageKey, JSON.stringify(visibleColumnIds));
-  }, [isStorageLoaded, storageKey, visibleColumnIds]);
-
-  const visibleColumnIdSet = useMemo(
-    () => new Set(visibleColumnIds),
-    [visibleColumnIds]
-  );
-  const visibleColumns = useMemo(
-    () => columns.filter((column) => visibleColumnIdSet.has(column.id)),
-    [columns, visibleColumnIdSet]
-  );
-  const setColumnVisible = useCallback(
-    (columnId: ColumnIdOf<ColumnConfig>, isVisible: boolean) => {
-      setVisibleColumnIds((currentColumnIds) => {
-        const currentColumnIdSet = new Set(currentColumnIds);
-        const column = columns.find((item) => item.id === columnId);
-
-        if (column?.required) {
-          currentColumnIdSet.add(columnId);
-          return sanitizeVisibleColumnIds([...currentColumnIdSet], columns);
-        }
-
-        if (column && isVisible) {
-          currentColumnIdSet.add(columnId);
-        } else {
-          currentColumnIdSet.delete(columnId);
-        }
-
-        return sanitizeVisibleColumnIds([...currentColumnIdSet], columns);
-      });
-    },
-    [columns]
-  );
-  const resetColumns = useCallback(() => {
-    setVisibleColumnIds(defaultVisibleColumnIds);
-  }, [defaultVisibleColumnIds]);
+    saveVisibleColumnIds(
+      sanitizeVisibleColumnIds([...nextColumnIdSet], columns)
+    );
+  };
+  const resetColumns = () => {
+    saveVisibleColumnIds(defaultVisibleColumnIds);
+  };
 
   return {
     resetColumns,
@@ -158,10 +138,7 @@ export function ColumnVisibilityMenu<ColumnId extends string>({
   onVisibleChange,
   visibleColumnIds,
 }: ColumnVisibilityMenuProps<ColumnId>) {
-  const visibleColumnIdSet = useMemo(
-    () => new Set(visibleColumnIds),
-    [visibleColumnIds]
-  );
+  const visibleColumnIdSet = new Set(visibleColumnIds);
   const hasDefaultVisibility = columns.every((column) => {
     const shouldBeVisible = column.defaultVisible || column.required;
     return visibleColumnIdSet.has(column.id) === shouldBeVisible;

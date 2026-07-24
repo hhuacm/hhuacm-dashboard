@@ -21,7 +21,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
@@ -232,20 +232,13 @@ export function CompletionLeaderboardCard({
   const completionsQuery = useQuery(
     trpc.problemSet.completions.queryOptions({ id: problemSetId })
   );
-  const rows = useMemo(
-    () => sortCompletionRows(completionsQuery.data ?? []),
-    [completionsQuery.data]
-  );
-  const gradeOptions = useMemo(() => getCompletionGradeOptions(rows), [rows]);
-  const filteredRows = useMemo(
-    () =>
-      filterCompletionRows(rows, {
-        minCompletedCount,
-        selectedGrades,
-        selectedMemberStatuses,
-      }),
-    [minCompletedCount, rows, selectedGrades, selectedMemberStatuses]
-  );
+  const rows = sortCompletionRows(completionsQuery.data ?? []);
+  const gradeOptions = getCompletionGradeOptions(rows);
+  const filteredRows = filterCompletionRows(rows, {
+    minCompletedCount,
+    selectedGrades,
+    selectedMemberStatuses,
+  });
   const hasActiveFilters =
     minCompletedCount !== undefined ||
     selectedGrades.length > 0 ||

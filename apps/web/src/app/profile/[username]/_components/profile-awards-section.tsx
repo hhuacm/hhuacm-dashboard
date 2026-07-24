@@ -4,17 +4,20 @@ import { Medal } from "lucide-react";
 
 import {
   formatDateTime,
-  getAwardLevelClassName,
   getAwardStatusText,
+  getAwardTierClassName,
   type PublicProfileAward,
   type PublicProfileAwards,
 } from "../_model/public-profile-view";
 
-function AwardLevelChip({ level }: { level: string }) {
+function AwardLevelChip({
+  level,
+  tier,
+}: Pick<PublicProfileAward, "level" | "tier">) {
   return (
     <Chip
       className={clsx(
-        getAwardLevelClassName(level),
+        getAwardTierClassName(tier),
         "min-h-9 border px-4 font-semibold text-base"
       )}
       size="md"
@@ -45,7 +48,7 @@ function ProfileAwardRow({ award }: { award: PublicProfileAward }) {
         ) : null}
       </div>
       <div className="sm:self-center sm:justify-self-end">
-        <AwardLevelChip level={award.level} />
+        <AwardLevelChip level={award.level} tier={award.tier} />
       </div>
     </div>
   );

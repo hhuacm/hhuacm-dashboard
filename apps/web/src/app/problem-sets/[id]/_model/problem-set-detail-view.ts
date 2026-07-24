@@ -5,6 +5,8 @@ import {
 } from "@hhuacm-dashboard/domain";
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { getLuoguDifficultyLabel } from "@/utils/luogu-difficulty";
+
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export type ProblemSetProblem =
@@ -24,28 +26,6 @@ export interface CompletionRowFilters {
 }
 
 export const emptyCompletionGradeFilterValue = "__empty_completion_grade__";
-
-export const luoguDifficultyClassNames = [
-  "bg-[rgb(191,191,191)] text-[#333333]",
-  "bg-[rgb(254,76,97)] text-white",
-  "bg-[rgb(243,156,17)] text-white",
-  "bg-[rgb(255,193,22)] text-[#713f12]",
-  "bg-[rgb(83,196,26)] text-white",
-  "bg-[rgb(52,152,219)] text-white",
-  "bg-[rgb(156,61,207)] text-white",
-  "bg-[rgb(14,29,105)] text-white",
-] as const;
-
-export const luoguDifficultyLabels = [
-  "暂无评定",
-  "入门",
-  "普及-",
-  "普及/提高-",
-  "普及+/提高",
-  "提高+/省选-",
-  "省选/NOI-",
-  "NOI/NOI+/CTSC",
-] as const;
 
 export const problemTableColumnClassNames = {
   index: "w-10 whitespace-nowrap text-center",
@@ -74,22 +54,14 @@ export const getPidColumnClassName = (problems: ProblemSetProblem[]) => {
   return `${widthClassName} whitespace-nowrap px-3 text-left`;
 };
 
-export const getDifficultyLabel = (difficulty: null | number) => {
-  if (difficulty === null) {
-    return "-";
-  }
-
-  return luoguDifficultyLabels[difficulty] ?? `难度 ${difficulty}`;
-};
-
 const getDifficultyColumnWidthClassName = (
   maxDifficultyLabelLength: number
 ) => {
-  if (maxDifficultyLabelLength >= luoguDifficultyLabels[7].length) {
+  if (maxDifficultyLabelLength >= getLuoguDifficultyLabel(7).length) {
     return "w-[8.5rem]";
   }
 
-  if (maxDifficultyLabelLength >= luoguDifficultyLabels[4].length) {
+  if (maxDifficultyLabelLength >= getLuoguDifficultyLabel(4).length) {
     return "w-28";
   }
 
@@ -99,7 +71,9 @@ const getDifficultyColumnWidthClassName = (
 export const getDifficultyColumnClassName = (problems: ProblemSetProblem[]) => {
   const maxDifficultyLabelLength = Math.max(
     0,
-    ...problems.map((problem) => getDifficultyLabel(problem.difficulty).length)
+    ...problems.map(
+      (problem) => getLuoguDifficultyLabel(problem.difficulty).length
+    )
   );
   const widthClassName = getDifficultyColumnWidthClassName(
     maxDifficultyLabelLength

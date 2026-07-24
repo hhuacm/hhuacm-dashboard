@@ -1,60 +1,62 @@
 import { Alert, Spinner } from "@heroui/react";
 
+import type { AdminAccessStatus } from "./use-admin-access";
+
 interface AccessFeedbackProps {
-  isAccessError: boolean;
-  isCheckingAccess: boolean;
-  isMember: boolean;
   loginReturnLabel?: string;
-  shouldPromptLogin: boolean;
+  status: AdminAccessStatus;
 }
 
 export function AccessFeedback({
-  isAccessError,
-  isCheckingAccess,
-  isMember,
   loginReturnLabel = "管理面板",
-  shouldPromptLogin,
+  status,
 }: AccessFeedbackProps) {
-  return (
-    <>
-      {isCheckingAccess ? (
-        <div className="flex items-center gap-3">
-          <Spinner color="current" size="sm" />
-          <p className="font-medium">正在确认管理员权限。</p>
-        </div>
-      ) : null}
+  if (status === "checking") {
+    return (
+      <div className="flex items-center gap-3">
+        <Spinner color="current" size="sm" />
+        <p className="font-medium">正在确认管理员权限。</p>
+      </div>
+    );
+  }
 
-      {shouldPromptLogin ? (
-        <Alert status="warning">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>请登录管理员账户</Alert.Title>
-            <Alert.Description>
-              即将跳转到登录页面，登录后会回到{loginReturnLabel}。
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
-      ) : null}
+  if (status === "guest") {
+    return (
+      <Alert status="warning">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>请登录管理员账户</Alert.Title>
+          <Alert.Description>
+            即将跳转到登录页面，登录后会回到{loginReturnLabel}。
+          </Alert.Description>
+        </Alert.Content>
+      </Alert>
+    );
+  }
 
-      {isMember ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>不具备管理员权限</Alert.Title>
-            <Alert.Description>即将跳转到首页。</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      ) : null}
+  if (status === "member") {
+    return (
+      <Alert status="danger">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>不具备管理员权限</Alert.Title>
+          <Alert.Description>即将跳转到首页。</Alert.Description>
+        </Alert.Content>
+      </Alert>
+    );
+  }
 
-      {isAccessError ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>权限确认失败</Alert.Title>
-            <Alert.Description>请刷新页面后重试。</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      ) : null}
-    </>
-  );
+  if (status === "error") {
+    return (
+      <Alert status="danger">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>权限确认失败</Alert.Title>
+          <Alert.Description>请刷新页面后重试。</Alert.Description>
+        </Alert.Content>
+      </Alert>
+    );
+  }
+
+  return null;
 }

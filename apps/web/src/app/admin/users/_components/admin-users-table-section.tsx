@@ -1,12 +1,8 @@
 "use client";
 
 import { Alert, Card, Spinner } from "@heroui/react";
-import { useEffect } from "react";
 
-import {
-  type AdminUsersVisibleColumnControls,
-  getFirstVisibleAdminUsersSortColumn,
-} from "../_model/admin-users-table-columns";
+import type { AdminUsersVisibleColumnControls } from "../_model/admin-users-table-columns";
 import type {
   AdminUsersFilters,
   AdminUsersMetadata,
@@ -16,15 +12,15 @@ import type {
 import { AdminUsersTable } from "./admin-users-table";
 import { AdminUsersToolbar } from "./admin-users-toolbar";
 
+type AdminUsersListStatus = "error" | "loading" | "ready" | "refreshing";
+type AdminUsersMetadataStatus = "error" | "loading" | "ready";
+
 interface AdminUsersTableSectionProps {
   filters: AdminUsersFilters;
   hasActiveFilters: boolean;
-  isFetching: boolean;
-  isLoadError: boolean;
-  isLoading: boolean;
+  listStatus: AdminUsersListStatus;
   metadata: AdminUsersMetadata | undefined;
-  metadataIsError: boolean;
-  metadataIsLoading: boolean;
+  metadataStatus: AdminUsersMetadataStatus;
   onClearFilters: () => void;
   onDeleteUser: (user: AdminUserTableRow) => void;
   onEditUser: (user: AdminUserTableRow) => void;
@@ -39,12 +35,9 @@ interface AdminUsersTableSectionProps {
 export function AdminUsersTableSection({
   filters,
   hasActiveFilters,
-  isFetching,
-  isLoading,
-  isLoadError,
+  listStatus,
   metadata,
-  metadataIsError,
-  metadataIsLoading,
+  metadataStatus,
   onClearFilters,
   onDeleteUser,
   onEditUser,
@@ -55,25 +48,6 @@ export function AdminUsersTableSection({
   users,
   visibleColumnControls,
 }: AdminUsersTableSectionProps) {
-  useEffect(() => {
-    if (visibleColumnControls.visibleColumnIds.includes(sort.column)) {
-      return;
-    }
-
-    const fallbackSortColumn = getFirstVisibleAdminUsersSortColumn(
-      visibleColumnControls.visibleColumnIds
-    );
-
-    if (!fallbackSortColumn) {
-      return;
-    }
-
-    onSortChange({
-      column: fallbackSortColumn,
-      direction: "ascending",
-    });
-  }, [onSortChange, sort.column, visibleColumnControls.visibleColumnIds]);
-
   return (
     <Card>
       <Card.Header>
@@ -82,7 +56,7 @@ export function AdminUsersTableSection({
             <Card.Title className="mt-1">{total} 个用户</Card.Title>
           </div>
           <div className="flex items-center gap-3 text-muted text-sm">
-            {isFetching ? (
+            {listStatus === "refreshing" ? (
               <span className="inline-flex items-center gap-2">
                 <Spinner color="current" size="sm" />
                 刷新中
@@ -97,13 +71,13 @@ export function AdminUsersTableSection({
           filters={filters}
           hasActiveFilters={hasActiveFilters}
           metadata={metadata}
-          metadataIsLoading={metadataIsLoading}
+          metadataIsLoading={metadataStatus === "loading"}
           onClearFilters={onClearFilters}
           onFilterChange={onFilterChange}
           visibleColumnControls={visibleColumnControls}
         />
 
-        {metadataIsError ? (
+        {metadataStatus === "error" ? (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -114,7 +88,7 @@ export function AdminUsersTableSection({
           </Alert>
         ) : null}
 
-        {isLoading ? (
+        {listStatus === "loading" ? (
           <Alert>
             <Alert.Indicator />
             <Alert.Content>
@@ -123,7 +97,7 @@ export function AdminUsersTableSection({
           </Alert>
         ) : null}
 
-        {isLoadError ? (
+        {listStatus === "error" ? (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -143,7 +117,7 @@ export function AdminUsersTableSection({
           visibleColumnIds={visibleColumnControls.visibleColumnIds}
         />
 
-        {users.length === 0 && !isLoading ? (
+        {users.length === 0 && listStatus === "ready" ? (
           <Alert>
             <Alert.Indicator />
             <Alert.Content>

@@ -13,7 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Settings } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
@@ -52,33 +52,19 @@ function SettingsField({
   );
 }
 
-export default function AdminSettingsPage() {
-  const router = useRouter();
+function HomeNoticeSettingsEditor({
+  initialMarkdown,
+}: {
+  initialMarkdown: string;
+}) {
   const queryClient = useQueryClient();
-  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
-    useAdminAccess();
-  const [formMarkdown, setFormMarkdown] = useState("");
-  const [originalMarkdown, setOriginalMarkdown] = useState("");
+  const [formMarkdown, setFormMarkdown] = useState(initialMarkdown);
+  const [originalMarkdown, setOriginalMarkdown] = useState(initialMarkdown);
   const [message, setMessage] = useState<SettingsMessage | null>(null);
-  const homeNotice = useQuery(
-    trpc.dashboard.homeNotice.queryOptions(undefined, {
-      enabled: isAdmin,
-      retry: false,
-    })
-  );
   const updateHomeNotice = useMutation(
     trpc.admin.siteSettings.updateHomeNotice.mutationOptions()
   );
   const hasChanges = formMarkdown !== originalMarkdown;
-
-  useEffect(() => {
-    if (!homeNotice.data) {
-      return;
-    }
-
-    setFormMarkdown(homeNotice.data.markdown);
-    setOriginalMarkdown(homeNotice.data.markdown);
-  }, [homeNotice.data]);
 
   const handleMarkdownChange = (nextMarkdown: string) => {
     setMessage(null);
@@ -118,6 +104,71 @@ export default function AdminSettingsPage() {
     }
   };
 
+  return (
+    <>
+      {message ? (
+        <Alert status={message.tone}>
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Description>{message.text}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      ) : null}
+
+      <Form className="grid gap-4" onSubmit={handleSubmit}>
+        <TextField
+          fullWidth
+          isDisabled={updateHomeNotice.isPending}
+          name="homeNoticeMarkdown"
+          onChange={handleMarkdownChange}
+          value={formMarkdown}
+        >
+          <SettingsField
+            description="展示在首页左侧“队伍公告”区域，支持常见 Markdown 语法。"
+            isChanged={hasChanges}
+            title="首页公告 Markdown"
+          >
+            <TextArea
+              className="resize-y"
+              placeholder="填写首页公告内容"
+              rows={8}
+              variant="secondary"
+            />
+          </SettingsField>
+        </TextField>
+
+        <div className="flex justify-end">
+          <Button
+            isDisabled={!hasChanges}
+            isPending={updateHomeNotice.isPending}
+            type="submit"
+          >
+            {({ isPending }) => (
+              <>
+                {isPending ? (
+                  <Spinner color="current" size="sm" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                {isPending ? "保存中" : "保存全局设置"}
+              </>
+            )}
+          </Button>
+        </div>
+      </Form>
+    </>
+  );
+}
+
+export default function AdminSettingsPage() {
+  const router = useRouter();
+  const { isAdmin, status } = useAdminAccess();
+  const homeNotice = useQuery(
+    trpc.dashboard.homeNotice.queryOptions(undefined, {
+      enabled: isAdmin,
+      retry: false,
+    })
+  );
   const shellAction = (
     <Button
       onPress={() => router.push("/admin" as Route)}
@@ -138,13 +189,7 @@ export default function AdminSettingsPage() {
       title="全局设置"
     >
       <div className="grid gap-4">
-        <AccessFeedback
-          isAccessError={accountMe.isError}
-          isCheckingAccess={isCheckingAccess}
-          isMember={isMember}
-          loginReturnLabel="全局设置"
-          shouldPromptLogin={shouldPromptLogin}
-        />
+        <AccessFeedback loginReturnLabel="全局设置" status={status} />
 
         {isAdmin ? (
           <Card>
@@ -174,58 +219,11 @@ export default function AdminSettingsPage() {
                 </Alert>
               ) : null}
 
-              {message ? (
-                <Alert status={message.tone}>
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Description>{message.text}</Alert.Description>
-                  </Alert.Content>
-                </Alert>
+              {homeNotice.data ? (
+                <HomeNoticeSettingsEditor
+                  initialMarkdown={homeNotice.data.markdown}
+                />
               ) : null}
-
-              <Form className="grid gap-4" onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  isDisabled={
-                    homeNotice.isPending || updateHomeNotice.isPending
-                  }
-                  name="homeNoticeMarkdown"
-                  onChange={handleMarkdownChange}
-                  value={formMarkdown}
-                >
-                  <SettingsField
-                    description="展示在首页左侧“队伍公告”区域，支持常见 Markdown 语法。"
-                    isChanged={hasChanges}
-                    title="首页公告 Markdown"
-                  >
-                    <TextArea
-                      placeholder="填写首页公告内容"
-                      rows={8}
-                      style={{ resize: "vertical" }}
-                      variant="secondary"
-                    />
-                  </SettingsField>
-                </TextField>
-
-                <div className="flex justify-end">
-                  <Button
-                    isDisabled={homeNotice.isPending || !hasChanges}
-                    isPending={updateHomeNotice.isPending}
-                    type="submit"
-                  >
-                    {({ isPending }) => (
-                      <>
-                        {isPending ? (
-                          <Spinner color="current" size="sm" />
-                        ) : (
-                          <Save className="size-4" />
-                        )}
-                        {isPending ? "保存中" : "保存全局设置"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Form>
             </Card.Content>
           </Card>
         ) : null}

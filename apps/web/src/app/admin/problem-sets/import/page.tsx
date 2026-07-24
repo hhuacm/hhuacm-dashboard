@@ -15,7 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ListChecks, Save } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { trpc } from "@/utils/trpc";
@@ -34,13 +34,12 @@ const getProblemSetImportErrorMessage = () => "导入失败，请检查内容后
 export default function AdminProblemSetImportPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
-    useAdminAccess();
+  const { isAdmin, status } = useAdminAccess();
   const [title, setTitle] = useState("");
   const [descriptionMarkdown, setDescriptionMarkdown] = useState("");
   const [pidText, setPidText] = useState("");
   const [message, setMessage] = useState<ImportMessage | null>(null);
-  const parsedPids = useMemo(() => parseProblemPidText(pidText), [pidText]);
+  const parsedPids = parseProblemPidText(pidText);
   const createProblemSet = useMutation(
     trpc.admin.problemSets.create.mutationOptions()
   );
@@ -132,13 +131,7 @@ export default function AdminProblemSetImportPage() {
       title="导入题单"
     >
       <div className="grid gap-6">
-        <AccessFeedback
-          isAccessError={accountMe.isError}
-          isCheckingAccess={isCheckingAccess}
-          isMember={isMember}
-          loginReturnLabel="导入题单"
-          shouldPromptLogin={shouldPromptLogin}
-        />
+        <AccessFeedback loginReturnLabel="导入题单" status={status} />
 
         {isAdmin ? (
           <Card>
@@ -197,9 +190,9 @@ export default function AdminProblemSetImportPage() {
                     </p>
                   </div>
                   <TextArea
+                    className="resize-y"
                     placeholder="可不填"
                     rows={5}
-                    style={{ resize: "vertical" }}
                     variant="secondary"
                   />
                 </TextField>
@@ -221,9 +214,9 @@ export default function AdminProblemSetImportPage() {
                     </p>
                   </div>
                   <TextArea
+                    className="resize-y"
                     placeholder="P1001, P1002, P1003"
                     rows={8}
-                    style={{ resize: "vertical" }}
                     variant="secondary"
                   />
                 </TextField>

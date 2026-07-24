@@ -27,28 +27,31 @@ export type RankSyncStatus = RefreshSyncStatus | "missing-account";
 
 export const statusConfig = {
   empty: {
-    className: "bg-default text-muted",
+    color: "default",
     label: "等待刷新",
   },
   failed: {
-    className: "bg-danger-soft text-danger",
+    color: "danger",
     label: "刷新失败",
   },
   "missing-account": {
-    className: "bg-default text-muted",
+    color: "default",
     label: "未绑定",
   },
   ready: {
-    className: "bg-success-soft text-success",
+    color: "success",
     label: "已更新",
   },
   refreshing: {
-    className: "bg-accent-soft text-accent",
+    color: "accent",
     label: "刷新中",
   },
 } as const satisfies Record<
   RankSyncStatus,
-  { className: string; label: string }
+  {
+    color: "accent" | "danger" | "default" | "success";
+    label: string;
+  }
 >;
 
 export type SortDirection = "ascending" | "descending";

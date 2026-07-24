@@ -19,12 +19,15 @@ type LuoguUserLoader = typeof luoguSource.user;
 
 const userAwardSource = "luogu";
 
+export type AwardTier = "bronze" | "default" | "gold" | "silver";
+
 export interface PublicProfileAward {
   contest: string;
   event: null | string;
   level: string;
   sortOrder: number;
   source: typeof userAwardSource;
+  tier: AwardTier;
   year: number;
 }
 
@@ -67,6 +70,22 @@ const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown user award sync error";
+
+export const classifyAwardLevel = (level: string): AwardTier => {
+  if (level.includes("金") || level.includes("一等")) {
+    return "gold";
+  }
+
+  if (level.includes("银") || level.includes("二等")) {
+    return "silver";
+  }
+
+  if (level.includes("铜") || level.includes("三等")) {
+    return "bronze";
+  }
+
+  return "default";
+};
 
 export const selectLuoguUserAwards = (
   userPage: LuoguUserPageData
@@ -244,6 +263,7 @@ export const getAwardsForPublicProfile = async (
       level: award.level,
       sortOrder: award.sortOrder,
       source: userAwardSource,
+      tier: classifyAwardLevel(award.level),
       year: award.year,
     })),
     syncStatus,

@@ -4,7 +4,6 @@ import {
   Alert,
   Button,
   Card,
-  Chip,
   Form,
   Input,
   ListBox,
@@ -13,16 +12,10 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import {
-  defaultMemberStatus,
-  getGradeOptionsWithCurrentValue,
-  isMemberStatus,
-  type MemberStatus,
-  memberStatusLabels,
-} from "@hhuacm-dashboard/domain";
+import { getGradeOptionsWithCurrentValue } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save } from "lucide-react";
-import { type Key, type ReactNode, useState } from "react";
+import { type Key, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -37,21 +30,8 @@ import {
   profileFieldConfigs,
 } from "@/utils/profile-fields";
 import { DirtyFieldLabel } from "./dirty-field-label";
-
-const memberStatusConfig = {
-  active: {
-    className: "bg-success-soft text-success",
-  },
-  frozen: {
-    className: "bg-black text-white",
-  },
-  retired: {
-    className: "bg-default text-muted",
-  },
-  selection: {
-    className: "bg-accent-soft text-accent",
-  },
-} as const satisfies Record<MemberStatus, { className: string }>;
+import { InfoItem } from "./info-item";
+import { MemberStatusChip } from "./member-status-chip";
 
 export interface UserBasicInfoMessage {
   text: string;
@@ -70,11 +50,6 @@ interface UserBasicInfoSectionProps {
   onClearMessage?: () => void;
   onSubmit: (values: ProfileUpdateValues) => Promise<void>;
   profile: null | UserBasicInfoProfile | undefined;
-}
-
-interface BasicInfoItemProps {
-  label: string;
-  value: ReactNode;
 }
 
 interface BasicInfoFieldInputProps {
@@ -100,28 +75,6 @@ const getErrorMessage = (error: unknown) => {
 
   return "保存失败，请稍后再试。";
 };
-
-function BasicInfoItem({ label, value }: BasicInfoItemProps) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <dt className="text-muted text-sm">{label}</dt>
-      <dd className="mt-2 break-all font-medium text-base text-foreground">
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function MemberStatusBadge({ status }: { status: null | string | undefined }) {
-  const memberStatus = isMemberStatus(status) ? status : defaultMemberStatus;
-  const config = memberStatusConfig[memberStatus];
-
-  return (
-    <Chip className={config.className} size="md" variant="soft">
-      {memberStatusLabels[memberStatus]}
-    </Chip>
-  );
-}
 
 function BasicInfoFieldInput({
   field,
@@ -322,12 +275,12 @@ export function UserBasicInfoSection({
           ) : null}
 
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <BasicInfoItem
+            <InfoItem
               label="状态"
-              value={<MemberStatusBadge status={profile?.memberStatus} />}
+              value={<MemberStatusChip status={profile?.memberStatus} />}
             />
             {profileFieldConfigs.map((field) => (
-              <BasicInfoItem
+              <InfoItem
                 key={field.key}
                 label={field.label}
                 value={getProfileDisplayValue(profile?.[field.key])}

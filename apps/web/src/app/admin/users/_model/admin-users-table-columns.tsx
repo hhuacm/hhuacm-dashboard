@@ -3,7 +3,6 @@
 import { Button, Chip, Tooltip } from "@heroui/react";
 import {
   type MemberStatus,
-  memberStatusLabels,
   ojPlatformLabels,
   ojPlatforms,
 } from "@hhuacm-dashboard/domain";
@@ -12,10 +11,12 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { Key, ReactNode } from "react";
 
 import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
+import { MemberStatusChip } from "@/components/member-status-chip";
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
 import {
   type AdminUserOjAccount,
+  type AdminUsersSort,
   type AdminUserTableRow,
   getAdminUsernameLabel,
   type SortColumn,
@@ -73,39 +74,11 @@ export interface AdminUsersDisplayColumn {
   visibility: AdminUsersColumnVisibility;
 }
 
-const memberStatusConfig = {
-  active: {
-    color: "success",
-  },
-  frozen: {
-    color: "danger",
-  },
-  retired: {
-    color: "default",
-  },
-  selection: {
-    color: "accent",
-  },
-} as const satisfies Record<
-  MemberStatus,
-  { color: "accent" | "danger" | "default" | "success" }
->;
-
-function MemberStatusChip({ status }: { status: MemberStatus }) {
-  const config = memberStatusConfig[status];
-
-  return (
-    <Chip color={config.color} size="sm" variant="soft">
-      {memberStatusLabels[status]}
-    </Chip>
-  );
-}
-
 function ProfileValue({
-  mono = false,
+  kind = "text",
   value,
 }: {
-  mono?: boolean;
+  kind?: "identifier" | "text";
   value: null | string | undefined;
 }) {
   const displayValue = getProfileDisplayValue(value);
@@ -115,7 +88,9 @@ function ProfileValue({
   }
 
   return (
-    <span className={clsx(mono && "font-mono text-sm")}>{displayValue}</span>
+    <span className={clsx(kind === "identifier" && "font-mono text-sm")}>
+      {displayValue}
+    </span>
   );
 }
 
@@ -299,7 +274,9 @@ export const adminUsersDisplayColumns: readonly AdminUsersDisplayColumn[] = [
     id: "memberStatus",
     label: "状态",
     minWidth: 104,
-    renderCell: ({ row }) => <MemberStatusChip status={row.memberStatus} />,
+    renderCell: ({ row }) => (
+      <MemberStatusChip size="sm" status={row.memberStatus} />
+    ),
     sortColumn: "memberStatus",
     visibility: "default",
   },
@@ -317,7 +294,9 @@ export const adminUsersDisplayColumns: readonly AdminUsersDisplayColumn[] = [
     id: "studentId",
     label: "学号",
     minWidth: 128,
-    renderCell: ({ row }) => <ProfileValue mono value={row.studentId} />,
+    renderCell: ({ row }) => (
+      <ProfileValue kind="identifier" value={row.studentId} />
+    ),
     sortColumn: "studentId",
     visibility: "optional",
   },
@@ -425,4 +404,22 @@ export const getFirstVisibleAdminUsersSortColumn = (
   }
 
   return null;
+};
+
+export const getVisibleAdminUsersSort = (
+  sort: AdminUsersSort,
+  visibleColumnIds: readonly AdminUsersColumnId[]
+): AdminUsersSort => {
+  if (visibleColumnIds.includes(sort.column)) {
+    return sort;
+  }
+
+  const fallbackColumn = getFirstVisibleAdminUsersSortColumn(visibleColumnIds);
+
+  return fallbackColumn
+    ? {
+        column: fallbackColumn,
+        direction: "ascending",
+      }
+    : sort;
 };

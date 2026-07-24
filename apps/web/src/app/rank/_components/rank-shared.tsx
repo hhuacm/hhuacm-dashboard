@@ -22,13 +22,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import {
-  type CSSProperties,
-  type Key,
-  type ReactNode,
-  useMemo,
-  useState,
-} from "react";
+import { type CSSProperties, type Key, type ReactNode, useState } from "react";
 
 import {
   ColumnVisibilityMenu,
@@ -134,7 +128,7 @@ interface EmptyCellProps {
 interface LinkedTextProps {
   children: ReactNode;
   href: string;
-  tone?: string;
+  tone?: "accent" | "inherit";
 }
 
 interface RelativeTimeCellProps {
@@ -147,7 +141,13 @@ interface RelativeTimeCellProps {
 
 interface StatusChipProps<Status extends string> {
   status: Status;
-  statusConfig: Record<Status, { className: string; label: string }>;
+  statusConfig: Record<
+    Status,
+    {
+      color: "accent" | "danger" | "default" | "success";
+      label: string;
+    }
+  >;
 }
 
 interface FilterMenuProps {
@@ -201,7 +201,7 @@ export function EmptyCell({ emptyText }: EmptyCellProps) {
 export function LinkedText({
   children,
   href,
-  tone = "text-accent",
+  tone = "accent",
 }: LinkedTextProps) {
   const isExternal = href.startsWith("http");
 
@@ -209,7 +209,7 @@ export function LinkedText({
     <a
       className={clsx(
         "inline-flex min-w-0 items-center gap-1 font-medium underline-offset-4 hover:underline focus-visible:underline",
-        tone
+        tone === "accent" ? "text-accent" : "text-inherit"
       )}
       href={href}
       rel={isExternal ? "noopener noreferrer" : undefined}
@@ -249,7 +249,7 @@ export function StatusChip<Status extends string>({
   const config = statusConfig[status];
 
   return (
-    <Chip className={config.className} size="sm" variant="soft">
+    <Chip color={config.color} size="sm" variant="soft">
       {config.label}
     </Chip>
   );
@@ -287,10 +287,9 @@ export function RankDataTable<
   sort,
   visibleColumns,
 }: RankDataTableProps<Row, ColumnId, SortColumn, ColumnConfig>) {
-  const tableStyle = useMemo<CSSProperties>(
-    () => ({ minWidth: getVisibleTableMinWidth(visibleColumns) }),
-    [visibleColumns]
-  );
+  const tableStyle: CSSProperties = {
+    minWidth: getVisibleTableMinWidth(visibleColumns),
+  };
   const tableContentKey = visibleColumns.map((column) => column.id).join("|");
 
   const handleSortChange = (descriptor: {
@@ -400,22 +399,10 @@ export function RankBoard<
     storageKey,
   });
   const rankRows = query.data ?? [];
-  const gradeOptions = useMemo(
-    () => getRankFilterOptions(rankRows, "grade"),
-    [rankRows]
-  );
-  const majorOptions = useMemo(
-    () => getRankFilterOptions(rankRows, "major"),
-    [rankRows]
-  );
-  const filteredRows = useMemo(
-    () => filterRows(rankRows, filters),
-    [filterRows, filters, rankRows]
-  );
-  const rows = useMemo(
-    () => sortRows(filteredRows, sort),
-    [filteredRows, sort, sortRows]
-  );
+  const gradeOptions = getRankFilterOptions(rankRows, "grade");
+  const majorOptions = getRankFilterOptions(rankRows, "major");
+  const filteredRows = filterRows(rankRows, filters);
+  const rows = sortRows(filteredRows, sort);
   const total = rankRows.length;
   const filtersActive = hasActiveRankFilters(filters, numberFilterConfigs);
   const activeNumberFilterCount = getActiveNumberFilterCount(
@@ -666,7 +653,7 @@ function NumberFilterMenu<FilterKey extends string>({
   );
 }
 
-export function RankToolbar<
+function RankToolbar<
   ColumnId extends string,
   FilterKey extends string,
   ColumnConfig extends TableColumnVisibilityConfig<ColumnId>,
@@ -731,7 +718,7 @@ export function RankToolbar<
   );
 }
 
-export function SortableColumnHeader({
+function SortableColumnHeader({
   children,
   sortDirection,
 }: {

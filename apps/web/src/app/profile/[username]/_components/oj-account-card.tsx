@@ -2,38 +2,27 @@ import { Chip } from "@heroui/react";
 import clsx from "clsx";
 import { CircleAlert, ExternalLink } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
+import { getLuoguDifficultyPresentation } from "@/utils/luogu-difficulty";
 import { buildOjProfileUrl, getOjPlatformConfig } from "@/utils/oj-platforms";
 import {
   codeforcesStatsStatusOptions,
   formatDateTime,
   formatNumber,
-  getStatsStatusClassName,
-  getStatsStatusText,
-  luoguDifficultyClassNames,
+  getStatsStatusPresentation,
   luoguStatsStatusOptions,
   type PublicOjAccount,
+  type StatsStatusPresentation,
+  type StatsStatusTone,
 } from "../_model/public-profile-view";
 
-function Metric({
-  label,
-  value,
-  valueClassName = "text-foreground",
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-}) {
+function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
       <dt className="text-muted text-xs">{label}</dt>
-      <dd
-        className={clsx(
-          "mt-1 font-semibold text-lg leading-snug",
-          valueClassName
-        )}
-      >
+      <dd className="mt-1 font-semibold text-foreground text-lg leading-snug">
         {value}
       </dd>
     </div>
@@ -50,17 +39,31 @@ function CodeforcesRatingMetric({
   return (
     <Metric
       label={label}
-      value={formatNumber(rating)}
-      valueClassName={getCodeforcesRatingClassName(rating)}
+      value={
+        <span className={getCodeforcesRatingClassName(rating)}>
+          {formatNumber(rating)}
+        </span>
+      }
     />
   );
 }
+
+const statsStatusToneClassNames = {
+  accent: "text-accent",
+  danger: "text-danger",
+  muted: "text-muted",
+} as const satisfies Record<StatsStatusTone, string>;
 
 function CodeforcesStatsContent({
   codeforces,
 }: {
   codeforces: PublicOjAccount["codeforces"] | undefined;
 }) {
+  const status = getStatsStatusPresentation(
+    codeforces,
+    codeforcesStatsStatusOptions
+  );
+
   return (
     <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <CodeforcesRatingMetric
@@ -96,10 +99,10 @@ function CodeforcesStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getStatsStatusClassName(codeforces, codeforcesStatsStatusOptions)
+            statsStatusToneClassNames[status.tone]
           )}
         >
-          {getStatsStatusText(codeforces, codeforcesStatsStatusOptions)}
+          {status.text}
         </dd>
       </div>
     </dl>
@@ -111,6 +114,8 @@ function AtcoderStatsContent({
 }: {
   atcoder: PublicOjAccount["atcoder"] | undefined;
 }) {
+  const status = getStatsStatusPresentation(atcoder);
+
   return (
     <dl className="mt-4 grid gap-3 sm:grid-cols-2">
       <Metric
@@ -132,10 +137,10 @@ function AtcoderStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getStatsStatusClassName(atcoder)
+            statsStatusToneClassNames[status.tone]
           )}
         >
-          {getStatsStatusText(atcoder)}
+          {status.text}
         </dd>
       </div>
     </dl>
@@ -151,13 +156,15 @@ function LuoguDifficultyRow({
   difficulty: number;
   label: string;
 }) {
-  const className =
-    luoguDifficultyClassNames[difficulty] ?? luoguDifficultyClassNames[0];
+  const presentation = getLuoguDifficultyPresentation(difficulty);
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-secondary px-3 py-2">
       <Chip
-        className={clsx(className, "px-3 py-1 font-semibold text-base")}
+        className={clsx(
+          presentation.className,
+          "px-3 py-1 font-semibold text-base"
+        )}
         size="md"
       >
         {label}
@@ -174,9 +181,11 @@ function LuoguStatsContent({
 }: {
   luogu: PublicOjAccount["luogu"] | undefined;
 }) {
+  const status = getStatsStatusPresentation(luogu, luoguStatsStatusOptions);
+
   return (
     <div className="mt-4 grid gap-3">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <dl className="grid gap-3 sm:grid-cols-3">
         <Metric
           label="总过题数"
           value={formatNumber(luogu?.acceptedProblemCount ?? null)}
@@ -194,7 +203,7 @@ function LuoguStatsContent({
               : luogu.averageAcceptedDifficulty.toFixed(2)
           }
         />
-      </div>
+      </dl>
       <div className="grid gap-2 sm:grid-cols-2">
         {luogu?.difficultyCounts.map((item) => (
           <LuoguDifficultyRow
@@ -205,20 +214,22 @@ function LuoguStatsContent({
           />
         ))}
       </div>
-      {luogu?.syncStatus === "failed" ? (
+      <dl className="grid gap-3">
+        {luogu?.syncStatus === "failed" ? (
+          <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
+            <dt className="text-muted text-xs">读取状态</dt>
+            <dd className="wrap-break-word mt-1 font-medium text-danger">
+              {status.text}
+            </dd>
+          </div>
+        ) : null}
         <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
-          <dt className="text-muted text-xs">读取状态</dt>
-          <dd className="wrap-break-word mt-1 font-medium text-danger">
-            {getStatsStatusText(luogu, luoguStatsStatusOptions)}
+          <dt className="text-muted text-xs">数据更新</dt>
+          <dd className="mt-1 font-medium text-foreground">
+            {formatDateTime(luogu?.fetchedAt ?? null)}
           </dd>
         </div>
-      ) : null}
-      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
-        <dt className="text-muted text-xs">数据更新</dt>
-        <dd className="mt-1 font-medium text-foreground">
-          {formatDateTime(luogu?.fetchedAt ?? null)}
-        </dd>
-      </div>
+      </dl>
     </div>
   );
 }
@@ -228,6 +239,8 @@ function NowcoderStatsContent({
 }: {
   nowcoder: PublicOjAccount["nowcoder"] | undefined;
 }) {
+  const status = getStatsStatusPresentation(nowcoder);
+
   return (
     <dl className="mt-4 grid gap-3 sm:grid-cols-2">
       <Metric label="Rating" value={formatNumber(nowcoder?.rating ?? null)} />
@@ -246,10 +259,10 @@ function NowcoderStatsContent({
         <dd
           className={clsx(
             "wrap-break-word mt-1 font-medium",
-            getStatsStatusClassName(nowcoder)
+            statsStatusToneClassNames[status.tone]
           )}
         >
-          {getStatsStatusText(nowcoder)}
+          {status.text}
         </dd>
       </div>
     </dl>
@@ -258,24 +271,13 @@ function NowcoderStatsContent({
 
 function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "atcoder") {
-    return (
-      <StatusLine
-        className={getStatsStatusClassName(account.atcoder)}
-        isFailed={account.atcoder?.syncStatus === "failed"}
-        text={getStatsStatusText(account.atcoder)}
-      />
-    );
+    return <StatusLine status={getStatsStatusPresentation(account.atcoder)} />;
   }
 
   if (account.platform === "codeforces") {
     return (
       <StatusLine
-        className={getStatsStatusClassName(
-          account.codeforces,
-          codeforcesStatsStatusOptions
-        )}
-        isFailed={account.codeforces?.syncStatus === "failed"}
-        text={getStatsStatusText(
+        status={getStatsStatusPresentation(
           account.codeforces,
           codeforcesStatsStatusOptions
         )}
@@ -286,44 +288,31 @@ function OjAccountStatusLine({ account }: { account: PublicOjAccount }) {
   if (account.platform === "luogu") {
     return (
       <StatusLine
-        className={getStatsStatusClassName(
+        status={getStatsStatusPresentation(
           account.luogu,
           luoguStatsStatusOptions
         )}
-        isFailed={account.luogu?.syncStatus === "failed"}
-        text={getStatsStatusText(account.luogu, luoguStatsStatusOptions)}
       />
     );
   }
 
   if (account.platform === "nowcoder") {
-    return (
-      <StatusLine
-        className={getStatsStatusClassName(account.nowcoder)}
-        isFailed={account.nowcoder?.syncStatus === "failed"}
-        text={getStatsStatusText(account.nowcoder)}
-      />
-    );
+    return <StatusLine status={getStatsStatusPresentation(account.nowcoder)} />;
   }
 
   return null;
 }
 
-function StatusLine({
-  className,
-  isFailed,
-  text,
-}: {
-  className: string;
-  isFailed: boolean;
-  text: string;
-}) {
+function StatusLine({ status }: { status: StatsStatusPresentation }) {
   return (
     <p
-      className={clsx("mt-1 inline-flex items-center gap-1 text-sm", className)}
+      className={clsx(
+        "mt-1 inline-flex items-center gap-1 text-sm",
+        statsStatusToneClassNames[status.tone]
+      )}
     >
-      {isFailed ? <CircleAlert className="size-3.5" /> : null}
-      {text}
+      {status.tone === "danger" ? <CircleAlert className="size-3.5" /> : null}
+      {status.text}
     </p>
   );
 }

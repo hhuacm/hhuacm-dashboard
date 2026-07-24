@@ -17,8 +17,7 @@ import { useAdminAccess } from "./_shared/use-admin-access";
 
 export default function AdminPage() {
   const router = useRouter();
-  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
-    useAdminAccess();
+  const { isAdmin, status } = useAdminAccess();
 
   return (
     <AppShell
@@ -28,12 +27,7 @@ export default function AdminPage() {
       title="管理面板"
     >
       <div className="grid gap-4">
-        <AccessFeedback
-          isAccessError={accountMe.isError}
-          isCheckingAccess={isCheckingAccess}
-          isMember={isMember}
-          shouldPromptLogin={shouldPromptLogin}
-        />
+        <AccessFeedback status={status} />
 
         {isAdmin ? (
           <Card>

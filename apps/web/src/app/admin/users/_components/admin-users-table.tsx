@@ -3,7 +3,7 @@
 import { Table } from "@heroui/react";
 import clsx from "clsx";
 import { ArrowUpDown } from "lucide-react";
-import { type CSSProperties, type Key, type ReactNode, useMemo } from "react";
+import type { CSSProperties, Key, ReactNode } from "react";
 
 import {
   type AdminUsersColumnId,
@@ -84,19 +84,12 @@ export function AdminUsersTable({
   users,
   visibleColumnIds,
 }: AdminUsersTableProps) {
-  const visibleColumns = useMemo(
-    () => getVisibleAdminUsersDisplayColumns(visibleColumnIds),
-    [visibleColumnIds]
-  );
-  const tableStyle = useMemo<CSSProperties>(
-    () => ({ minWidth: getAdminUsersTableMinWidth(visibleColumns) }),
-    [visibleColumns]
-  );
+  const visibleColumns = getVisibleAdminUsersDisplayColumns(visibleColumnIds);
+  const tableStyle: CSSProperties = {
+    minWidth: getAdminUsersTableMinWidth(visibleColumns),
+  };
   const tableContentKey = visibleColumns.map((column) => column.id).join("|");
-  const actions = useMemo(
-    () => ({ onDeleteUser, onEditUser }),
-    [onDeleteUser, onEditUser]
-  );
+  const actions = { onDeleteUser, onEditUser };
 
   const handleSortChange = (descriptor: {
     column?: Key;

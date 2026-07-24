@@ -7,7 +7,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { ArrowLeft, Check, Clipboard, Download, FileJson } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { trpc } from "@/utils/trpc";
@@ -105,21 +105,16 @@ function ExportResult({
 export default function AdminExportPage() {
   const router = useRouter();
   const [isCopied, setIsCopied] = useState(false);
-  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
-    useAdminAccess();
+  const { isAdmin, status } = useAdminAccess();
   const exportQuery = useQuery(
     trpc.admin.export.queryOptions(undefined, {
       enabled: Boolean(isAdmin),
       retry: false,
     })
   );
-  const exportJson = useMemo(
-    () =>
-      exportQuery.data
-        ? JSON.stringify(exportQuery.data, null, jsonIndent)
-        : "",
-    [exportQuery.data]
-  );
+  const exportJson = exportQuery.data
+    ? JSON.stringify(exportQuery.data, null, jsonIndent)
+    : "";
   useEffect(() => {
     if (!isCopied) {
       return;
@@ -175,13 +170,7 @@ export default function AdminExportPage() {
       title="系统导出"
     >
       <div className="grid gap-6">
-        <AccessFeedback
-          isAccessError={accountMe.isError}
-          isCheckingAccess={isCheckingAccess}
-          isMember={isMember}
-          loginReturnLabel="系统导出"
-          shouldPromptLogin={shouldPromptLogin}
-        />
+        <AccessFeedback loginReturnLabel="系统导出" status={status} />
 
         {isAdmin ? (
           <Card>

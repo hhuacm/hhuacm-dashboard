@@ -147,6 +147,7 @@ describe("getPublicProfile", () => {
           level: "铜牌",
           sortOrder: 0,
           source: "luogu",
+          tier: "bronze",
           year: 2023,
         },
       ],

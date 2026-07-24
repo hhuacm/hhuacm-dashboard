@@ -7,6 +7,13 @@ import { trpc } from "@/utils/trpc";
 
 const adminAccessRedirectDelayMs = 3000;
 
+export type AdminAccessStatus =
+  | "admin"
+  | "checking"
+  | "error"
+  | "guest"
+  | "member";
+
 export function useAdminAccess() {
   const pathname = usePathname();
   const router = useRouter();
@@ -18,18 +25,24 @@ export function useAdminAccess() {
       retry: false,
     })
   );
-  const isAdmin = accountMe.data?.role === "admin";
-  const isMember = Boolean(accountMe.data && !isAdmin);
-  const isCheckingAccess =
-    session.isPending || (Boolean(user) && accountMe.isPending);
-  const shouldPromptLogin = !(session.isPending || user);
-
-  useEffect(() => {
-    if (session.isPending) {
-      return;
+  const status: AdminAccessStatus = (() => {
+    if (session.isPending || (user && accountMe.isPending)) {
+      return "checking";
     }
 
     if (!user) {
+      return "guest";
+    }
+
+    if (accountMe.isError || !accountMe.data) {
+      return "error";
+    }
+
+    return accountMe.data.role === "admin" ? "admin" : "member";
+  })();
+
+  useEffect(() => {
+    if (status === "guest") {
       const timeoutId = window.setTimeout(() => {
         router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
       }, adminAccessRedirectDelayMs);
@@ -37,20 +50,17 @@ export function useAdminAccess() {
       return () => window.clearTimeout(timeoutId);
     }
 
-    if (isMember) {
+    if (status === "member") {
       const timeoutId = window.setTimeout(() => {
         router.push("/");
       }, adminAccessRedirectDelayMs);
 
       return () => window.clearTimeout(timeoutId);
     }
-  }, [isMember, pathname, router, session.isPending, user]);
+  }, [pathname, router, status]);
 
   return {
-    accountMe,
-    isAdmin,
-    isCheckingAccess,
-    isMember,
-    shouldPromptLogin,
+    isAdmin: status === "admin",
+    status,
   };
 }

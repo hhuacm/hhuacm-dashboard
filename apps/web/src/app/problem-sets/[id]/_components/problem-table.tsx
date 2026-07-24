@@ -10,11 +10,7 @@ import {
   type ProblemSetProblem,
   problemTableColumnClassNames,
 } from "../_model/problem-set-detail-view";
-import {
-  CenteredTableChip,
-  DifficultyChip,
-  ProblemStatusChip,
-} from "./problem-status";
+import { DifficultyChip, ProblemStatusChip } from "./problem-status";
 import { ProblemTitleLink } from "./problem-title-link";
 
 interface ProblemTableProps {
@@ -116,9 +112,9 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                       <Table.Cell
                         className={problemTableColumnClassNames.status}
                       >
-                        <CenteredTableChip>
+                        <div className="flex justify-center">
                           <ProblemStatusChip accepted={problem.accepted} />
-                        </CenteredTableChip>
+                        </div>
                       </Table.Cell>
                       <Table.Cell
                         className={clsx(
@@ -134,9 +130,9 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                         <ProblemTitleLink href={href} title={problem.title} />
                       </Table.Cell>
                       <Table.Cell className={difficultyColumnClassName}>
-                        <CenteredTableChip>
+                        <div className="flex justify-center">
                           <DifficultyChip difficulty={problem.difficulty} />
-                        </CenteredTableChip>
+                        </div>
                       </Table.Cell>
                     </Table.Row>
                   );

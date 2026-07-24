@@ -43,7 +43,7 @@ const renderNameCell = (row: RankRow) => {
   const nameLabel = getRankNameLabel(row);
 
   return (
-    <LinkedText href={getRankProfileUrl(row)} tone="text-foreground">
+    <LinkedText href={getRankProfileUrl(row)} tone="inherit">
       {nameLabel}
     </LinkedText>
   );

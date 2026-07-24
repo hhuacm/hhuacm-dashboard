@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UsersRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
@@ -18,6 +18,7 @@ import { AdminUsersTableSection } from "./_components/admin-users-table-section"
 import {
   adminUsersColumns,
   adminUsersColumnVisibilityStorageKey,
+  getVisibleAdminUsersSort,
 } from "./_model/admin-users-table-columns";
 import {
   type AdminUsersFilters,
@@ -49,8 +50,7 @@ function AdminUsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { accountMe, isAdmin, isCheckingAccess, isMember, shouldPromptLogin } =
-    useAdminAccess();
+  const { isAdmin, status } = useAdminAccess();
   const targetUsername = searchParams.get("username");
   const [filters, setFilters] = useState<AdminUsersFilters>(
     emptyAdminUsersFilters
@@ -93,16 +93,16 @@ function AdminUsersPageContent() {
     setFilters(emptyAdminUsersFilters);
   };
 
-  const handleSortChange = useCallback((nextSort: AdminUsersSort) => {
-    setSort(nextSort);
-  }, []);
-
   const handleEditUser = (nextUser: AdminUserTableRow) => {
     setEditTargetUser(nextUser);
   };
 
   const closeEditDialog = () => {
     setEditTargetUser(null);
+
+    if (targetUsername) {
+      router.replace("/admin/users" as Route);
+    }
   };
 
   const handleDeleteUser = (nextUser: AdminUserTableRow) => {
@@ -126,28 +126,51 @@ function AdminUsersPageContent() {
     storageKey: adminUsersColumnVisibilityStorageKey,
   });
   const hasActiveFilters = hasFilters(filters);
-  const listInput = useMemo(
-    () => ({
-      filters: hasActiveFilters ? filters : undefined,
-      sort,
-    }),
-    [filters, hasActiveFilters, sort]
+  const visibleSort = getVisibleAdminUsersSort(
+    sort,
+    visibleColumnControls.visibleColumnIds
   );
+  const listInput = {
+    filters: hasActiveFilters ? filters : undefined,
+    sort: visibleSort,
+  };
   const listQueryKey = trpc.admin.users.list.queryKey(listInput);
   const usersQuery = useQuery(
     trpc.admin.users.list.queryOptions(listInput, {
-      enabled: Boolean(isAdmin),
+      enabled: isAdmin,
       retry: false,
     })
   );
   const metadataQuery = useQuery(
     trpc.admin.users.metadata.queryOptions(undefined, {
-      enabled: Boolean(isAdmin),
+      enabled: isAdmin,
       retry: false,
     })
   );
   const users = usersQuery.data?.items ?? [];
   const total = usersQuery.data?.total ?? 0;
+  const listStatus = (() => {
+    if (usersQuery.isPending) {
+      return "loading";
+    }
+
+    if (usersQuery.isError) {
+      return "error";
+    }
+
+    return usersQuery.isFetching ? "refreshing" : "ready";
+  })();
+  const metadataStatus = (() => {
+    if (metadataQuery.isPending) {
+      return "loading";
+    }
+
+    return metadataQuery.isError ? "error" : "ready";
+  })();
+  const requestedUser = targetUsername
+    ? (users.find((user) => user.username === targetUsername) ?? null)
+    : null;
+  const selectedUser = editTargetUser ?? requestedUser;
   const deleteUser = useMutation(
     trpc.admin.users.delete.mutationOptions({
       onError: (error) => {
@@ -172,20 +195,6 @@ function AdminUsersPageContent() {
     });
   };
 
-  useEffect(() => {
-    if (!(targetUsername && isAdmin && !usersQuery.isPending)) {
-      return;
-    }
-
-    const targetUser = users.find(
-      (currentUser) => currentUser.username === targetUsername
-    );
-
-    if (targetUser) {
-      setEditTargetUser(targetUser);
-    }
-  }, [isAdmin, targetUsername, users, usersQuery.isPending]);
-
   const shellAction = (
     <Button
       onPress={() => router.push("/admin" as Route)}
@@ -205,30 +214,21 @@ function AdminUsersPageContent() {
       title="用户列表"
     >
       <div className="grid gap-6">
-        <AccessFeedback
-          isAccessError={accountMe.isError}
-          isCheckingAccess={isCheckingAccess}
-          isMember={isMember}
-          loginReturnLabel="用户列表"
-          shouldPromptLogin={shouldPromptLogin}
-        />
+        <AccessFeedback loginReturnLabel="用户列表" status={status} />
 
         {isAdmin ? (
           <AdminUsersTableSection
             filters={filters}
             hasActiveFilters={hasActiveFilters}
-            isFetching={usersQuery.isFetching}
-            isLoadError={usersQuery.isError}
-            isLoading={usersQuery.isPending}
+            listStatus={listStatus}
             metadata={metadataQuery.data}
-            metadataIsError={metadataQuery.isError}
-            metadataIsLoading={metadataQuery.isPending}
+            metadataStatus={metadataStatus}
             onClearFilters={handleClearFilters}
             onDeleteUser={handleDeleteUser}
             onEditUser={handleEditUser}
             onFilterChange={handleFilterChange}
-            onSortChange={handleSortChange}
-            sort={sort}
+            onSortChange={setSort}
+            sort={visibleSort}
             total={total}
             users={users}
             visibleColumnControls={visibleColumnControls}
@@ -250,7 +250,7 @@ function AdminUsersPageContent() {
         <AdminUserEditDialog
           listQueryKey={listQueryKey}
           onClose={closeEditDialog}
-          user={editTargetUser}
+          user={selectedUser}
         />
       </div>
     </AppShell>

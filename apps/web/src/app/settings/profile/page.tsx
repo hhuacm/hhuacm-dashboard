@@ -6,6 +6,7 @@ import { BadgeCheck, KeyRound, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { InfoItem } from "@/components/info-item";
 import {
   type UserBasicInfoMessage,
   UserBasicInfoSection,
@@ -163,19 +164,9 @@ export default function ProfileSettingsPage() {
             </Button>
           </Card.Header>
           <Card.Content>
-            <dl className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-border bg-surface p-4">
-                <dt className="text-muted text-sm">用户名</dt>
-                <dd className="mt-2 break-all font-medium text-base text-foreground">
-                  {username}
-                </dd>
-              </div>
-              <div className="rounded-lg border border-border bg-surface p-4">
-                <dt className="text-muted text-sm">邮箱</dt>
-                <dd className="mt-2 break-all font-medium text-base text-foreground">
-                  {account.email}
-                </dd>
-              </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <InfoItem label="用户名" value={username} />
+              <InfoItem label="邮箱" value={account.email} />
             </dl>
           </Card.Content>
         </Card>

@@ -55,7 +55,7 @@ const renderNameCell = (row: RankRow) => {
   const nameLabel = getRankNameLabel(row);
 
   return (
-    <LinkedText href={getRankProfileUrl(row)} tone="text-foreground">
+    <LinkedText href={getRankProfileUrl(row)} tone="inherit">
       {nameLabel}
     </LinkedText>
   );
@@ -72,12 +72,14 @@ const renderHandleCell = (row: RankRow) => {
   }
 
   return (
-    <LinkedText
-      href={buildOjProfileUrl("codeforces", codeforces.externalId)}
-      tone={getCodeforcesRatingClassName(codeforces.rating)}
-    >
-      {codeforces.handle}
-    </LinkedText>
+    <span className={getCodeforcesRatingClassName(codeforces.rating)}>
+      <LinkedText
+        href={buildOjProfileUrl("codeforces", codeforces.externalId)}
+        tone="inherit"
+      >
+        {codeforces.handle}
+      </LinkedText>
+    </span>
   );
 };
 
