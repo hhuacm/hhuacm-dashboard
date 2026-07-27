@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account-stats";
 import { eq } from "drizzle-orm";
 import type { AtCoderUserHistory } from "../../external/online-judge-sources/atcoder/api";
@@ -120,7 +120,10 @@ export const markAtcoderAccountStatsRefreshFailed = async (
   return stats;
 };
 
-export const deleteAtcoderStats = async (db: Database, accountId: string) => {
+export const deleteAtcoderStats = async (
+  db: Database | DatabaseTransaction,
+  accountId: string
+) => {
   await db
     .delete(atcoderAccountStats)
     .where(eq(atcoderAccountStats.accountId, accountId));

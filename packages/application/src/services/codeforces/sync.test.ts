@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
+import { sql } from "drizzle-orm";
 
 import type {
   CodeforcesSubmissionResult,
@@ -132,6 +133,37 @@ describe("Codeforces sync", () => {
       stats.fetchedAt.toISOString()
     );
     expect(ojAccount?.handle).toBe("tourist");
+  });
+
+  it("rolls back stats when canonical handle writing fails", async () => {
+    const db = await createServiceTestDb();
+    const account = await createCodeforcesAccount(db);
+    await db.run(sql`
+      CREATE TRIGGER fail_codeforces_handle_update
+      BEFORE UPDATE ON user_oj_account
+      BEGIN
+        SELECT RAISE(ABORT, 'forced handle update failure');
+      END
+    `);
+
+    await expect(
+      syncCodeforcesAccountStats(
+        db,
+        account,
+        new Date("2026-01-31T00:00:00.000Z"),
+        {
+          loadUserInfo: async () => [
+            createUserInfo({ handle: "canonical-handle" }),
+          ],
+          loadUserStatus: async () => [],
+        }
+      )
+    ).rejects.toThrow();
+
+    expect(await db.select().from(codeforcesAccountStats)).toEqual([]);
+    expect(await db.select().from(userOjAccount)).toEqual([
+      expect.objectContaining({ handle: "tourist-old" }),
+    ]);
   });
 
   it("records failures without overwriting fetched stats", async () => {

@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
@@ -55,40 +55,42 @@ export const syncNowcoderAccountStats = async (
   const acceptedProblemCountUpdate =
     acceptedProblemCount === null ? {} : { acceptedProblemCount };
 
-  const [stats] = await db
-    .insert(nowcoderAccountStats)
-    .values({
-      acceptedProblemCount,
-      accountId: account.id,
-      fetchedAt,
-      lastAttemptedAt: fetchedAt,
-      lastError: null,
-      rating: ratingBasic.rating,
-    })
-    .onConflictDoUpdate({
-      set: {
-        ...acceptedProblemCountUpdate,
+  return await db.transaction(async (tx) => {
+    const [stats] = await tx
+      .insert(nowcoderAccountStats)
+      .values({
+        acceptedProblemCount,
+        accountId: account.id,
         fetchedAt,
         lastAttemptedAt: fetchedAt,
         lastError: null,
         rating: ratingBasic.rating,
-      },
-      target: nowcoderAccountStats.accountId,
-    })
-    .returning(nowcoderStatsFields);
+      })
+      .onConflictDoUpdate({
+        set: {
+          ...acceptedProblemCountUpdate,
+          fetchedAt,
+          lastAttemptedAt: fetchedAt,
+          lastError: null,
+          rating: ratingBasic.rating,
+        },
+        target: nowcoderAccountStats.accountId,
+      })
+      .returning(nowcoderStatsFields);
 
-  if (!stats) {
-    throw new Error(`Nowcoder stats write failed for ${account.externalId}`);
-  }
+    if (!stats) {
+      throw new Error(`Nowcoder stats write failed for ${account.externalId}`);
+    }
 
-  if (account.handle !== ratingBasic.nickname) {
-    await db
-      .update(userOjAccount)
-      .set({ handle: ratingBasic.nickname })
-      .where(eq(userOjAccount.id, account.id));
-  }
+    if (account.handle !== ratingBasic.nickname) {
+      await tx
+        .update(userOjAccount)
+        .set({ handle: ratingBasic.nickname })
+        .where(eq(userOjAccount.id, account.id));
+    }
 
-  return stats;
+    return stats;
+  });
 };
 
 export const markNowcoderAccountStatsRefreshFailed = async (
@@ -122,7 +124,10 @@ export const markNowcoderAccountStatsRefreshFailed = async (
   return stats;
 };
 
-export const deleteNowcoderStats = async (db: Database, accountId: string) => {
+export const deleteNowcoderStats = async (
+  db: Database | DatabaseTransaction,
+  accountId: string
+) => {
   await db
     .delete(nowcoderAccountStats)
     .where(eq(nowcoderAccountStats.accountId, accountId));

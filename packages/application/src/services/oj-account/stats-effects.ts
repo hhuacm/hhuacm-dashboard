@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
@@ -20,7 +20,10 @@ export interface AccountStatsEffectTarget {
   platform: OjPlatform;
 }
 
-type AccountStatsEffect = (db: Database, accountId: string) => Promise<unknown>;
+type AccountStatsEffect = (
+  db: Database | DatabaseTransaction,
+  accountId: string
+) => Promise<unknown>;
 
 interface AccountStatsEffects {
   clearStats: AccountStatsEffect[];
@@ -56,7 +59,7 @@ const clearOjAccountRefreshRequests = async (
 };
 
 export const resetOjAccountStatsEffects = async (
-  db: Database,
+  db: Database | DatabaseTransaction,
   account: AccountStatsEffectTarget
 ) => {
   for (const clearStats of accountStatsEffects[account.platform].clearStats) {
@@ -67,7 +70,7 @@ export const resetOjAccountStatsEffects = async (
 };
 
 export const clearOjAccountRefreshRequestsForUser = async (
-  db: Database,
+  db: Database | DatabaseTransaction,
   userId: string
 ) => {
   const accounts = await listInternalOjAccountsByUserId(db, userId);
@@ -108,7 +111,7 @@ export const requestOjAccountRefreshEffectsIfNeeded = async (
 };
 
 export const replaceOjAccountStatsEffectsIfNeeded = async (
-  db: Database,
+  db: Database | DatabaseTransaction,
   account: AccountStatsEffectTarget,
   userId: string
 ) => {

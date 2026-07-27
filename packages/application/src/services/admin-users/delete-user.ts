@@ -1,3 +1,4 @@
+import type { DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
@@ -8,7 +9,12 @@ import { clearOjAccountRefreshRequestsForUser } from "../oj-account/stats-effect
 import { getTargetUser } from "../profile";
 import type { Database } from "./types";
 
-const getUserMemberStatus = async (db: Database, userId: string) => {
+type AdminUserDeleteDatabase = Database | DatabaseTransaction;
+
+const getUserMemberStatus = async (
+  db: AdminUserDeleteDatabase,
+  userId: string
+) => {
   const [profile] = await db
     .select({ memberStatus: userProfile.memberStatus })
     .from(userProfile)
@@ -19,7 +25,7 @@ const getUserMemberStatus = async (db: Database, userId: string) => {
 };
 
 const assertAdminUserCanBeDeleted = async (
-  db: Database,
+  db: AdminUserDeleteDatabase,
   input: { userId: string; usernameConfirmation: string }
 ) => {
   const targetUser = await getTargetUser(db, input.userId);
@@ -53,23 +59,24 @@ const assertAdminUserCanBeDeleted = async (
 export const deleteAdminUser = async (
   db: Database,
   input: { userId: string; usernameConfirmation: string }
-) => {
-  await assertAdminUserCanBeDeleted(db, input);
-  await clearOjAccountRefreshRequestsForUser(db, input.userId);
+) =>
+  await db.transaction(async (tx) => {
+    await assertAdminUserCanBeDeleted(tx, input);
+    await clearOjAccountRefreshRequestsForUser(tx, input.userId);
 
-  const [deletedUser] = await db
-    .delete(user)
-    .where(eq(user.id, input.userId))
-    .returning({
-      email: user.email,
-      id: user.id,
-      role: user.role,
-      username: user.username,
-    });
+    const [deletedUser] = await tx
+      .delete(user)
+      .where(eq(user.id, input.userId))
+      .returning({
+        email: user.email,
+        id: user.id,
+        role: user.role,
+        username: user.username,
+      });
 
-  if (!deletedUser) {
-    throw new ApplicationError({ code: "NOT_FOUND" });
-  }
+    if (!deletedUser) {
+      throw new ApplicationError({ code: "NOT_FOUND" });
+    }
 
-  return deletedUser;
-};
+    return deletedUser;
+  });

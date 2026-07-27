@@ -30,48 +30,51 @@ interface OjAccountDeleteInput {
   userId: string;
 }
 
-const createOjAccount = async (db: Database, input: OjAccountInput) => {
-  const [account] = await db
-    .insert(userOjAccount)
-    .values({
-      externalId: input.externalId,
-      handle: input.externalId,
-      platform: input.platform,
-      userId: input.userId,
-    })
-    .returning(internalOjAccountFields);
+const createOjAccount = async (db: Database, input: OjAccountInput) =>
+  await db.transaction(async (tx) => {
+    const [account] = await tx
+      .insert(userOjAccount)
+      .values({
+        externalId: input.externalId,
+        handle: input.externalId,
+        platform: input.platform,
+        userId: input.userId,
+      })
+      .returning(internalOjAccountFields);
 
-  if (!account) {
-    throw new ApplicationError({ code: "INTERNAL_SERVER_ERROR" });
-  }
+    if (!account) {
+      throw new ApplicationError({ code: "INTERNAL_SERVER_ERROR" });
+    }
 
-  await requestOjAccountRefreshEffectsIfNeeded(db, account, input.userId);
+    await requestOjAccountRefreshEffectsIfNeeded(tx, account, input.userId);
 
-  return toPublicOjAccount(account);
-};
-const updateExistingOjAccount = async (db: Database, input: OjAccountInput) => {
-  const [account] = await db
-    .update(userOjAccount)
-    .set({
-      externalId: input.externalId,
-      handle: input.externalId,
-    })
-    .where(
-      and(
-        eq(userOjAccount.userId, input.userId),
-        eq(userOjAccount.platform, input.platform)
+    return toPublicOjAccount(account);
+  });
+
+const updateExistingOjAccount = async (db: Database, input: OjAccountInput) =>
+  await db.transaction(async (tx) => {
+    const [account] = await tx
+      .update(userOjAccount)
+      .set({
+        externalId: input.externalId,
+        handle: input.externalId,
+      })
+      .where(
+        and(
+          eq(userOjAccount.userId, input.userId),
+          eq(userOjAccount.platform, input.platform)
+        )
       )
-    )
-    .returning(internalOjAccountFields);
+      .returning(internalOjAccountFields);
 
-  if (!account) {
-    throw new ApplicationError({ code: "NOT_FOUND" });
-  }
+    if (!account) {
+      throw new ApplicationError({ code: "NOT_FOUND" });
+    }
 
-  await replaceOjAccountStatsEffectsIfNeeded(db, account, input.userId);
+    await replaceOjAccountStatsEffectsIfNeeded(tx, account, input.userId);
 
-  return toPublicOjAccount(account);
-};
+    return toPublicOjAccount(account);
+  });
 
 export const addOjAccount = async (db: Database, input: OjAccountInput) => {
   const existingCurrentUserAccount = await getPublicOjAccountForUserPlatform(
@@ -124,25 +127,26 @@ export const upsertOjAccount = async (db: Database, input: OjAccountInput) => {
 export const deleteOjAccount = async (
   db: Database,
   input: OjAccountDeleteInput
-) => {
-  const [account] = await db
-    .delete(userOjAccount)
-    .where(
-      and(
-        eq(userOjAccount.userId, input.userId),
-        eq(userOjAccount.platform, input.platform)
+) =>
+  await db.transaction(async (tx) => {
+    const [account] = await tx
+      .delete(userOjAccount)
+      .where(
+        and(
+          eq(userOjAccount.userId, input.userId),
+          eq(userOjAccount.platform, input.platform)
+        )
       )
-    )
-    .returning(internalOjAccountFields);
+      .returning(internalOjAccountFields);
 
-  if (!account) {
-    throw new ApplicationError({
-      code: "NOT_FOUND",
-      message: `OJ account does not exist: ${input.platform}`,
-    });
-  }
+    if (!account) {
+      throw new ApplicationError({
+        code: "NOT_FOUND",
+        message: `OJ account does not exist: ${input.platform}`,
+      });
+    }
 
-  await resetOjAccountStatsEffects(db, account);
+    await resetOjAccountStatsEffects(tx, account);
 
-  return toPublicOjAccount(account);
-};
+    return toPublicOjAccount(account);
+  });

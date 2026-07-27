@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { eq } from "drizzle-orm";
 import { ensureCodeforcesAccountStatsRefresh } from "../../refresh/ensure";
@@ -80,7 +80,7 @@ export const getCodeforcesStatsForProfile = async (
 };
 
 export const deleteCodeforcesStats = async (
-  db: Database,
+  db: Database | DatabaseTransaction,
   accountId: string
 ) => {
   await db

@@ -5,6 +5,7 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
+import { sql } from "drizzle-orm";
 import { createServiceTestDb } from "../test-db";
 import { deleteAdminUser } from "./delete-user";
 import { getAdminUser } from "./detail";
@@ -341,5 +342,40 @@ describe("admin users", () => {
     expect(users).toEqual([]);
     expect(stats).toEqual([]);
     expect(refreshRequests).toEqual([]);
+  });
+
+  it("restores refresh requests when user deletion fails", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, {
+      id: "frozen-user",
+      memberStatus: "frozen",
+      username: "frozen-user",
+    });
+    const codeforcesAccountId = await createOjAccount(db, {
+      platform: "codeforces",
+      userId: "frozen-user",
+    });
+    await db.insert(refreshRequest).values({
+      kind: "codeforces.accountStats",
+      targetId: codeforcesAccountId,
+    });
+    await db.run(sql`
+      CREATE TRIGGER fail_user_delete
+      BEFORE DELETE ON user
+      BEGIN
+        SELECT RAISE(ABORT, 'forced user delete failure');
+      END
+    `);
+
+    await expect(
+      deleteAdminUser(db, {
+        userId: "frozen-user",
+        usernameConfirmation: "frozen-user",
+      })
+    ).rejects.toThrow();
+
+    expect(await listUserIds(db)).toEqual(["frozen-user"]);
+    expect(await db.select().from(userOjAccount)).toHaveLength(1);
+    expect(await db.select().from(refreshRequest)).toHaveLength(1);
   });
 });

@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import {
@@ -63,7 +63,10 @@ interface ProfileUpdateValues {
   studentId?: string;
 }
 
-export const getTargetUser = async (db: Database, userId: string) => {
+export const getTargetUser = async (
+  db: Database | DatabaseTransaction,
+  userId: string
+) => {
   const [targetUser] = await db
     .select(userFields)
     .from(user)

@@ -1,4 +1,4 @@
-import type { Database } from "@hhuacm-dashboard/db";
+import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { and, asc, eq } from "drizzle-orm";
@@ -42,7 +42,10 @@ export const listOjAccountsByUserId = (db: Database, userId: string) =>
     .where(eq(userOjAccount.userId, userId))
     .orderBy(asc(userOjAccount.platform));
 
-export const listInternalOjAccountsByUserId = (db: Database, userId: string) =>
+export const listInternalOjAccountsByUserId = (
+  db: Database | DatabaseTransaction,
+  userId: string
+) =>
   db
     .select(internalOjAccountFields)
     .from(userOjAccount)

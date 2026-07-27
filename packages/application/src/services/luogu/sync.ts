@@ -175,7 +175,10 @@ export const markLuoguAccountStatsRefreshFailed = async (
   return stats;
 };
 
-export const deleteLuoguStats = async (db: Database, accountId: string) => {
+export const deleteLuoguStats = async (
+  db: Database | DatabaseTransaction,
+  accountId: string
+) => {
   await db
     .delete(luoguAcceptedProblem)
     .where(eq(luoguAcceptedProblem.accountId, accountId));

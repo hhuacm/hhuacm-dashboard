@@ -1,37 +1,63 @@
 import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { createServiceTestDb } from "../test-db";
-import { addOjAccount } from "./commands";
+import { addOjAccount, deleteOjAccount, updateOjAccount } from "./commands";
+
+type TestDatabase = Awaited<ReturnType<typeof createServiceTestDb>>;
+
+const createUser = async (
+  db: TestDatabase,
+  input: {
+    id: string;
+    memberStatus?: MemberStatus;
+  }
+) => {
+  await db.insert(user).values({
+    email: `${input.id}@example.com`,
+    id: input.id,
+    name: input.id,
+    username: input.id,
+  });
+
+  if (input.memberStatus) {
+    await db.insert(userProfile).values({
+      memberStatus: input.memberStatus,
+      userId: input.id,
+    });
+  }
+};
+
+const createCodeforcesAccountWithStats = async (db: TestDatabase) => {
+  const fetchedAt = new Date();
+
+  await createUser(db, { id: "active-user", memberStatus: "active" });
+  await db.insert(userOjAccount).values({
+    externalId: "old-handle",
+    handle: "old-handle",
+    id: "codeforces-account",
+    platform: "codeforces",
+    userId: "active-user",
+  });
+  await db.insert(codeforcesAccountStats).values({
+    accountId: "codeforces-account",
+    fetchedAt,
+    lastAttemptedAt: fetchedAt,
+    rating: 1200,
+  });
+  await db.insert(refreshRequest).values({
+    kind: "codeforces.accountStats",
+    targetId: "codeforces-account",
+  });
+};
 
 describe("addOjAccount", () => {
-  const createUser = async (
-    db: Awaited<ReturnType<typeof createServiceTestDb>>,
-    input: {
-      id: string;
-      memberStatus?: MemberStatus;
-    }
-  ) => {
-    await db.insert(user).values({
-      email: `${input.id}@example.com`,
-      id: input.id,
-      name: input.id,
-      username: input.id,
-    });
-
-    if (input.memberStatus) {
-      await db.insert(userProfile).values({
-        memberStatus: input.memberStatus,
-        userId: input.id,
-      });
-    }
-  };
-
   it("enqueues current-member stats refreshes", async () => {
     const db = await createServiceTestDb();
 
@@ -159,5 +185,139 @@ describe("addOjAccount", () => {
       externalId: "second-id",
       handle: "second-id",
     });
+  });
+
+  it("rolls back the account when refresh enqueueing fails", async () => {
+    const db = await createServiceTestDb();
+    await createUser(db, { id: "active-user", memberStatus: "active" });
+    await db.run(sql`
+      CREATE TRIGGER fail_refresh_request_insert
+      BEFORE INSERT ON refresh_request
+      BEGIN
+        SELECT RAISE(ABORT, 'forced refresh insert failure');
+      END
+    `);
+
+    await expect(
+      addOjAccount(db, {
+        externalId: "new-handle",
+        platform: "codeforces",
+        userId: "active-user",
+      })
+    ).rejects.toThrow();
+
+    expect(await db.select().from(userOjAccount)).toEqual([]);
+    expect(await db.select().from(refreshRequest)).toEqual([]);
+  });
+});
+
+describe("updateOjAccount", () => {
+  it("updates the identity, clears old stats, and requests a refresh", async () => {
+    const db = await createServiceTestDb();
+    await createCodeforcesAccountWithStats(db);
+
+    await updateOjAccount(db, {
+      externalId: "new-handle",
+      platform: "codeforces",
+      userId: "active-user",
+    });
+
+    const [account] = await db.select().from(userOjAccount);
+    const stats = await db.select().from(codeforcesAccountStats);
+    const requests = await db.select().from(refreshRequest);
+
+    expect(account).toMatchObject({
+      externalId: "new-handle",
+      handle: "new-handle",
+      id: "codeforces-account",
+      platform: "codeforces",
+      userId: "active-user",
+    });
+    expect(stats).toEqual([]);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      kind: "codeforces.accountStats",
+      targetId: "codeforces-account",
+    });
+  });
+
+  it("rolls back the identity and effects when refresh enqueueing fails", async () => {
+    const db = await createServiceTestDb();
+    await createCodeforcesAccountWithStats(db);
+
+    await db.run(sql`
+      CREATE TRIGGER fail_refresh_request_insert
+      BEFORE INSERT ON refresh_request
+      BEGIN
+        SELECT RAISE(ABORT, 'forced refresh insert failure');
+      END
+    `);
+
+    await expect(
+      updateOjAccount(db, {
+        externalId: "new-handle",
+        platform: "codeforces",
+        userId: "active-user",
+      })
+    ).rejects.toThrow();
+
+    const [account] = await db.select().from(userOjAccount);
+    const stats = await db.select().from(codeforcesAccountStats);
+    const requests = await db.select().from(refreshRequest);
+
+    expect(account).toMatchObject({
+      externalId: "old-handle",
+      handle: "old-handle",
+      id: "codeforces-account",
+    });
+    expect(stats).toHaveLength(1);
+    expect(stats[0]).toMatchObject({
+      accountId: "codeforces-account",
+      rating: 1200,
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      kind: "codeforces.accountStats",
+      targetId: "codeforces-account",
+    });
+  });
+});
+
+describe("deleteOjAccount", () => {
+  it("deletes the account, stats, and refresh request", async () => {
+    const db = await createServiceTestDb();
+    await createCodeforcesAccountWithStats(db);
+
+    await deleteOjAccount(db, {
+      platform: "codeforces",
+      userId: "active-user",
+    });
+
+    expect(await db.select().from(userOjAccount)).toEqual([]);
+    expect(await db.select().from(codeforcesAccountStats)).toEqual([]);
+    expect(await db.select().from(refreshRequest)).toEqual([]);
+  });
+
+  it("rolls back the deletion when refresh cleanup fails", async () => {
+    const db = await createServiceTestDb();
+    await createCodeforcesAccountWithStats(db);
+    await db.run(sql`
+      CREATE TRIGGER fail_refresh_request_delete
+      BEFORE DELETE ON refresh_request
+      BEGIN
+        SELECT RAISE(ABORT, 'forced refresh delete failure');
+      END
+    `);
+
+    await expect(
+      deleteOjAccount(db, {
+        platform: "codeforces",
+        userId: "active-user",
+      })
+    ).rejects.toThrow();
+
+    expect(await db.select().from(userOjAccount)).toHaveLength(1);
+    expect(await db.select().from(codeforcesAccountStats)).toHaveLength(1);
+    expect(await db.select().from(refreshRequest)).toHaveLength(1);
   });
 });

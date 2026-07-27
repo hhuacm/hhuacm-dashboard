@@ -75,46 +75,50 @@ export const syncCodeforcesAccountStats = async (
       ? null
       : new Date(userInfo.lastOnlineTimeSeconds * 1000);
 
-  const [stats] = await db
-    .insert(codeforcesAccountStats)
-    .values({
-      acceptedProblemCount: summary.acceptedProblemCount,
-      acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
-      accountId: account.id,
-      fetchedAt,
-      lastAttemptedAt: fetchedAt,
-      lastError: null,
-      lastOnlineAt,
-      maxRating: userInfo.maxRating ?? null,
-      rating: userInfo.rating ?? null,
-    })
-    .onConflictDoUpdate({
-      set: {
+  return await db.transaction(async (tx) => {
+    const [stats] = await tx
+      .insert(codeforcesAccountStats)
+      .values({
         acceptedProblemCount: summary.acceptedProblemCount,
         acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
+        accountId: account.id,
         fetchedAt,
         lastAttemptedAt: fetchedAt,
         lastError: null,
         lastOnlineAt,
         maxRating: userInfo.maxRating ?? null,
         rating: userInfo.rating ?? null,
-      },
-      target: codeforcesAccountStats.accountId,
-    })
-    .returning(codeforcesStatsFields);
+      })
+      .onConflictDoUpdate({
+        set: {
+          acceptedProblemCount: summary.acceptedProblemCount,
+          acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
+          fetchedAt,
+          lastAttemptedAt: fetchedAt,
+          lastError: null,
+          lastOnlineAt,
+          maxRating: userInfo.maxRating ?? null,
+          rating: userInfo.rating ?? null,
+        },
+        target: codeforcesAccountStats.accountId,
+      })
+      .returning(codeforcesStatsFields);
 
-  if (!stats) {
-    throw new Error(`Codeforces stats write failed for ${account.externalId}`);
-  }
+    if (!stats) {
+      throw new Error(
+        `Codeforces stats write failed for ${account.externalId}`
+      );
+    }
 
-  if (account.handle !== userInfo.handle) {
-    await db
-      .update(userOjAccount)
-      .set({ handle: userInfo.handle })
-      .where(eq(userOjAccount.id, account.id));
-  }
+    if (account.handle !== userInfo.handle) {
+      await tx
+        .update(userOjAccount)
+        .set({ handle: userInfo.handle })
+        .where(eq(userOjAccount.id, account.id));
+    }
 
-  return stats;
+    return stats;
+  });
 };
 
 export const markCodeforcesAccountStatsRefreshFailed = async (
