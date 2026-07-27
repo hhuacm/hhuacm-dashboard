@@ -21,6 +21,7 @@
     "@trpc/tanstack-react-query": "11",
     "better-auth": "catalog:",
     "clsx": "2",
+    "geist": "1",
     "lucide-react": "0.546",
     "next": "16",
     "react": "19",
