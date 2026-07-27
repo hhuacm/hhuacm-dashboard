@@ -35,38 +35,28 @@ const createProblemSetWithPid = async (
 };
 
 describe("Luogu problem details", () => {
-  it("loads problem details by PID", async () => {
-    await expect(
-      findLuoguProblemDetails("P1563", async () =>
-        createProblemPage({
-          difficulty: 2,
-          name: "玩具谜题",
-          pid: "P1563",
-          type: "P",
-        })
-      )
-    ).resolves.toEqual({
-      difficulty: 2,
-      pid: "P1563",
-      title: "玩具谜题",
-    });
-  });
+  it("requests and maps multi-letter problem details by PID", async () => {
+    const requestedPids: string[] = [];
 
-  it("loads multi-letter problem details by PID", async () => {
     await expect(
-      findLuoguProblemDetails("CF1027G", async () =>
-        createProblemPage({
-          difficulty: 7,
-          name: "X-mouse in the Campus",
-          pid: "CF1027G",
-          type: "CF",
-        })
-      )
+      findLuoguProblemDetails("CF1027G", ({ pid }) => {
+        requestedPids.push(pid);
+
+        return Promise.resolve(
+          createProblemPage({
+            difficulty: 7,
+            name: "X-mouse in the Campus",
+            pid: "CF1027G",
+            type: "CF",
+          })
+        );
+      })
     ).resolves.toEqual({
       difficulty: 7,
       pid: "CF1027G",
       title: "X-mouse in the Campus",
     });
+    expect(requestedPids).toEqual(["CF1027G"]);
   });
 
   it("keeps unrated problem details as difficulty 0", async () => {

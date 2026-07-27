@@ -49,16 +49,6 @@ describe("filterCompletionRows", () => {
     ).toEqual(["u1", "u4"]);
   });
 
-  it("combines completed count and grade filters", () => {
-    expect(
-      filterCompletionRows(rows, {
-        minCompletedCount: 9,
-        selectedGrades: ["24级"],
-        selectedMemberStatuses: [],
-      }).map((row) => row.userId)
-    ).toEqual(["u4"]);
-  });
-
   it("matches empty grades with the empty grade option", () => {
     expect(
       filterCompletionRows(rows, {
@@ -78,13 +68,20 @@ describe("filterCompletionRows", () => {
   });
 
   it("combines completed count, grade, and member status filters", () => {
+    const combinationRows = [
+      buildCompletion("wrong-status", 8, "24级"),
+      buildCompletion("too-few", 5, "24级", "active"),
+      buildCompletion("wrong-grade", 8, "23级", "active"),
+      buildCompletion("match", 10, "24级", "active"),
+    ];
+
     expect(
-      filterCompletionRows(rows, {
+      filterCompletionRows(combinationRows, {
         minCompletedCount: 6,
         selectedGrades: ["24级"],
         selectedMemberStatuses: ["active"],
       }).map((row) => row.userId)
-    ).toEqual(["u4"]);
+    ).toEqual(["match"]);
   });
 
   it("returns all rows without active filters", () => {

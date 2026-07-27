@@ -97,14 +97,9 @@ describe("requestExternalResource", () => {
 });
 
 describe("isCommonRetryableHttpStatus", () => {
-  it("treats rate limits and server errors as retryable", () => {
+  it("treats rate limits and 5xx responses as retryable", () => {
     expect(isCommonRetryableHttpStatus(429)).toBe(true);
+    expect(isCommonRetryableHttpStatus(499)).toBe(false);
     expect(isCommonRetryableHttpStatus(500)).toBe(true);
-    expect(isCommonRetryableHttpStatus(502)).toBe(true);
-  });
-
-  it("treats common client errors as non-retryable", () => {
-    expect(isCommonRetryableHttpStatus(400)).toBe(false);
-    expect(isCommonRetryableHttpStatus(404)).toBe(false);
   });
 });

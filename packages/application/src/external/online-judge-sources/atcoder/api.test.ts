@@ -19,21 +19,13 @@ const createHistoryItem = () => ({
 });
 
 describe("atcoderSource", () => {
-  it("loads user rating history", async () => {
+  it("loads user rating history from the encoded official URL", async () => {
     const item = createHistoryItem();
-
-    mockJsonResponse([item]);
+    const urls = mockFetchUrls([Response.json([item])]);
 
     await expect(
-      atcoderSource.userHistory({ userId: "forlight" })
+      atcoderSource.userHistory({ userId: "user/name" })
     ).resolves.toEqual([item]);
-  });
-
-  it("builds the official history JSON URL with an encoded user id", async () => {
-    const urls = mockFetchUrls([Response.json([])]);
-
-    await atcoderSource.userHistory({ userId: "user/name" });
-
     expect(urls).toEqual(["https://atcoder.jp/users/user%2Fname/history/json"]);
   });
 

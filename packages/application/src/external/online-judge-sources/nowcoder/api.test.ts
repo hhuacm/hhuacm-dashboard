@@ -60,23 +60,13 @@ const createPracticeCodingHtml = (acceptedProblemCount: string | number) => `
 `;
 
 describe("nowcoderSource", () => {
-  it("loads rating-basic data", async () => {
+  it("loads rating-basic data from the UID URL", async () => {
     const data = createRatingBasicData();
-
-    mockJsonResponse(createOkEnvelope(data));
+    const urls = mockFetchUrls([Response.json(createOkEnvelope(data))]);
 
     await expect(
       nowcoderSource.ratingBasic({ uid: 660_255_087 })
     ).resolves.toEqual(data);
-  });
-
-  it("builds the rating-basic URL with uid query", async () => {
-    const urls = mockFetchUrls([
-      Response.json(createOkEnvelope(createRatingBasicData())),
-    ]);
-
-    await nowcoderSource.ratingBasic({ uid: 660_255_087 });
-
     expect(urls).toEqual([
       "https://ac.nowcoder.com/acm/contest/rating-basic?uid=660255087",
     ]);
@@ -132,19 +122,12 @@ describe("nowcoderSource", () => {
     );
   });
 
-  it("loads accepted practice problem count from profile stats", async () => {
-    mockTextResponse(createPracticeCodingHtml(312));
+  it("loads accepted practice count with a small page size", async () => {
+    const urls = mockFetchUrls([new Response(createPracticeCodingHtml(312))]);
 
     await expect(
       nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
     ).resolves.toBe(312);
-  });
-
-  it("builds practice-coding URL with a small page size", async () => {
-    const urls = mockFetchUrls([new Response(createPracticeCodingHtml(312))]);
-
-    await nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 });
-
     expect(urls).toEqual([
       "https://ac.nowcoder.com/acm/contest/profile/660255087/practice-coding?pageSize=1",
     ]);
