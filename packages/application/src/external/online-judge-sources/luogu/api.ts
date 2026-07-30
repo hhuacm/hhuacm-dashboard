@@ -74,7 +74,6 @@ const luoguPracticeUserSchema = luoguUserSchema.extend({
   followingCount: z.number(),
   introduction: z.string().nullable(),
   passedProblemCount: z.number().nullable(),
-  prize: z.array(z.unknown()),
   ranking: z.number().nullable(),
   registerTime: z.number(),
   submittedProblemCount: z.number().nullable(),
