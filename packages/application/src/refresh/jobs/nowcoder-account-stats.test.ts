@@ -51,7 +51,7 @@ describe("Nowcoder account stats refresh request", () => {
 
   it("only enqueues due Nowcoder accounts for current members", async () => {
     const db = await createServiceTestDb();
-    const now = new Date("2026-01-01T00:10:00.000Z");
+    const now = new Date("2026-01-01T02:00:00.000Z");
 
     await createAccount(db, {
       id: "selection-user",
@@ -62,12 +62,12 @@ describe("Nowcoder account stats refresh request", () => {
     await createAccount(db, { id: "frozen-user", memberStatus: "frozen" });
     await createAccount(db, { id: "missing-profile-user" });
     await createAccount(db, {
-      fetchedAt: new Date("2026-01-01T00:09:00.000Z"),
+      fetchedAt: new Date("2026-01-01T01:30:00.000Z"),
       id: "fresh-user",
       memberStatus: "active",
     });
     await createAccount(db, {
-      fetchedAt: new Date("2026-01-01T00:00:00.000Z"),
+      fetchedAt: new Date("2026-01-01T00:59:00.000Z"),
       id: "expired-user",
       memberStatus: "active",
     });

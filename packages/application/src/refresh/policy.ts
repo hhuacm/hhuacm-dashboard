@@ -1,12 +1,14 @@
+const accountStatsTtlMs = 60 * 60 * 1000;
+
 export const refreshDefaults = {
-  atcoderStatsTtlMs: 5 * 60 * 1000,
-  codeforcesStatsTtlMs: 5 * 60 * 1000,
+  atcoderStatsTtlMs: accountStatsTtlMs,
+  codeforcesStatsTtlMs: accountStatsTtlMs,
   dueScanIntervalMs: 10 * 60 * 1000,
   jobCooldownMs: 2 * 1000,
-  luoguStatsTtlMs: 5 * 60 * 1000,
+  luoguStatsTtlMs: accountStatsTtlMs,
   maxErrorLength: 500,
-  nowcoderStatsTtlMs: 5 * 60 * 1000,
-  userAwardsTtlMs: 1 * 60 * 60 * 1000,
+  nowcoderStatsTtlMs: accountStatsTtlMs,
+  userAwardsTtlMs: 24 * 60 * 60 * 1000,
   workerPollIntervalMs: 5 * 1000,
 } as const;
 
