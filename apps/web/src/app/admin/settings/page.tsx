@@ -13,7 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Settings } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
@@ -22,32 +22,6 @@ import { trpc } from "@/utils/trpc";
 interface SettingsMessage {
   text: string;
   tone: "danger" | "success";
-}
-
-interface SettingsFieldProps {
-  children: ReactNode;
-  description: string;
-  isChanged: boolean;
-  title: string;
-}
-
-const getSettingsSaveErrorMessage = () => "保存失败，请稍后再试。";
-
-function SettingsField({
-  children,
-  description,
-  isChanged,
-  title,
-}: SettingsFieldProps) {
-  return (
-    <div className="grid gap-3">
-      <div className="grid gap-1">
-        <DirtyFieldLabel isChanged={isChanged} label={title} />
-        <p className="text-muted text-sm leading-6">{description}</p>
-      </div>
-      {children}
-    </div>
-  );
 }
 
 function HomeNoticeSettingsEditor({
@@ -73,14 +47,6 @@ function HomeNoticeSettingsEditor({
     event.preventDefault();
     setMessage(null);
 
-    if (!hasChanges) {
-      setMessage({
-        text: "没有需要保存的修改。",
-        tone: "success",
-      });
-      return;
-    }
-
     try {
       const result = await updateHomeNotice.mutateAsync({
         markdown: formMarkdown,
@@ -96,7 +62,7 @@ function HomeNoticeSettingsEditor({
       });
     } catch {
       setMessage({
-        text: getSettingsSaveErrorMessage(),
+        text: "保存失败，请稍后再试。",
         tone: "danger",
       });
     }
@@ -121,18 +87,23 @@ function HomeNoticeSettingsEditor({
           onChange={handleMarkdownChange}
           value={formMarkdown}
         >
-          <SettingsField
-            description="展示在首页左侧“队伍公告”区域，支持常见 Markdown 语法。"
-            isChanged={hasChanges}
-            title="首页公告 Markdown"
-          >
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <DirtyFieldLabel
+                isChanged={hasChanges}
+                label="首页公告 Markdown"
+              />
+              <p className="text-muted text-sm leading-6">
+                展示在首页左侧“队伍公告”区域，支持常见 Markdown 语法。
+              </p>
+            </div>
             <TextArea
               className="resize-y"
               placeholder="填写首页公告内容"
               rows={8}
               variant="secondary"
             />
-          </SettingsField>
+          </div>
         </TextField>
 
         <div className="flex justify-end">
