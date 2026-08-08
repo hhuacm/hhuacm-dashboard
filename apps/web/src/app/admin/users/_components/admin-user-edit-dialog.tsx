@@ -2,7 +2,6 @@
 
 import {
   Alert,
-  AlertDialog,
   Button,
   Chip,
   Form,
@@ -24,6 +23,7 @@ import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import { OjAccountDeleteDialog } from "@/components/oj-account-delete-dialog";
 import { OjAccountExternalIdField } from "@/components/oj-account-external-id-field";
 import { ProfileFieldInput } from "@/components/profile-field-input";
 import {
@@ -60,14 +60,6 @@ interface AdminUserOjAccountRowProps {
   account: AdminUserOjAccount | undefined;
   platform: OjPlatform;
   userId: string;
-}
-
-interface AdminUserOjAccountDeleteDialogProps {
-  account: AdminUserOjAccount | undefined;
-  isDeleting: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-  platform: OjPlatform | null;
 }
 
 interface EditorMessage {
@@ -255,69 +247,6 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
   );
 }
 
-function AdminUserOjAccountDeleteDialog({
-  account,
-  isDeleting,
-  onCancel,
-  onConfirm,
-  platform,
-}: AdminUserOjAccountDeleteDialogProps) {
-  const platformLabel = platform ? ojPlatformLabels[platform] : "";
-
-  return (
-    <AlertDialog.Backdrop
-      isOpen={Boolean(platform && account)}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          onCancel();
-        }
-      }}
-    >
-      <AlertDialog.Container>
-        <AlertDialog.Dialog className="sm:max-w-110">
-          <AlertDialog.CloseTrigger isDisabled={isDeleting} />
-          <AlertDialog.Header>
-            <AlertDialog.Icon status="danger">
-              <Trash2 className="size-5" />
-            </AlertDialog.Icon>
-            <AlertDialog.Heading>删除 OJ 账号？</AlertDialog.Heading>
-          </AlertDialog.Header>
-          <AlertDialog.Body>
-            <p className="text-sm">
-              将删除 {platformLabel} 账号
-              <span className="font-mono font-semibold">
-                {account ? ` ${account.handle}` : ""}
-              </span>
-              。
-            </p>
-          </AlertDialog.Body>
-          <AlertDialog.Footer>
-            <Button
-              isDisabled={isDeleting}
-              onPress={onCancel}
-              variant="tertiary"
-            >
-              取消
-            </Button>
-            <Button isPending={isDeleting} onPress={onConfirm} variant="danger">
-              {({ isPending }) => (
-                <>
-                  {isPending ? (
-                    <Spinner color="current" size="sm" />
-                  ) : (
-                    <Trash2 className="size-4" />
-                  )}
-                  {isPending ? "删除中" : "删除"}
-                </>
-              )}
-            </Button>
-          </AlertDialog.Footer>
-        </AlertDialog.Dialog>
-      </AlertDialog.Container>
-    </AlertDialog.Backdrop>
-  );
-}
-
 function AdminUserOjAccountRow({
   account,
   platform,
@@ -326,8 +255,7 @@ function AdminUserOjAccountRow({
   const queryClient = useQueryClient();
   const [externalId, setExternalId] = useState(account?.externalId ?? "");
   const [message, setMessage] = useState<EditorMessage | null>(null);
-  const [deleteTargetPlatform, setDeleteTargetPlatform] =
-    useState<OjPlatform | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const invalidateUserData = async () =>
     await queryClient.invalidateQueries({
@@ -360,7 +288,7 @@ function AdminUserOjAccountRow({
       },
       onSuccess: async () => {
         await invalidateUserData();
-        setDeleteTargetPlatform(null);
+        setIsDeleteDialogOpen(false);
         setMessage({
           text: "OJ 账号已删除。",
           tone: "success",
@@ -396,12 +324,8 @@ function AdminUserOjAccountRow({
     });
   };
   const handleDeleteConfirm = async () => {
-    if (!deleteTargetPlatform) {
-      return;
-    }
-
     await deleteAccount.mutateAsync({
-      platform: deleteTargetPlatform,
+      platform,
       userId,
     });
   };
@@ -453,7 +377,10 @@ function AdminUserOjAccountRow({
           </Button>
           <Button
             isDisabled={!account || upsertAccount.isPending}
-            onPress={() => setDeleteTargetPlatform(platform)}
+            onPress={() => {
+              setMessage(null);
+              setIsDeleteDialogOpen(true);
+            }}
             variant="danger"
           >
             <Trash2 className="size-4" />
@@ -469,16 +396,14 @@ function AdminUserOjAccountRow({
           </Alert.Content>
         </Alert>
       ) : null}
-      <AdminUserOjAccountDeleteDialog
-        account={account}
+      <OjAccountDeleteDialog
+        errorMessage={
+          isDeleteDialogOpen && message?.tone === "danger" ? message.text : null
+        }
         isDeleting={deleteAccount.isPending}
-        onCancel={() => {
-          if (!deleteAccount.isPending) {
-            setDeleteTargetPlatform(null);
-          }
-        }}
+        onCancel={() => setIsDeleteDialogOpen(false)}
         onConfirm={handleDeleteConfirm}
-        platform={deleteTargetPlatform}
+        target={isDeleteDialogOpen && account ? account : null}
       />
     </div>
   );

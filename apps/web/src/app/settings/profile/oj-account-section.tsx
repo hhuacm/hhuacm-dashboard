@@ -2,7 +2,6 @@
 
 import {
   Alert,
-  AlertDialog,
   Button,
   Card,
   Chip,
@@ -23,6 +22,7 @@ import Image from "next/image";
 import { type Key, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { OjAccountDeleteDialog } from "@/components/oj-account-delete-dialog";
 import { OjAccountExternalIdField } from "@/components/oj-account-external-id-field";
 import {
   buildOjProfileUrl,
@@ -168,7 +168,7 @@ export function OjAccountSection({
   const [dialogMessage, setDialogMessage] = useState<OjAccountMessage | null>(
     null
   );
-  const [deleteMessage, setDeleteMessage] = useState<OjAccountMessage | null>(
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<null | string>(
     null
   );
   const form = useForm<OjAccountFormValues>({
@@ -239,10 +239,7 @@ export function OjAccountSection({
   const deleteAccount = useMutation(
     trpc.settings.ojAccount.delete.mutationOptions({
       onError: (error) => {
-        setDeleteMessage({
-          text: getOjAccountErrorMessage(error),
-          tone: "danger",
-        });
+        setDeleteErrorMessage(getOjAccountErrorMessage(error));
       },
       onSuccess: async () => {
         await invalidateAccounts();
@@ -357,7 +354,7 @@ export function OjAccountSection({
     }
 
     setMessage(null);
-    setDeleteMessage(null);
+    setDeleteErrorMessage(null);
     deleteAccount.mutate({ platform: deleteTarget.platform });
   };
 
@@ -465,7 +462,7 @@ export function OjAccountSection({
                             onPress={() => {
                               setDeleteTarget(account);
                               setMessage(null);
-                              setDeleteMessage(null);
+                              setDeleteErrorMessage(null);
                             }}
                             size="sm"
                             variant="danger"
@@ -605,64 +602,13 @@ export function OjAccountSection({
         </Modal.Container>
       </Modal.Backdrop>
 
-      <AlertDialog.Backdrop
-        isOpen={Boolean(deleteTarget)}
-        onOpenChange={(isOpen) => {
-          if (!(isOpen || deleteAccount.isPending)) {
-            setDeleteTarget(null);
-          }
-        }}
-      >
-        <AlertDialog.Container>
-          <AlertDialog.Dialog className="sm:max-w-100">
-            <AlertDialog.CloseTrigger isDisabled={deleteAccount.isPending} />
-            <AlertDialog.Header>
-              <AlertDialog.Icon status="danger">
-                <Trash2 className="size-5" />
-              </AlertDialog.Icon>
-              <AlertDialog.Heading>删除 OJ 账号？</AlertDialog.Heading>
-            </AlertDialog.Header>
-            <AlertDialog.Body>
-              <div className="grid gap-3">
-                <p>
-                  将删除
-                  {deleteTarget
-                    ? ` ${getOjPlatformConfig(deleteTarget.platform).label} `
-                    : " "}
-                  的账号记录。删除后可以重新添加。
-                </p>
-                {deleteMessage ? (
-                  <Alert status={deleteMessage.tone}>
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Description>
-                        {deleteMessage.text}
-                      </Alert.Description>
-                    </Alert.Content>
-                  </Alert>
-                ) : null}
-              </div>
-            </AlertDialog.Body>
-            <AlertDialog.Footer>
-              <Button
-                isDisabled={deleteAccount.isPending}
-                onPress={() => setDeleteTarget(null)}
-                variant="tertiary"
-              >
-                取消
-              </Button>
-              <Button
-                isPending={deleteAccount.isPending}
-                onPress={handleDeleteConfirm}
-                variant="danger"
-              >
-                <Trash2 className="size-4" />
-                删除
-              </Button>
-            </AlertDialog.Footer>
-          </AlertDialog.Dialog>
-        </AlertDialog.Container>
-      </AlertDialog.Backdrop>
+      <OjAccountDeleteDialog
+        errorMessage={deleteErrorMessage}
+        isDeleting={deleteAccount.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        target={deleteTarget}
+      />
     </>
   );
 }
