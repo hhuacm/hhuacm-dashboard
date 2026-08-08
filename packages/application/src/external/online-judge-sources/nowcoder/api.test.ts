@@ -8,24 +8,8 @@ import {
 import { nowcoderSource } from "./api";
 
 const createRatingBasicData = () => ({
-  allRatedCount: 32,
-  colorLevel: 4,
-  contestCount: 72,
-  followedCount: 8,
-  followingCount: 7,
-  hasRank: false,
-  hasRating: true,
-  isFollowedByHost: false,
-  isHostSelf: false,
   nickname: "F0rL1ght",
-  rank: -1,
-  ratedCount: 17,
   rating: 1609,
-  school: "河海大学",
-  teamRatedCount: 15,
-  tinnyHeaderUrl:
-    "https://images.nowcoder.com/images/20200805/660255087_1596626167187_DE6BA02482C88CFFE9FCBC469CA57CD6?x-oss-process=image/resize,m_mfit,h_100,w_100",
-  uid: 660_255_087,
 });
 
 const createOkEnvelope = (data: unknown = createRatingBasicData()) => ({
@@ -98,28 +82,13 @@ describe("nowcoderSource", () => {
     mockJsonResponse(
       createOkEnvelope({
         ...createRatingBasicData(),
-        uid: "660255087",
+        rating: "1609",
       })
     );
 
     await expect(
       nowcoderSource.ratingBasic({ uid: 660_255_087 })
     ).rejects.toThrow("Nowcoder rating-basic 660255087 data is invalid");
-  });
-
-  it("throws when rating-basic only returns follow metadata", async () => {
-    mockJsonResponse(
-      createOkEnvelope({
-        followedCount: 0,
-        followingCount: 0,
-        isFollowedByHost: false,
-        isHostSelf: false,
-      })
-    );
-
-    await expect(nowcoderSource.ratingBasic({ uid: 1 })).rejects.toThrow(
-      "Nowcoder rating-basic 1 data is invalid"
-    );
   });
 
   it("loads accepted practice count with a small page size", async () => {

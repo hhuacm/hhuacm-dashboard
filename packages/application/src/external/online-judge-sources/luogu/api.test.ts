@@ -4,32 +4,6 @@ import { mockFetchRequests } from "../../test-fetch";
 import { luoguSource } from "./api";
 
 const userData = {
-  dailyCounts: [],
-  elo: [
-    {
-      contest: {
-        endTime: 1_741_957_200,
-        id: 235_262,
-        name: "Luogu Round",
-        startTime: 1_741_950_000,
-      },
-      latest: true,
-      prevDiff: 120,
-      rating: 1080,
-      time: 1_741_957_200,
-      userCount: 7,
-    },
-  ],
-  gu: {
-    scores: {
-      basic: 100,
-      contest: 1,
-      practice: 0,
-      prize: 20,
-      rating: 121,
-      social: 0,
-    },
-  },
   prizes: [
     {
       prize: {
@@ -40,45 +14,8 @@ const userData = {
       },
     },
   ],
-  user: {
-    avatar: "https://cdn.luogu.com.cn/upload/usericon/97238.png",
-    background: "",
-    badge: null,
-    ccfLevel: 0,
-    color: "Green",
-    elo: null,
-    eloValue: null,
-    followerCount: 17,
-    followingCount: 0,
-    introduction: "",
-    isAdmin: false,
-    isBanned: false,
-    name: "forlight",
-    passedProblemCount: 436,
-    ranking: 46_589,
-    registerTime: 1_523_780_429,
-    slogan: "",
-    submittedProblemCount: 489,
-    uid: 97_238,
-    xcpcLevel: 3,
-  },
 };
 const practiceData = {
-  elo: [
-    {
-      contest: {
-        endTime: 1_741_957_200,
-        id: 235_262,
-        name: "Luogu Round",
-        startTime: 1_741_950_000,
-      },
-      latest: true,
-      prevDiff: 120,
-      rating: 1080,
-      time: 1_741_957_200,
-      userCount: 7,
-    },
-  ],
   passed: [
     {
       difficulty: 1,
@@ -87,35 +24,9 @@ const practiceData = {
       type: "P",
     },
   ],
-  submitted: [
-    {
-      difficulty: 2,
-      name: "Factorial Sum",
-      pid: "P1009",
-      type: "P",
-    },
-  ],
   user: {
-    avatar: "https://cdn.luogu.com.cn/upload/usericon/97238.png",
-    background: "",
-    badge: null,
-    ccfLevel: 0,
-    color: "Blue",
-    elo: null,
-    eloValue: null,
-    followerCount: 17,
-    followingCount: 0,
-    introduction: "",
-    isAdmin: false,
-    isBanned: false,
     name: "forlight",
     passedProblemCount: 436,
-    ranking: 56_573,
-    registerTime: 1_523_780_429,
-    slogan: "",
-    submittedProblemCount: 489,
-    uid: 97_238,
-    xcpcLevel: 3,
   },
 };
 
@@ -199,31 +110,12 @@ describe("luoguSource", () => {
     });
   });
 
-  it("accepts Luogu user page data with date-indexed daily counts", async () => {
-    const dateIndexedDailyCountsUserData = {
-      ...userData,
-      dailyCounts: {
-        "2026-05-26": [1, 1],
-      },
-    };
-
-    mockFetchRequests([
-      createUserRedirectResponse("C3VK=daily-counts"),
-      Response.json({ data: dateIndexedDailyCountsUserData, status: 200 }),
-    ]);
-
-    await expect(luoguSource.user({ uid: 97_238 })).resolves.toEqual(
-      dateIndexedDailyCountsUserData
-    );
-  });
-
   it("loads problem page data", async () => {
     const problemData = {
       problem: {
         difficulty: 7,
         name: "X-mouse in the Campus",
         pid: "CF1027G",
-        type: "CF",
       },
     };
     const requests = mockFetchRequests([
@@ -249,7 +141,6 @@ describe("luoguSource", () => {
             difficulty: null,
             name: "A+B Problem",
             pid: "P1001",
-            type: "P",
           },
         },
         status: 200,

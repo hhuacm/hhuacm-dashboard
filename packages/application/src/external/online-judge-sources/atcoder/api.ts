@@ -5,16 +5,10 @@ import { requestExternalResource } from "../../request";
 const atcoderBaseUrl = "https://atcoder.jp";
 
 const atcoderUserHistoryItemSchema = z.looseObject({
-  ContestName: z.string(),
-  ContestNameEn: z.string(),
-  ContestScreenName: z.string(),
   EndTime: z.string(),
-  InnerPerformance: z.number(),
   IsRated: z.boolean(),
   NewRating: z.number(),
-  OldRating: z.number(),
   Performance: z.number(),
-  Place: z.number(),
 });
 
 const atcoderUserHistorySchema = z.array(atcoderUserHistoryItemSchema);

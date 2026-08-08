@@ -4,18 +4,10 @@ import { mockFetchUrls, mockJsonResponse } from "../../test-fetch";
 import { atcoderSource } from "./api";
 
 const createHistoryItem = () => ({
-  ContestName:
-    "Ｓｋｙ株式会社プログラミングコンテスト2025（AtCoder Beginner Contest 434）",
-  ContestNameEn:
-    "Ｓｋｙ Inc, Programming Contest 2025 (AtCoder Beginner Contest 434)",
-  ContestScreenName: "abc434.contest.atcoder.jp",
   EndTime: "2025-11-29T22:40:00+09:00",
-  InnerPerformance: 711,
   IsRated: true,
   NewRating: 584,
-  OldRating: 566,
   Performance: 711,
-  Place: 3891,
 });
 
 describe("atcoderSource", () => {

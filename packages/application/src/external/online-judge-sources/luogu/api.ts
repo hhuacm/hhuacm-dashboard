@@ -11,20 +11,6 @@ let luoguCdnCookieExpiresAt = 0;
 let luoguCdnCookieRequest: Promise<string> | null = null;
 let luoguCdnCookieFetch: typeof fetch | null = null;
 
-const luoguUserSchema = z.looseObject({
-  avatar: z.string(),
-  background: z.string(),
-  badge: z.unknown().nullable(),
-  ccfLevel: z.number(),
-  color: z.string(),
-  isAdmin: z.boolean(),
-  isBanned: z.boolean(),
-  name: z.string(),
-  slogan: z.string(),
-  uid: z.number(),
-  xcpcLevel: z.number(),
-});
-
 const luoguProblemSummarySchema = z.looseObject({
   difficulty: z.number(),
   name: z.string(),
@@ -36,7 +22,6 @@ const luoguLegacyProblemSchema = z.looseObject({
   difficulty: z.number(),
   name: z.string(),
   pid: z.string(),
-  type: z.string(),
 });
 
 const luoguProblemPageDataSchema = z.looseObject({
@@ -45,38 +30,13 @@ const luoguProblemPageDataSchema = z.looseObject({
 
 export type LuoguProblemPageData = z.infer<typeof luoguProblemPageDataSchema>;
 
-const luoguContestSummarySchema = z.looseObject({
-  endTime: z.number(),
-  id: z.number(),
+const luoguPracticeUserSchema = z.looseObject({
   name: z.string(),
-  startTime: z.number(),
-});
-
-const luoguEloRatingSchema = z.looseObject({
-  contest: luoguContestSummarySchema.optional(),
-  latest: z.boolean(),
-  prevDiff: z.number().nullable(),
-  rating: z.number(),
-  time: z.number(),
-  userCount: z.number(),
-});
-
-const luoguPracticeUserSchema = luoguUserSchema.extend({
-  elo: z.unknown().nullable(),
-  eloValue: z.number().nullable(),
-  followerCount: z.number(),
-  followingCount: z.number(),
-  introduction: z.string().nullable(),
   passedProblemCount: z.number().nullable(),
-  ranking: z.number().nullable(),
-  registerTime: z.number(),
-  submittedProblemCount: z.number().nullable(),
 });
 
 const luoguPracticePageDataSchema = z.looseObject({
-  elo: z.array(luoguEloRatingSchema),
   passed: z.array(luoguProblemSummarySchema),
-  submitted: z.array(luoguProblemSummarySchema),
   user: luoguPracticeUserSchema,
 });
 
@@ -91,23 +51,8 @@ const luoguPrizeSchema = z.looseObject({
   }),
 });
 
-const luoguGuScoresSchema = z.looseObject({
-  basic: z.number(),
-  contest: z.number(),
-  practice: z.number(),
-  prize: z.number(),
-  rating: z.number(),
-  social: z.number(),
-});
-
 const luoguUserPageDataSchema = z.looseObject({
-  dailyCounts: z.unknown(),
-  elo: z.array(luoguEloRatingSchema),
-  gu: z.looseObject({
-    scores: luoguGuScoresSchema,
-  }),
   prizes: z.array(luoguPrizeSchema),
-  user: luoguPracticeUserSchema,
 });
 
 export type LuoguUserPageData = z.infer<typeof luoguUserPageDataSchema>;

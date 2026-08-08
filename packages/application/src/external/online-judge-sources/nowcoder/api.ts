@@ -5,23 +5,8 @@ import { requestExternalResource } from "../../request";
 const nowcoderBaseUrl = "https://ac.nowcoder.com";
 
 const nowcoderRatingBasicDataSchema = z.looseObject({
-  allRatedCount: z.number(),
-  colorLevel: z.number(),
-  contestCount: z.number(),
-  followedCount: z.number(),
-  followingCount: z.number(),
-  hasRank: z.boolean(),
-  hasRating: z.boolean(),
-  isFollowedByHost: z.boolean(),
-  isHostSelf: z.boolean(),
   nickname: z.string(),
-  rank: z.number(),
-  ratedCount: z.number(),
   rating: z.number(),
-  school: z.string(),
-  teamRatedCount: z.number(),
-  tinnyHeaderUrl: z.string(),
-  uid: z.number(),
 });
 
 const nowcoderRatingBasicEnvelopeSchema = z.looseObject({

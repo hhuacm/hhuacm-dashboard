@@ -15,7 +15,7 @@ describe("codeforcesSource", () => {
     ).rejects.toThrow("Codeforces user.info nope returned FAILED");
   });
 
-  it("keeps known user.info fields", async () => {
+  it("loads user.info results and accepts extra fields", async () => {
     mockJsonResponse({
       result: [
         {
@@ -38,7 +38,7 @@ describe("codeforcesSource", () => {
     ]);
   });
 
-  it("keeps known user.status fields", async () => {
+  it("loads user.status results and accepts extra fields", async () => {
     mockJsonResponse({
       result: [
         {
