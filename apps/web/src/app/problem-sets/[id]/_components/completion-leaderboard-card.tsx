@@ -15,7 +15,6 @@ import {
 import {
   type CurrentMemberStatus,
   currentMemberStatuses,
-  getUserNameLabel,
   memberStatusLabels,
 } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
@@ -33,7 +32,6 @@ import {
   sortCompletionRows,
 } from "../_model/problem-set-detail-view";
 
-const emptyText = "-";
 const memberStatusOptions = currentMemberStatuses.map((status) => ({
   label: memberStatusLabels[status],
   value: status,
@@ -54,14 +52,12 @@ function LinkedProfileName({
   isCurrentUser: boolean;
   row: ProblemSetCompletion;
 }) {
-  const nameLabel = getUserNameLabel(row);
-
   return (
     <a
       className="flex min-w-0 max-w-full items-center justify-center font-medium text-foreground underline-offset-4 hover:underline focus-visible:underline"
       href={getProfileUrl(row.username)}
     >
-      <span className="truncate">{nameLabel}</span>
+      <span className="truncate">{row.realName}</span>
       <CurrentUserSuffix isCurrentUser={isCurrentUser} />
     </a>
   );
@@ -333,8 +329,8 @@ export function CompletionLeaderboardCard({
                   {filteredRows.map((row, index) => {
                     const isCurrentUser = row.userId === currentUserId;
                     const currentUserLabel = isCurrentUser ? " 我" : "";
-                    const nameLabel = getUserNameLabel(row);
-                    const gradeLabel = row.grade ?? emptyText;
+                    const nameLabel = row.realName;
+                    const gradeLabel = row.grade;
 
                     return (
                       <Table.Row

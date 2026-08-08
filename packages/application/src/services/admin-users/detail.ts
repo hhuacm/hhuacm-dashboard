@@ -1,19 +1,12 @@
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
 import { asc, eq } from "drizzle-orm";
 
 import { ojAccountFields } from "../oj-account/queries";
-import { getTargetUser, profileFields } from "../profile";
+import { getTargetUser } from "../profile";
 import type { Database } from "./types";
 
 export const getAdminUser = async (db: Database, userId: string) => {
   const targetUser = await getTargetUser(db, userId);
-  const [profile] = await db
-    .select(profileFields)
-    .from(userProfile)
-    .where(eq(userProfile.userId, userId))
-    .limit(1);
   const ojAccounts = await db
     .select(ojAccountFields)
     .from(userOjAccount)
@@ -25,11 +18,11 @@ export const getAdminUser = async (db: Database, userId: string) => {
     id: targetUser.id,
     ojAccounts,
     profile: {
-      grade: profile?.grade ?? null,
-      major: profile?.major ?? null,
-      memberStatus: profile?.memberStatus ?? defaultMemberStatus,
-      realName: profile?.realName ?? null,
-      studentId: profile?.studentId ?? null,
+      grade: targetUser.grade,
+      major: targetUser.major,
+      memberStatus: targetUser.memberStatus,
+      realName: targetUser.realName,
+      studentId: targetUser.studentId,
     },
     role: targetUser.role,
     username: targetUser.username,

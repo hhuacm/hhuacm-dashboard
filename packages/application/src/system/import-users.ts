@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { hashPassword } from "better-auth/crypto";
 import { requestOjAccountRefreshEffectsIfNeeded } from "../services/oj-account/stats-effects";
@@ -16,7 +15,6 @@ const defaultImportedUserPassword = "12345678";
 export interface ImportUsersResult {
   adminCount: number;
   ojAccountCount: number;
-  profileCount: number;
   refreshRequestCount: number;
   userCount: number;
 }
@@ -40,14 +38,6 @@ const getFirstUserDomainRow = async (db: UserImportDatabase) => {
     .limit(1);
   if (existingAccount) {
     return "account";
-  }
-
-  const [existingProfile] = await db
-    .select({ userId: userProfile.userId })
-    .from(userProfile)
-    .limit(1);
-  if (existingProfile) {
-    return "user_profile";
   }
 
   const [existingOjAccount] = await db
@@ -129,9 +119,15 @@ const createImportedUser = async (
   await db.insert(user).values({
     email: input.seedUser.email,
     emailVerified: true,
+    grade: input.seedUser.grade,
     id: userId,
-    name: input.seedUser.username,
+    major: input.seedUser.major,
+    ...(input.seedUser.memberStatus
+      ? { memberStatus: input.seedUser.memberStatus }
+      : {}),
+    name: input.seedUser.realName,
     ...(input.seedUser.role ? { role: input.seedUser.role } : {}),
+    studentId: input.seedUser.studentId,
     username: input.seedUser.username,
   });
 
@@ -142,13 +138,6 @@ const createImportedUser = async (
     providerId: "credential",
     userId,
   });
-
-  if (input.seedUser.profile) {
-    await db.insert(userProfile).values({
-      ...input.seedUser.profile,
-      userId,
-    });
-  }
 
   let refreshRequestCount = 0;
 
@@ -199,7 +188,6 @@ export const importUsersFromSystemSeedFile = async (
     const summary: ImportUsersResult = {
       adminCount: 0,
       ojAccountCount: 0,
-      profileCount: 0,
       refreshRequestCount: 0,
       userCount: users.length,
     };
@@ -212,10 +200,6 @@ export const importUsersFromSystemSeedFile = async (
 
       if (seedUser.role === "admin") {
         summary.adminCount += 1;
-      }
-
-      if (seedUser.profile) {
-        summary.profileCount += 1;
       }
 
       summary.ojAccountCount += seedUser.ojAccounts?.length ?? 0;

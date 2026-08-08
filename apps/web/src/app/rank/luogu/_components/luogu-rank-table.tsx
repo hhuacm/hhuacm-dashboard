@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
-  EmptyCell,
   LinkedText,
   RankDataTable,
   RelativeTimeCell,
@@ -36,10 +35,6 @@ interface LuoguRankTableProps {
   visibleColumns: readonly RankColumnConfig[];
 }
 
-function EmptyRankCell() {
-  return <EmptyCell emptyText={emptyText} />;
-}
-
 const renderNameCell = (row: RankRow) => {
   const nameLabel = getRankNameLabel(row);
 
@@ -50,8 +45,9 @@ const renderNameCell = (row: RankRow) => {
   );
 };
 
-const renderMajorCell = (row: RankRow) =>
-  row.major ? <span className="truncate">{row.major}</span> : <EmptyRankCell />;
+const renderMajorCell = (row: RankRow) => (
+  <span className="truncate">{row.major}</span>
+);
 
 const renderHandleCell = (row: RankRow) => (
   <LinkedText href={buildOjProfileUrl("luogu", row.luogu.externalId)}>
@@ -73,7 +69,7 @@ const rankCellRenderers = {
       value={row.luogu.fetchedAt}
     />
   ),
-  grade: (row) => row.grade ?? <EmptyRankCell />,
+  grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,
   major: renderMajorCell,

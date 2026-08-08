@@ -13,7 +13,6 @@ import type { Key, ReactNode } from "react";
 import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
 import { MemberStatusChip } from "@/components/member-status-chip";
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
-import { getProfileDisplayValue } from "@/utils/profile-fields";
 import type {
   AdminUserOjAccount,
   AdminUsersSort,
@@ -78,17 +77,11 @@ function ProfileValue({
   value,
 }: {
   kind?: "identifier" | "text";
-  value: null | string | undefined;
+  value: string;
 }) {
-  const displayValue = getProfileDisplayValue(value);
-
-  if (displayValue === "未填写") {
-    return <span className="text-muted">{displayValue}</span>;
-  }
-
   return (
     <span className={clsx(kind === "identifier" && "font-mono text-sm")}>
-      {displayValue}
+      {value}
     </span>
   );
 }
@@ -226,11 +219,9 @@ function AdminUserActionsCell({
   );
 }
 
-const renderProfileValue = (value: null | string | undefined) => (
-  <ProfileValue value={value} />
-);
+const renderProfileValue = (value: string) => <ProfileValue value={value} />;
 
-const renderTruncatedProfileValue = (value: null | string | undefined) => (
+const renderTruncatedProfileValue = (value: string) => (
   <span className="block truncate">
     <ProfileValue value={value} />
   </span>

@@ -38,7 +38,6 @@ const run = async () => {
     [
       `imported users: ${result.userCount}`,
       `admins: ${result.adminCount}`,
-      `profiles: ${result.profileCount}`,
       `oj accounts: ${result.ojAccountCount}`,
       `refresh requests: ${result.refreshRequestCount}`,
     ].join(", ")

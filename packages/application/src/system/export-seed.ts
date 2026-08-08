@@ -5,12 +5,8 @@ import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import {
-  defaultMemberStatus,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
-import { asc, eq, inArray } from "drizzle-orm";
+import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
+import { asc, inArray } from "drizzle-orm";
 import {
   defaultHomeNoticeMarkdown,
   getHomeNoticeMarkdown,
@@ -23,13 +19,9 @@ import {
   type SystemSeedProblemSet,
   type SystemSeedSettings,
   type SystemSeedUser,
-  type SystemSeedUserProfile,
 } from "./seed-format";
 
 const defaultUserRole = "user";
-
-const isFilledString = (value: null | string): value is string =>
-  value !== null && value !== "";
 
 const groupOjAccountsByUserId = (
   accounts: Array<SystemSeedOjAccount & { userId: string }>
@@ -70,68 +62,40 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
   return groupOjAccountsByUserId(accounts);
 };
 
-const toExportUserProfile = (profile: {
-  grade: null | string;
-  major: null | string;
-  memberStatus: MemberStatus | null;
-  realName: null | string;
-  studentId: null | string;
-}) => {
-  const exportProfile: SystemSeedUserProfile = {};
-
-  if (isFilledString(profile.grade)) {
-    exportProfile.grade = profile.grade;
-  }
-
-  if (isFilledString(profile.major)) {
-    exportProfile.major = profile.major;
-  }
-
-  if (profile.memberStatus && profile.memberStatus !== defaultMemberStatus) {
-    exportProfile.memberStatus = profile.memberStatus;
-  }
-
-  if (isFilledString(profile.realName)) {
-    exportProfile.realName = profile.realName;
-  }
-
-  if (isFilledString(profile.studentId)) {
-    exportProfile.studentId = profile.studentId;
-  }
-
-  return Object.keys(exportProfile).length > 0 ? exportProfile : undefined;
-};
-
 const listExportUsers = async (db: Database) => {
   const users = await db
     .select({
       email: user.email,
-      grade: userProfile.grade,
+      grade: user.grade,
       id: user.id,
-      major: userProfile.major,
-      memberStatus: userProfile.memberStatus,
-      realName: userProfile.realName,
+      major: user.major,
+      memberStatus: user.memberStatus,
+      realName: user.name,
       role: user.role,
-      studentId: userProfile.studentId,
+      studentId: user.studentId,
       username: user.username,
     })
     .from(user)
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .orderBy(asc(user.username), asc(user.email), asc(user.id));
 
   const userIds = users.map((currentUser) => currentUser.id);
   const accountsByUserId = await listOjAccountsForUsers(db, userIds);
   const exportUsers = users.map((currentUser): SystemSeedUser => {
     const ojAccounts = accountsByUserId.get(currentUser.id) ?? [];
-    const profile = toExportUserProfile(currentUser);
 
     return {
       email: currentUser.email,
+      grade: currentUser.grade,
+      major: currentUser.major,
+      ...(currentUser.memberStatus === defaultMemberStatus
+        ? {}
+        : { memberStatus: currentUser.memberStatus }),
       ...(ojAccounts.length > 0 ? { ojAccounts } : {}),
-      ...(profile ? { profile } : {}),
+      realName: currentUser.realName,
       ...(currentUser.role === defaultUserRole
         ? {}
         : { role: currentUser.role }),
+      studentId: currentUser.studentId,
       username: currentUser.username,
     };
   });

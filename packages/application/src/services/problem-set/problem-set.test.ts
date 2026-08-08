@@ -9,7 +9,6 @@ import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
@@ -30,32 +29,21 @@ const createLuoguUser = async (
   db: Awaited<ReturnType<typeof createServiceTestDb>>,
   input: {
     fetchedAt?: Date;
-    grade?: null | string;
+    grade?: string;
     id: string;
     memberStatus?: MemberStatus;
-    realName?: null | string;
+    realName?: string;
     username?: string;
   }
 ) => {
   await db.insert(user).values({
     email: `${input.id}@example.com`,
+    grade: input.grade,
     id: input.id,
-    name: input.id,
+    memberStatus: input.memberStatus,
+    name: input.realName ?? "未知",
     username: input.username ?? input.id,
   });
-
-  if (
-    input.grade !== undefined ||
-    input.memberStatus ||
-    input.realName !== undefined
-  ) {
-    await db.insert(userProfile).values({
-      grade: input.grade ?? null,
-      memberStatus: input.memberStatus ?? "selection",
-      realName: input.realName,
-      userId: input.id,
-    });
-  }
 
   await db.insert(userOjAccount).values({
     externalId: input.id,
@@ -340,15 +328,15 @@ describe("problem sets", () => {
       completedProblemCount: 1,
       grade: "23级",
       memberStatus: "active",
-      realName: null,
+      realName: "未知",
       userId: "active-user",
       username: "active-user",
     });
     expect(rowsByUserId.get("missing-profile-user")).toEqual({
       completedProblemCount: 1,
-      grade: null,
+      grade: "未知",
       memberStatus: "selection",
-      realName: null,
+      realName: "未知",
       userId: "missing-profile-user",
       username: "missing-profile-user",
     });

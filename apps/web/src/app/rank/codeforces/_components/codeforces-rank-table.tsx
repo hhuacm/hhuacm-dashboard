@@ -61,8 +61,9 @@ const renderNameCell = (row: RankRow) => {
   );
 };
 
-const renderMajorCell = (row: RankRow) =>
-  row.major ? <span className="truncate">{row.major}</span> : <EmptyRankCell />;
+const renderMajorCell = (row: RankRow) => (
+  <span className="truncate">{row.major}</span>
+);
 
 const renderHandleCell = (row: RankRow) => {
   const codeforces = row.codeforces;
@@ -88,7 +89,7 @@ const rankCellRenderers = {
     formatNumber(row.codeforces?.acceptedProblemCount ?? null),
   acceptedProblemCountInMonth: (row) =>
     formatNumber(row.codeforces?.acceptedProblemCountInMonth ?? null),
-  grade: (row) => row.grade ?? <EmptyRankCell />,
+  grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,
   lastOnlineAt: (row) => (

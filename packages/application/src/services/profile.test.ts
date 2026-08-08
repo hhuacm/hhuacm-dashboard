@@ -3,7 +3,6 @@ import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import {
   userAward,
@@ -20,12 +19,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "retired@example.com",
       id: "user-retired",
+      memberStatus: "retired",
       name: "retired",
       username: "retired",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "retired",
-      userId: "user-retired",
     });
     await db.insert(userOjAccount).values([
       {
@@ -102,12 +98,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "retired-award@example.com",
       id: "user-retired-award",
+      memberStatus: "retired",
       name: "retired award",
       username: "retired-award",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "retired",
-      userId: "user-retired-award",
     });
     await db.insert(userOjAccount).values({
       externalId: "97238",
@@ -162,12 +155,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "active-award@example.com",
       id: "user-active-award",
+      memberStatus: "active",
       name: "active award",
       username: "active-award",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "active",
-      userId: "user-active-award",
     });
     await db.insert(userOjAccount).values({
       externalId: "97238",
@@ -196,12 +186,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "active-oj@example.com",
       id: "user-active-oj",
+      memberStatus: "active",
       name: "active oj",
       username: "active-oj",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "active",
-      userId: "user-active-oj",
     });
     await db.insert(userOjAccount).values([
       {
@@ -263,12 +250,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "cached-oj@example.com",
       id: "user-cached-oj",
+      memberStatus: "active",
       name: "cached oj",
       username: "cached-oj",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "active",
-      userId: "user-cached-oj",
     });
     await db.insert(userOjAccount).values([
       {
@@ -342,12 +326,9 @@ describe("getPublicProfile", () => {
     await db.insert(user).values({
       email: "failed-oj@example.com",
       id: "user-failed-oj",
+      memberStatus: "active",
       name: "failed oj",
       username: "failed-oj",
-    });
-    await db.insert(userProfile).values({
-      memberStatus: "active",
-      userId: "user-failed-oj",
     });
     await db.insert(userOjAccount).values([
       {

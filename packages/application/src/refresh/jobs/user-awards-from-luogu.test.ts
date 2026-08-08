@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import {
   userAward,
@@ -24,16 +23,10 @@ describe("user awards from Luogu refresh request", () => {
     await db.insert(user).values({
       email: `${input.id}@example.com`,
       id: input.id,
+      memberStatus: input.memberStatus,
       name: input.id,
       username: input.id,
     });
-
-    if (input.memberStatus) {
-      await db.insert(userProfile).values({
-        memberStatus: input.memberStatus,
-        userId: input.id,
-      });
-    }
 
     await db.insert(userOjAccount).values({
       externalId: input.externalId ?? input.id,

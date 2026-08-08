@@ -33,29 +33,56 @@ describe("auth bootstrap", () => {
     await auth.api.signUpEmail({
       body: {
         email: "first@example.com",
-        name: "first",
+        grade: "24级",
+        major: "计算机科学与技术",
+        name: "张三",
         password: "password123",
+        studentId: "20240001",
         username: "first",
       },
     });
     await auth.api.signUpEmail({
       body: {
         email: "second@example.com",
-        name: "second",
+        grade: "23级",
+        major: "软件工程",
+        name: "李四",
         password: "password123",
+        studentId: "20230001",
         username: "second",
       },
     });
 
     const db = createDb();
     const users = await db
-      .select({ role: user.role, username: user.username })
+      .select({
+        grade: user.grade,
+        major: user.major,
+        name: user.name,
+        role: user.role,
+        studentId: user.studentId,
+        username: user.username,
+      })
       .from(user)
       .orderBy(asc(user.username));
 
     expect(users).toEqual([
-      { role: "admin", username: "first" },
-      { role: "user", username: "second" },
+      {
+        grade: "24级",
+        major: "计算机科学与技术",
+        name: "张三",
+        role: "admin",
+        studentId: "20240001",
+        username: "first",
+      },
+      {
+        grade: "23级",
+        major: "软件工程",
+        name: "李四",
+        role: "user",
+        studentId: "20230001",
+        username: "second",
+      },
     ]);
   });
 });

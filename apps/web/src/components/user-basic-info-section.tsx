@@ -25,7 +25,6 @@ import {
   buildProfileFormValues,
   emptyProfileFormValues,
   getChangedProfileValues,
-  getProfileDisplayValue,
   hasProfileUpdateValues,
   type ProfileData,
   type ProfileFormValues,
@@ -65,10 +64,10 @@ interface BasicInfoFieldInputProps {
 }
 
 const profileFormSchema = z.object({
-  grade: z.string(),
-  major: z.string(),
-  realName: z.string(),
-  studentId: z.string(),
+  grade: z.string().trim().min(1, "请选择年级"),
+  major: z.string().trim().min(1, "请输入专业"),
+  realName: z.string().trim().min(1, "请输入姓名"),
+  studentId: z.string().trim().min(1, "请输入学号"),
 }) satisfies z.ZodType<ProfileFormValues>;
 
 const getErrorMessage = (error: unknown) => {
@@ -97,7 +96,7 @@ function BasicInfoFieldInput({
         fullWidth
         isDisabled={isDisabled}
         onSelectionChange={handleGradeChange}
-        placeholder="未填写"
+        placeholder="请选择年级"
         selectedKey={value || null}
         variant="secondary"
       >
@@ -108,10 +107,6 @@ function BasicInfoFieldInput({
         </Select.Trigger>
         <Select.Popover>
           <ListBox>
-            <ListBox.Item id="" textValue="未填写">
-              未填写
-              <ListBox.ItemIndicator />
-            </ListBox.Item>
             {gradeOptions.map((option) => (
               <ListBox.Item id={option} key={option} textValue={option}>
                 {option}
@@ -135,7 +130,7 @@ function BasicInfoFieldInput({
       <DirtyFieldLabel isChanged={isChanged} label={field.label} />
       <Input
         autoComplete={field.autoComplete}
-        placeholder="未填写"
+        placeholder={`请输入${field.label}`}
         variant="secondary"
       />
     </TextField>
@@ -166,7 +161,9 @@ export function UserBasicInfoSection({
     ...emptyProfileFormValues,
     ...watchedFormValues,
   };
-  const originalFormValues = buildProfileFormValues(editorProfile);
+  const originalFormValues = editorProfile
+    ? buildProfileFormValues(editorProfile)
+    : emptyProfileFormValues;
 
   const changedProfileValues = getChangedProfileValues(
     formValues,
@@ -178,9 +175,13 @@ export function UserBasicInfoSection({
   );
 
   const openEditor = () => {
+    if (!profile) {
+      return;
+    }
+
     const nextFormValues = buildProfileFormValues(profile);
     reset(nextFormValues);
-    setEditorProfile(profile ?? null);
+    setEditorProfile(profile);
     setDialogMessage(null);
     onClearMessage?.();
     setIsEditorOpen(true);
@@ -277,25 +278,21 @@ export function UserBasicInfoSection({
             </Alert>
           ) : null}
 
-          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <InfoItem
-              label="状态"
-              value={
-                profile ? (
-                  <MemberStatusChip status={profile.memberStatus} />
-                ) : (
-                  "未填写"
-                )
-              }
-            />
-            {profileFieldConfigs.map((field) => (
+          {profile ? (
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <InfoItem
-                key={field.key}
-                label={field.label}
-                value={getProfileDisplayValue(profile?.[field.key])}
+                label="状态"
+                value={<MemberStatusChip status={profile.memberStatus} />}
               />
-            ))}
-          </dl>
+              {profileFieldConfigs.map((field) => (
+                <InfoItem
+                  key={field.key}
+                  label={field.label}
+                  value={profile[field.key]}
+                />
+              ))}
+            </dl>
+          ) : null}
         </Card.Content>
       </Card>
 

@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@hhuacm-dashboard/db": "workspace:*",
+    "@hhuacm-dashboard/domain": "workspace:*",
     "@hhuacm-dashboard/env": "workspace:*",
     "better-auth": "catalog:",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@libsql/client": "catalog:",

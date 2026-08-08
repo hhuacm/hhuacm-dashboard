@@ -8,10 +8,12 @@ import {
   userRelations,
   verification,
 } from "@hhuacm-dashboard/db/schema/auth";
+import { isValidGradeOption } from "@hhuacm-dashboard/domain";
 import { getAuthEnv } from "@hhuacm-dashboard/env/auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { username } from "better-auth/plugins";
+import { z } from "zod";
 import { ensureFirstUserIsAdmin } from "./bootstrap-admin";
 
 const authSchema = {
@@ -23,6 +25,11 @@ const authSchema = {
   userRelations,
   verification,
 } as const;
+
+const requiredMemberFieldSchema = z.string().trim().min(1);
+const gradeSchema = requiredMemberFieldSchema.refine(isValidGradeOption, {
+  message: "Invalid grade",
+});
 
 export function createAuth() {
   const db = createDb();
@@ -50,8 +57,32 @@ export function createAuth() {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     plugins: [username({ usernameNormalization: false })],
+    user: {
+      additionalFields: {
+        grade: {
+          required: true,
+          returned: false,
+          type: "string",
+          validator: { input: gradeSchema },
+        },
+        major: {
+          required: true,
+          returned: false,
+          type: "string",
+          validator: { input: requiredMemberFieldSchema },
+        },
+        studentId: {
+          required: true,
+          returned: false,
+          type: "string",
+          validator: { input: requiredMemberFieldSchema },
+        },
+      },
+    },
   });
 }
+
+export type Auth = ReturnType<typeof createAuth>;
 
 let auth: ReturnType<typeof createAuth> | undefined;
 

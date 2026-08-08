@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
 import { sql } from "drizzle-orm";
@@ -28,28 +27,15 @@ const createUser = async (
 ) => {
   await db.insert(user).values({
     email: input.email ?? `${input.id}@example.com`,
+    grade: input.grade,
     id: input.id,
-    name: input.id,
+    major: input.major,
+    memberStatus: input.memberStatus,
+    name: input.realName ?? "未知",
     role: input.role ?? "user",
+    studentId: input.studentId,
     username: input.username ?? input.id,
   });
-
-  if (
-    input.grade ||
-    input.major ||
-    input.memberStatus ||
-    input.realName ||
-    input.studentId
-  ) {
-    await db.insert(userProfile).values({
-      grade: input.grade,
-      major: input.major,
-      memberStatus: input.memberStatus,
-      realName: input.realName,
-      studentId: input.studentId,
-      userId: input.id,
-    });
-  }
 };
 
 const createOjAccount = async (
@@ -135,11 +121,11 @@ describe("admin users", () => {
 
     expect(result.username).toBe("detail");
     expect(result.profile).toEqual({
-      grade: null,
-      major: null,
+      grade: "未知",
+      major: "未知",
       memberStatus: "selection",
-      realName: null,
-      studentId: null,
+      realName: "未知",
+      studentId: "未知",
     });
     expect(result.ojAccounts).toEqual([
       {

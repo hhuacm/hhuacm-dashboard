@@ -1,8 +1,6 @@
 import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import {
-  defaultMemberStatus,
   isStatsDisabledMemberStatus,
   type MemberStatus,
   type OjPlatform,
@@ -26,20 +24,31 @@ import {
   type PublicProfileAwards,
 } from "./profile-awards";
 
-export const profileFields = {
-  grade: userProfile.grade,
-  major: userProfile.major,
-  memberStatus: userProfile.memberStatus,
-  realName: userProfile.realName,
-  studentId: userProfile.studentId,
-} as const;
-
 const userFields = {
   email: user.email,
+  grade: user.grade,
   id: user.id,
+  major: user.major,
+  memberStatus: user.memberStatus,
+  realName: user.name,
   role: user.role,
+  studentId: user.studentId,
   username: user.username,
 } as const;
+
+const toProfile = (currentUser: {
+  grade: string;
+  major: string;
+  memberStatus: MemberStatus;
+  realName: string;
+  studentId: string;
+}) => ({
+  grade: currentUser.grade,
+  major: currentUser.major,
+  memberStatus: currentUser.memberStatus,
+  realName: currentUser.realName,
+  studentId: currentUser.studentId,
+});
 
 export interface PublicOjAccount {
   atcoder?: PublicAtcoderStats | null;
@@ -100,22 +109,6 @@ const getTargetUserByUsername = async (db: Database, username: string) => {
   return targetUser;
 };
 
-export const getProfileByUserId = async (db: Database, userId: string) => {
-  const [profile] = await db
-    .select(profileFields)
-    .from(userProfile)
-    .where(eq(userProfile.userId, userId))
-    .limit(1);
-
-  return {
-    grade: profile?.grade ?? null,
-    major: profile?.major ?? null,
-    memberStatus: profile?.memberStatus ?? defaultMemberStatus,
-    realName: profile?.realName ?? null,
-    studentId: profile?.studentId ?? null,
-  };
-};
-
 const attachPublicOjAccountData = async (
   db: Database,
   accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>,
@@ -166,7 +159,7 @@ export const getPublicProfile = async (
   input: { currentUserId: null | string; username: string }
 ) => {
   const targetUser = await getTargetUserByUsername(db, input.username);
-  const profile = await getProfileByUserId(db, targetUser.id);
+  const profile = toProfile(targetUser);
   const internalOjAccounts = await listInternalOjAccountsByUserId(
     db,
     targetUser.id
@@ -208,12 +201,11 @@ export const getPublicProfile = async (
 
 export const getSettingsProfile = async (db: Database, userId: string) => {
   const currentUser = await getTargetUser(db, userId);
-  const profile = await getProfileByUserId(db, currentUser.id);
   const ojAccounts = await listOjAccountsByUserId(db, currentUser.id);
 
   return {
     ojAccounts,
-    profile,
+    profile: toProfile(currentUser),
     user: {
       email: currentUser.email,
       username: currentUser.username,
@@ -228,25 +220,20 @@ export const updateUserProfile = async (
     values: ProfileUpdateValues;
   }
 ) => {
-  await getTargetUser(db, input.userId);
+  const { realName, ...profileValues } = input.values;
 
-  const profile = await db
-    .insert(userProfile)
-    .values({
-      ...input.values,
-      userId: input.userId,
+  const [updatedUser] = await db
+    .update(user)
+    .set({
+      ...profileValues,
+      ...(realName === undefined ? {} : { name: realName }),
     })
-    .onConflictDoUpdate({
-      set: {
-        ...input.values,
-      },
-      target: userProfile.userId,
-    })
-    .returning(profileFields)
-    .get();
+    .where(eq(user.id, input.userId))
+    .returning(userFields);
 
-  return {
-    ...profile,
-    memberStatus: profile.memberStatus ?? defaultMemberStatus,
-  };
+  if (!updatedUser) {
+    throw new ApplicationError({ code: "NOT_FOUND" });
+  }
+
+  return toProfile(updatedUser);
 };

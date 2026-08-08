@@ -98,14 +98,7 @@ const getProfileSnapshotKey = (detail: AdminUserDetail | undefined) => {
 
   const { grade, major, memberStatus, realName, studentId } = detail.profile;
 
-  return [
-    detail.id,
-    memberStatus,
-    grade ?? "",
-    major ?? "",
-    realName ?? "",
-    studentId ?? "",
-  ].join(":");
+  return [detail.id, memberStatus, grade, major, realName, studentId].join(":");
 };
 
 interface AdminProfileDraft {
@@ -275,7 +268,7 @@ function AdminUserBasicInfoEditor({
                     typeof key === "string" ? key : ""
                   )
                 }
-                placeholder="未填写"
+                placeholder="请选择年级"
                 selectedKey={formValues.grade || null}
                 variant="secondary"
               >
@@ -289,10 +282,6 @@ function AdminUserBasicInfoEditor({
                 </Select.Trigger>
                 <Select.Popover>
                   <ListBox>
-                    <ListBox.Item id="" textValue="未填写">
-                      未填写
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
                     {gradeOptions.map((option) => (
                       <ListBox.Item id={option} key={option} textValue={option}>
                         {option}
@@ -319,7 +308,7 @@ function AdminUserBasicInfoEditor({
                 />
                 <Input
                   autoComplete={field.autoComplete}
-                  placeholder="未填写"
+                  placeholder={`请输入${field.label}`}
                   variant="secondary"
                 />
               </TextField>
@@ -668,9 +657,7 @@ export function AdminUserEditDialog({
               </div>
               <div>
                 <span className="text-muted">邮箱</span>
-                <p className="mt-1 break-all">
-                  {detail?.email ?? user?.email ?? "未填写"}
-                </p>
+                <p className="mt-1 break-all">{detail?.email ?? user?.email}</p>
               </div>
             </div>
 

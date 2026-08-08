@@ -2,7 +2,7 @@ import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { asc, sql } from "drizzle-orm";
 import { enqueueRefreshIfDue } from "../../refresh/ensure";
 
-export const userNameLabelSortExpression = sql<string>`coalesce(nullif(trim(${currentMember.realName}), ''), nullif(trim(${currentMember.username}), ''), '')`;
+export const userNameLabelSortExpression = sql<string>`${currentMember.realName}`;
 
 type FreshPolicy = (fetchedAt: Date | null, now: Date) => boolean;
 

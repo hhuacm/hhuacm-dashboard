@@ -11,7 +11,6 @@ const databaseUrl = process.env.DATABASE_URL ?? "file:local.db";
 export default defineConfig({
   schema: [
     "./src/schema/auth.ts",
-    "./src/schema/profile.ts",
     "./src/schema/current-member.ts",
     "./src/schema/oj-account.ts",
     "./src/schema/atcoder-account-stats.ts",

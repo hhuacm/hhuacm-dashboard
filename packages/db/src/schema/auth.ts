@@ -1,11 +1,20 @@
+import { defaultMemberStatus, memberStatuses } from "@hhuacm-dashboard/domain";
 import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const userRoles = ["user", "admin"] as const;
 
+const unknownMemberFieldValue = "未知";
+
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  grade: text("grade").default(unknownMemberFieldValue).notNull(),
+  studentId: text("student_id").default(unknownMemberFieldValue).notNull(),
+  major: text("major").default(unknownMemberFieldValue).notNull(),
+  memberStatus: text("member_status", { enum: memberStatuses })
+    .default(defaultMemberStatus)
+    .notNull(),
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" })
     .default(false)

@@ -1,8 +1,12 @@
-import { usernameClient } from "better-auth/client/plugins";
+import type { Auth } from "@hhuacm-dashboard/auth";
+import {
+  inferAdditionalFields,
+  usernameClient,
+} from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  plugins: [usernameClient()],
+  plugins: [inferAdditionalFields<Auth>(), usernameClient()],
 });
 
 interface UserNameFields {

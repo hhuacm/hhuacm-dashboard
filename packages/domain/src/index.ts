@@ -55,22 +55,6 @@ export const memberStatusLabels = {
   selection: "选拔中",
 } as const satisfies Record<MemberStatus, string>;
 
-const unnamedUserLabel = "未命名用户";
-
-const normalizeUserNamePart = (value: null | string | undefined) => {
-  const normalizedValue = value?.trim();
-
-  return normalizedValue ? normalizedValue : null;
-};
-
-export const getUserNameLabel = (user: {
-  realName?: null | string;
-  username: string;
-}) =>
-  normalizeUserNamePart(user.realName) ??
-  normalizeUserNamePart(user.username) ??
-  unnamedUserLabel;
-
 export const ojPlatforms = [
   "luogu",
   "codeforces",

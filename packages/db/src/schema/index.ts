@@ -33,7 +33,6 @@ import {
   problemSetProblemRelations,
   problemSetRelations,
 } from "./problem-set";
-import { userProfile, userProfileRelations } from "./profile";
 import { refreshRequest, refreshRequestRelations } from "./refresh-request";
 import { siteSetting } from "./site-setting";
 import {
@@ -73,8 +72,6 @@ export const schema = {
   userAwardSyncRelations,
   userOjAccount,
   userOjAccountRelations,
-  userProfile,
-  userProfileRelations,
   userRelations,
   verification,
 } as const;

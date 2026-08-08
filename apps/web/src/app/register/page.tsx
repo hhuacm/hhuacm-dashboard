@@ -15,9 +15,8 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import { getGradeOptions } from "@hhuacm-dashboard/domain";
+import { getGradeOptions, isValidGradeOption } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -30,12 +29,9 @@ import { PasswordField } from "@/components/password-field";
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
-  getChangedProfileValues,
-  hasProfileUpdateValues,
   type ProfileFormValues,
   profileFieldConfigs,
 } from "@/utils/profile-fields";
-import { trpc } from "@/utils/trpc";
 
 type RegisterFormValues = ProfileFormValues & {
   email: string;
@@ -52,11 +48,11 @@ const emptyRegisterFormValues: RegisterFormValues = {
 
 const registerFormSchema = z.object({
   email: z.string().trim().min(1, "请输入邮箱。"),
-  grade: z.string(),
-  major: z.string(),
+  grade: z.string().refine(isValidGradeOption, "请选择年级。"),
+  major: z.string().trim().min(1, "请输入专业。"),
   password: z.string().min(1, "请输入密码。"),
-  realName: z.string(),
-  studentId: z.string(),
+  realName: z.string().trim().min(1, "请输入姓名。"),
+  studentId: z.string().trim().min(1, "请输入学号。"),
   username: z.string().trim().min(1, "请输入用户名。"),
 }) satisfies z.ZodType<RegisterFormValues>;
 
@@ -113,7 +109,7 @@ function RegisterProfileFieldInput({
         fullWidth
         isDisabled={isDisabled}
         onSelectionChange={handleGradeChange}
-        placeholder="可不填"
+        placeholder="请选择年级"
         selectedKey={value || null}
         variant="secondary"
       >
@@ -124,10 +120,6 @@ function RegisterProfileFieldInput({
         </Select.Trigger>
         <Select.Popover>
           <ListBox>
-            <ListBox.Item id="" textValue="未填写">
-              未填写
-              <ListBox.ItemIndicator />
-            </ListBox.Item>
             {gradeOptions.map((option) => (
               <ListBox.Item id={option} key={option} textValue={option}>
                 {option}
@@ -152,7 +144,7 @@ function RegisterProfileFieldInput({
       <Label>{field.label}</Label>
       <Input
         autoComplete={field.autoComplete}
-        placeholder="可不填"
+        placeholder={`请输入${field.label}`}
         variant="secondary"
       />
     </TextField>
@@ -171,10 +163,6 @@ export default function RegisterPage() {
     resolver: zodResolver(registerFormSchema),
   });
   const { control, handleSubmit: handleFormSubmit } = form;
-  const updateProfile = useMutation(
-    trpc.settings.profile.update.mutationOptions()
-  );
-
   const handleSubmit = handleFormSubmit(
     async (values) => {
       const username = values.username;
@@ -185,8 +173,11 @@ export default function RegisterPage() {
       try {
         const response = await authClient.signUp.email({
           email,
-          name: username,
+          grade: values.grade,
+          major: values.major,
+          name: values.realName,
           password: values.password,
+          studentId: values.studentId,
           username,
         });
 
@@ -194,24 +185,6 @@ export default function RegisterPage() {
           setError(getRegisterErrorMessage(response.error.message));
           setSubmitting(false);
           return;
-        }
-
-        const changedProfileValues = getChangedProfileValues(
-          values,
-          emptyProfileFormValues
-        );
-
-        if (hasProfileUpdateValues(changedProfileValues)) {
-          try {
-            await updateProfile.mutateAsync(changedProfileValues);
-          } catch {
-            setError(
-              "账号已创建，但个人信息保存失败，可稍后在资料设置页补填。"
-            );
-            await session.refetch();
-            setSubmitting(false);
-            return;
-          }
         }
 
         await session.refetch();
@@ -227,6 +200,10 @@ export default function RegisterPage() {
         errors.username?.message ??
           errors.email?.message ??
           errors.password?.message ??
+          errors.realName?.message ??
+          errors.grade?.message ??
+          errors.studentId?.message ??
+          errors.major?.message ??
           "请检查注册信息。"
       );
     }
@@ -340,9 +317,7 @@ export default function RegisterPage() {
                   <Separator />
 
                   <Fieldset className="rounded-xl border border-border bg-surface-secondary p-4">
-                    <Fieldset.Legend className="px-1">
-                      个人信息（可选）
-                    </Fieldset.Legend>
+                    <Fieldset.Legend className="px-1">个人信息</Fieldset.Legend>
                     <Fieldset.Group className="grid gap-4 sm:grid-cols-2">
                       {profileFieldConfigs.map((field) => (
                         <Controller

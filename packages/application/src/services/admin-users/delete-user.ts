@@ -1,7 +1,5 @@
 import type { DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { ApplicationError } from "../../errors";
 
@@ -10,19 +8,6 @@ import { getTargetUser } from "../profile";
 import type { Database } from "./types";
 
 type AdminUserDeleteDatabase = Database | DatabaseTransaction;
-
-const getUserMemberStatus = async (
-  db: AdminUserDeleteDatabase,
-  userId: string
-) => {
-  const [profile] = await db
-    .select({ memberStatus: userProfile.memberStatus })
-    .from(userProfile)
-    .where(eq(userProfile.userId, userId))
-    .limit(1);
-
-  return profile?.memberStatus ?? defaultMemberStatus;
-};
 
 const assertAdminUserCanBeDeleted = async (
   db: AdminUserDeleteDatabase,
@@ -37,9 +22,7 @@ const assertAdminUserCanBeDeleted = async (
     });
   }
 
-  const targetMemberStatus = await getUserMemberStatus(db, input.userId);
-
-  if (targetMemberStatus !== "frozen") {
+  if (targetUser.memberStatus !== "frozen") {
     throw new ApplicationError({
       code: "FORBIDDEN",
       message: "Only frozen users can be deleted from the admin panel",

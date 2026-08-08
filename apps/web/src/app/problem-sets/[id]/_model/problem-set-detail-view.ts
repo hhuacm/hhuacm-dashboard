@@ -1,8 +1,5 @@
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
-import {
-  type CurrentMemberStatus,
-  getUserNameLabel,
-} from "@hhuacm-dashboard/domain";
+import type { CurrentMemberStatus } from "@hhuacm-dashboard/domain";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { getLuoguDifficultyLabel } from "@/utils/luogu-difficulty";
@@ -24,8 +21,6 @@ export interface CompletionRowFilters {
   selectedGrades: string[];
   selectedMemberStatuses: CurrentMemberStatus[];
 }
-
-export const emptyCompletionGradeFilterValue = "__empty_completion_grade__";
 
 export const problemTableColumnClassNames = {
   index: "w-10 whitespace-nowrap text-center",
@@ -113,10 +108,7 @@ export const sortCompletionRows = (rows: ProblemSetCompletion[]) =>
       return right.completedProblemCount - left.completedProblemCount;
     }
 
-    const nameLabelOrder = getUserNameLabel(left).localeCompare(
-      getUserNameLabel(right),
-      "zh-CN"
-    );
+    const nameLabelOrder = left.realName.localeCompare(right.realName, "zh-CN");
 
     if (nameLabelOrder !== 0) {
       return nameLabelOrder;
@@ -125,35 +117,23 @@ export const sortCompletionRows = (rows: ProblemSetCompletion[]) =>
     return left.userId.localeCompare(right.userId);
   });
 
-const getCompletionGradeFilterValue = (grade: null | string) =>
-  grade ?? emptyCompletionGradeFilterValue;
-
 const getCompletionGradeOption = (value: string): CompletionGradeOption => ({
-  label: value === emptyCompletionGradeFilterValue ? "未填写" : value,
+  label: value,
   value,
 });
 
 const compareCompletionGradeOptions = (
   left: CompletionGradeOption,
   right: CompletionGradeOption
-) => {
-  if (left.value === emptyCompletionGradeFilterValue) {
-    return 1;
-  }
-
-  if (right.value === emptyCompletionGradeFilterValue) {
-    return -1;
-  }
-
-  return right.label.localeCompare(left.label, "zh-CN", {
+) =>
+  right.label.localeCompare(left.label, "zh-CN", {
     numeric: true,
   });
-};
 
 export const getCompletionGradeOptions = (
   rows: ProblemSetCompletion[]
 ): CompletionGradeOption[] =>
-  [...new Set(rows.map((row) => getCompletionGradeFilterValue(row.grade)))]
+  [...new Set(rows.map((row) => row.grade))]
     .map(getCompletionGradeOption)
     .sort(compareCompletionGradeOptions);
 
@@ -175,10 +155,7 @@ export const filterCompletionRows = (
       return false;
     }
 
-    if (
-      hasGradeFilter &&
-      !selectedGradeSet.has(getCompletionGradeFilterValue(row.grade))
-    ) {
+    if (hasGradeFilter && !selectedGradeSet.has(row.grade)) {
       return false;
     }
 

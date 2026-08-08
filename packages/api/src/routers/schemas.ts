@@ -7,17 +7,15 @@ import { z } from "zod";
 
 export const trimmedStringSchema = z.string().trim().min(1);
 
-export const gradeSchema = z
-  .string()
-  .refine((grade) => !grade || isValidGradeOption(grade), {
-    message: "Invalid grade",
-  });
+export const gradeSchema = trimmedStringSchema.refine(isValidGradeOption, {
+  message: "Invalid grade",
+});
 
 export const profileInputSchema = z.object({
   grade: gradeSchema,
-  major: z.string(),
-  realName: z.string(),
-  studentId: z.string(),
+  major: trimmedStringSchema,
+  realName: trimmedStringSchema,
+  studentId: trimmedStringSchema,
 });
 
 export const profileUpdateInputSchema = profileInputSchema

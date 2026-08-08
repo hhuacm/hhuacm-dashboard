@@ -8,26 +8,22 @@ import {
 import { z } from "zod";
 
 export const systemSeedKind = "hhuacm-dashboard.system-seed";
-export const systemSeedVersion = 1;
+export const systemSeedVersion = 2;
 
 export interface SystemSeedOjAccount {
   externalId: string;
   platform: OjPlatform;
 }
 
-export interface SystemSeedUserProfile {
-  grade?: string;
-  major?: string;
-  memberStatus?: MemberStatus;
-  realName?: string;
-  studentId?: string;
-}
-
 export interface SystemSeedUser {
   email: string;
+  grade: string;
+  major: string;
+  memberStatus?: MemberStatus;
   ojAccounts?: SystemSeedOjAccount[];
-  profile?: SystemSeedUserProfile;
+  realName: string;
   role?: "admin";
+  studentId: string;
   username: string;
 }
 
@@ -65,7 +61,7 @@ export class SystemSeedFormatError extends Error {
   }
 }
 
-const nonEmptyStringSchema = z.string().min(1);
+const nonEmptyStringSchema = z.string().trim().min(1);
 
 const systemSeedOjAccountSchema = z
   .object({
@@ -74,22 +70,16 @@ const systemSeedOjAccountSchema = z
   })
   .strict();
 
-const systemSeedUserProfileSchema = z
-  .object({
-    grade: nonEmptyStringSchema.optional(),
-    major: nonEmptyStringSchema.optional(),
-    memberStatus: z.enum(memberStatuses).optional(),
-    realName: nonEmptyStringSchema.optional(),
-    studentId: nonEmptyStringSchema.optional(),
-  })
-  .strict();
-
 const systemSeedUserSchema = z
   .object({
     email: nonEmptyStringSchema,
+    grade: nonEmptyStringSchema,
+    major: nonEmptyStringSchema,
+    memberStatus: z.enum(memberStatuses).optional(),
     ojAccounts: z.array(systemSeedOjAccountSchema).optional(),
-    profile: systemSeedUserProfileSchema.optional(),
+    realName: nonEmptyStringSchema,
     role: z.literal("admin").optional(),
+    studentId: nonEmptyStringSchema,
     username: nonEmptyStringSchema,
   })
   .strict();

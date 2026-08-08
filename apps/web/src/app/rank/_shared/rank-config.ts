@@ -1,4 +1,3 @@
-import { getUserNameLabel } from "@hhuacm-dashboard/domain";
 import type { Key } from "react";
 
 import type { TableColumnVisibilityConfig } from "@/components/column-visibility";
@@ -10,9 +9,9 @@ import {
 } from "./rank-utils";
 
 export interface RankMemberRowBase {
-  grade?: null | string;
-  major?: null | string;
-  realName?: null | string;
+  grade: string;
+  major: string;
+  realName: string;
   userId: string;
   username: string;
 }
@@ -195,7 +194,7 @@ export const createIsRankSortColumn =
     sortableColumns.includes(columnId as SortColumn);
 
 export const getRankNameLabel = <Row extends RankMemberRowBase>(row: Row) =>
-  getUserNameLabel(row);
+  row.realName;
 
 export const getRankProfileUrl = <Row extends RankMemberRowBase>(row: Row) =>
   `/profile/${encodeURIComponent(row.username)}`;
@@ -219,11 +218,11 @@ export const createRankRowsFilter =
     }
 
     return rows.filter((row) => {
-      if (selectedGrades.size > 0 && !selectedGrades.has(row.grade ?? "")) {
+      if (selectedGrades.size > 0 && !selectedGrades.has(row.grade)) {
         return false;
       }
 
-      if (selectedMajors.size > 0 && !selectedMajors.has(row.major ?? "")) {
+      if (selectedMajors.size > 0 && !selectedMajors.has(row.major)) {
         return false;
       }
 

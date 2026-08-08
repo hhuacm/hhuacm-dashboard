@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { account, user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { verifyPassword } from "better-auth/crypto";
 import { asc, eq } from "drizzle-orm";
@@ -43,6 +42,10 @@ const createSeedUser = (
   } = {}
 ): SystemSeedUser => ({
   email: input.email ?? `${username}@example.com`,
+  grade: input.grade ?? "未知",
+  major: input.major ?? "未知",
+  realName: input.realName ?? "未知",
+  studentId: input.studentId ?? "未知",
   username,
   ...input,
 });
@@ -68,9 +71,13 @@ const listUsers = async (db: Database) =>
     .select({
       email: user.email,
       emailVerified: user.emailVerified,
+      grade: user.grade,
       id: user.id,
+      major: user.major,
+      memberStatus: user.memberStatus,
       name: user.name,
       role: user.role,
+      studentId: user.studentId,
       username: user.username,
     })
     .from(user)
@@ -85,7 +92,6 @@ describe("system import users", () => {
     ).resolves.toEqual({
       adminCount: 0,
       ojAccountCount: 0,
-      profileCount: 0,
       refreshRequestCount: 0,
       userCount: 0,
     });
@@ -115,8 +121,12 @@ describe("system import users", () => {
     expect(createdUser).toMatchObject({
       email: "alice@example.com",
       emailVerified: true,
-      name: "alice",
+      grade: "未知",
+      major: "未知",
+      memberStatus: "selection",
+      name: "未知",
       role: "user",
+      studentId: "未知",
       username: "alice",
     });
     expect(credentialAccount).toMatchObject({
@@ -140,35 +150,27 @@ describe("system import users", () => {
       db,
       createSeedFile([
         createSeedUser("admin", {
-          profile: {
-            grade: "24级",
-            major: "计算机科学与技术",
-            memberStatus: "active",
-            realName: "Admin",
-            studentId: "20240001",
-          },
+          grade: "24级",
+          major: "计算机科学与技术",
+          memberStatus: "active",
+          realName: "Admin",
           role: "admin",
+          studentId: "20240001",
         }),
       ])
     );
     const [createdUser] = await listUsers(db);
-    const [profile] = await db
-      .select()
-      .from(userProfile)
-      .where(eq(userProfile.userId, createdUser?.id ?? ""))
-      .limit(1);
 
     expect(result).toMatchObject({
       adminCount: 1,
-      profileCount: 1,
       userCount: 1,
     });
-    expect(createdUser?.role).toBe("admin");
-    expect(profile).toMatchObject({
+    expect(createdUser).toMatchObject({
       grade: "24级",
       major: "计算机科学与技术",
       memberStatus: "active",
-      realName: "Admin",
+      name: "Admin",
+      role: "admin",
       studentId: "20240001",
     });
   });
@@ -183,34 +185,24 @@ describe("system import users", () => {
           ojAccounts: [codeforcesAccount("selectionCf")],
         }),
         createSeedUser("active-user", {
+          memberStatus: "active",
           ojAccounts: [luoguAccount("activeLuogu")],
-          profile: {
-            memberStatus: "active",
-          },
         }),
         createSeedUser("active-atcoder-user", {
+          memberStatus: "active",
           ojAccounts: [atcoderAccount("activeAtcoder")],
-          profile: {
-            memberStatus: "active",
-          },
         }),
         createSeedUser("active-nowcoder-user", {
+          memberStatus: "active",
           ojAccounts: [nowcoderAccount("660255087")],
-          profile: {
-            memberStatus: "active",
-          },
         }),
         createSeedUser("retired-user", {
+          memberStatus: "retired",
           ojAccounts: [codeforcesAccount("retiredCf")],
-          profile: {
-            memberStatus: "retired",
-          },
         }),
         createSeedUser("frozen-user", {
+          memberStatus: "frozen",
           ojAccounts: [luoguAccount("frozenLuogu")],
-          profile: {
-            memberStatus: "frozen",
-          },
         }),
       ])
     );
@@ -325,7 +317,7 @@ describe("system import users", () => {
       },
       {
         error: SystemSeedFormatError,
-        input: { ...validSeedFile, version: 2 },
+        input: { ...validSeedFile, version: 1 },
       },
       {
         error: SystemUserImportError,
@@ -372,9 +364,10 @@ describe("system import users", () => {
         input: seedFileWithUsers([
           {
             email: "null@example.com",
-            profile: {
-              realName: null,
-            },
+            grade: "未知",
+            major: "未知",
+            realName: null,
+            studentId: "未知",
             username: "null-user",
           },
         ]),

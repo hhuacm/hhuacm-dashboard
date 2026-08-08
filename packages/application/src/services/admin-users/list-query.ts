@@ -1,8 +1,6 @@
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
-import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, inArray } from "drizzle-orm";
 
 import type { AdminUserOjAccount, Database } from "./types";
 
@@ -47,17 +45,16 @@ export const listAdminUsers = async (db: Database) => {
   const users = await db
     .select({
       email: user.email,
-      grade: userProfile.grade,
+      grade: user.grade,
       id: user.id,
-      major: userProfile.major,
-      memberStatus: userProfile.memberStatus,
-      realName: userProfile.realName,
+      major: user.major,
+      memberStatus: user.memberStatus,
+      realName: user.name,
       role: user.role,
-      studentId: userProfile.studentId,
+      studentId: user.studentId,
       username: user.username,
     })
     .from(user)
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .orderBy(asc(user.username), asc(user.email), asc(user.id));
 
   const userIds = users.map((currentUser) => currentUser.id);
@@ -65,7 +62,6 @@ export const listAdminUsers = async (db: Database) => {
 
   return users.map((currentUser) => ({
     ...currentUser,
-    memberStatus: currentUser.memberStatus ?? defaultMemberStatus,
     ojAccounts: ojAccountsByUserId.get(currentUser.id) ?? [],
   }));
 };

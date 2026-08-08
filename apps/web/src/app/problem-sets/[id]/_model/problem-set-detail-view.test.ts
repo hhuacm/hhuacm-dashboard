@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import type { CurrentMemberStatus } from "@hhuacm-dashboard/domain";
 
 import {
-  emptyCompletionGradeFilterValue,
   filterCompletionRows,
   getCompletionGradeOptions,
   type ProblemSetCompletion,
@@ -11,13 +10,13 @@ import {
 const buildCompletion = (
   userId: string,
   completedProblemCount: number,
-  grade: null | string,
+  grade: string,
   memberStatus: CurrentMemberStatus = "selection"
 ): ProblemSetCompletion => ({
   completedProblemCount,
   grade,
   memberStatus,
-  realName: null,
+  realName: "未知",
   userId,
   username: userId,
 });
@@ -26,7 +25,7 @@ describe("filterCompletionRows", () => {
   const rows = [
     buildCompletion("u1", 8, "24级"),
     buildCompletion("u2", 5, "23级", "active"),
-    buildCompletion("u3", 2, null),
+    buildCompletion("u3", 2, "22级"),
     buildCompletion("u4", 10, "24级", "active"),
   ];
 
@@ -47,15 +46,6 @@ describe("filterCompletionRows", () => {
         selectedMemberStatuses: [],
       }).map((row) => row.userId)
     ).toEqual(["u1", "u4"]);
-  });
-
-  it("matches empty grades with the empty grade option", () => {
-    expect(
-      filterCompletionRows(rows, {
-        selectedGrades: [emptyCompletionGradeFilterValue],
-        selectedMemberStatuses: [],
-      }).map((row) => row.userId)
-    ).toEqual(["u3"]);
   });
 
   it("keeps rows matching selected member statuses", () => {
@@ -95,11 +85,11 @@ describe("filterCompletionRows", () => {
 });
 
 describe("getCompletionGradeOptions", () => {
-  it("sorts grade options descending and keeps empty grades last", () => {
+  it("sorts grade options descending and removes duplicates", () => {
     expect(
       getCompletionGradeOptions([
         buildCompletion("u1", 1, "23级"),
-        buildCompletion("u2", 1, null),
+        buildCompletion("u2", 1, "22级"),
         buildCompletion("u3", 1, "25级"),
         buildCompletion("u4", 1, "24级"),
         buildCompletion("u5", 1, "24级"),
@@ -108,7 +98,7 @@ describe("getCompletionGradeOptions", () => {
       { label: "25级", value: "25级" },
       { label: "24级", value: "24级" },
       { label: "23级", value: "23级" },
-      { label: "未填写", value: emptyCompletionGradeFilterValue },
+      { label: "22级", value: "22级" },
     ]);
   });
 });

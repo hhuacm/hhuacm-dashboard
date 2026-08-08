@@ -14,6 +14,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import {
   buildProfileFormValues,
+  emptyProfileFormValues,
   getChangedProfileValues,
   hasProfileUpdateValues,
   type ProfileFormValues,
@@ -118,7 +119,7 @@ export const getAdminUsersFilterOptions = (
 });
 
 const getSortValue = (user: AdminUserTableRow, column: SortColumn) =>
-  user[column] ?? "";
+  user[column];
 
 export const getVisibleAdminUsers = (
   users: AdminUserTableRow[],
@@ -197,7 +198,7 @@ export const getAdminEditErrorMessage = (error: unknown) => {
 export const buildAdminProfileFormValues = (
   profile: AdminUserProfile | undefined
 ): AdminProfileFormValues => ({
-  ...buildProfileFormValues(profile),
+  ...(profile ? buildProfileFormValues(profile) : emptyProfileFormValues),
   memberStatus: profile?.memberStatus ?? defaultMemberStatus,
 });
 

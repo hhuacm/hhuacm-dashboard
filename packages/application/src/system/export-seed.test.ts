@@ -6,7 +6,6 @@ import {
   problemSet,
   problemSetProblem,
 } from "@hhuacm-dashboard/db/schema/problem-set";
-import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { siteSetting } from "@hhuacm-dashboard/db/schema/site-setting";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
@@ -32,28 +31,15 @@ const createUser = async (
 ) => {
   await db.insert(user).values({
     email: input.email ?? `${input.id}@example.com`,
+    grade: input.grade,
     id: input.id,
-    name: input.id,
+    major: input.major,
+    memberStatus: input.memberStatus,
+    name: input.realName ?? "未知",
     role: input.role ?? "user",
+    studentId: input.studentId,
     username: input.username ?? input.id,
   });
-
-  if (
-    input.grade ||
-    input.major ||
-    input.memberStatus ||
-    input.realName ||
-    input.studentId
-  ) {
-    await db.insert(userProfile).values({
-      grade: input.grade,
-      major: input.major,
-      memberStatus: input.memberStatus,
-      realName: input.realName,
-      studentId: input.studentId,
-      userId: input.id,
-    });
-  }
 };
 
 const createOjAccount = async (
@@ -125,7 +111,7 @@ describe("system seed export", () => {
         settings: {},
         users: [],
       },
-      version: 1,
+      version: 2,
     });
     expect(firstExport.hash).toBe(secondExport.hash);
     expect(firstExport.exportedAt).not.toBe("");
@@ -142,9 +128,9 @@ describe("system seed export", () => {
     expect(userExport.hash).not.toBe(firstExport.hash);
 
     await db
-      .update(userProfile)
-      .set({ realName: "After" })
-      .where(eq(userProfile.userId, "stable-user"));
+      .update(user)
+      .set({ name: "After" })
+      .where(eq(user.id, "stable-user"));
     const afterProfileChange = await exportSystemSeed(db);
 
     await createProblemSetSeed(db, {
@@ -203,16 +189,20 @@ describe("system seed export", () => {
           platform: "luogu",
         },
       ],
-      profile: {
-        grade: "24级",
-        memberStatus: "active",
-        realName: "Alpha",
-      },
+      grade: "24级",
+      major: "未知",
+      memberStatus: "active",
+      realName: "Alpha",
       role: "admin",
+      studentId: "未知",
       username: "alpha",
     });
     expect(result.seed.users[1]).toEqual({
       email: "beta@example.com",
+      grade: "未知",
+      major: "未知",
+      realName: "未知",
+      studentId: "未知",
       username: "beta",
     });
   });

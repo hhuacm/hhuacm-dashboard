@@ -7,7 +7,7 @@ export const profileFieldConfigs = [
 
 export type ProfileFieldKey = (typeof profileFieldConfigs)[number]["key"];
 export type ProfileFormValues = Record<ProfileFieldKey, string>;
-export type ProfileData = Partial<Record<ProfileFieldKey, null | string>>;
+export type ProfileData = Record<ProfileFieldKey, string>;
 export type ProfileUpdateValues = Partial<ProfileFormValues>;
 
 export const emptyProfileFormValues: ProfileFormValues = {
@@ -18,16 +18,8 @@ export const emptyProfileFormValues: ProfileFormValues = {
 };
 
 export const buildProfileFormValues = (
-  profile: null | ProfileData | undefined
-): ProfileFormValues => ({
-  grade: profile?.grade ?? "",
-  major: profile?.major ?? "",
-  realName: profile?.realName ?? "",
-  studentId: profile?.studentId ?? "",
-});
-
-export const getProfileDisplayValue = (value: null | string | undefined) =>
-  value ? value : "未填写";
+  profile: ProfileData
+): ProfileFormValues => ({ ...profile });
 
 export const getChangedProfileValues = (
   currentValues: ProfileFormValues,
