@@ -26,12 +26,6 @@ import { parseProblemPidText } from "../../../_model/problem-pid-text";
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type ProblemSet = RouterOutputs["problemSet"]["get"];
 
-interface EditMessage {
-  text: string;
-  title: string;
-  tone: "danger" | "success";
-}
-
 interface ProblemSetEditValues {
   descriptionMarkdown: string;
   pids: string[];
@@ -43,8 +37,6 @@ interface ProblemSetEditChangedFields {
   pids: boolean;
   title: boolean;
 }
-
-const getProblemSetEditErrorMessage = () => "保存失败，请检查内容后重试。";
 
 const areOrderedPidsEqual = (left: string[], right: string[]) =>
   left.length === right.length &&
@@ -79,7 +71,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
     problemSet.descriptionMarkdown
   );
   const [pidText, setPidText] = useState(() => initialPids.join("\n"));
-  const [message, setMessage] = useState<EditMessage | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const parsedPids = parseProblemPidText(pidText);
   const updateProblemSet = useMutation(
     trpc.admin.problemSets.update.mutationOptions()
@@ -104,56 +96,16 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
     hasChanges &&
     !updateProblemSet.isPending;
 
-  const clearMessage = () => setMessage(null);
+  const clearError = () => setErrorMessage(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage(null);
 
-    if (!trimmedTitle) {
-      setMessage({
-        text: "请填写题单标题。",
-        tone: "danger",
-        title: "无法保存",
-      });
+    if (!canSubmit) {
       return;
     }
 
-    if (!hasProblemPids) {
-      setMessage({
-        text: "请至少填写一个题号。",
-        tone: "danger",
-        title: "无法保存",
-      });
-      return;
-    }
-
-    if (parsedPids.invalidPids.length > 0) {
-      setMessage({
-        text: "请先修正非法题号。",
-        tone: "danger",
-        title: "无法保存",
-      });
-      return;
-    }
-
-    if (parsedPids.duplicatePids.length > 0) {
-      setMessage({
-        text: "请先移除重复题号。",
-        tone: "danger",
-        title: "无法保存",
-      });
-      return;
-    }
-
-    if (!hasChanges) {
-      setMessage({
-        text: "没有需要保存的修改。",
-        tone: "success",
-        title: "无需保存",
-      });
-      return;
-    }
+    setErrorMessage(null);
 
     try {
       await updateProblemSet.mutateAsync({
@@ -178,11 +130,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
       ]);
       router.push(`/problem-sets/${problemSet.id}` as Route);
     } catch {
-      setMessage({
-        text: getProblemSetEditErrorMessage(),
-        tone: "danger",
-        title: "保存失败",
-      });
+      setErrorMessage("保存失败，请检查内容后重试。");
     }
   };
 
@@ -194,12 +142,12 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
         </div>
       </Card.Header>
       <Card.Content className="grid gap-4">
-        {message ? (
-          <Alert status={message.tone}>
+        {errorMessage ? (
+          <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
-              <Alert.Title>{message.title}</Alert.Title>
-              <Alert.Description>{message.text}</Alert.Description>
+              <Alert.Title>保存失败</Alert.Title>
+              <Alert.Description>{errorMessage}</Alert.Description>
             </Alert.Content>
           </Alert>
         ) : null}
@@ -209,9 +157,10 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
             className="gap-3"
             fullWidth
             isDisabled={updateProblemSet.isPending}
+            isRequired
             name="title"
             onChange={(nextTitle) => {
-              clearMessage();
+              clearError();
               setTitle(nextTitle);
             }}
             value={title}
@@ -230,7 +179,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
             isDisabled={updateProblemSet.isPending}
             name="descriptionMarkdown"
             onChange={(nextMarkdown) => {
-              clearMessage();
+              clearError();
               setDescriptionMarkdown(nextMarkdown);
             }}
             value={descriptionMarkdown}
@@ -256,9 +205,10 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
             className="gap-3"
             fullWidth
             isDisabled={updateProblemSet.isPending}
+            isRequired
             name="pidText"
             onChange={(nextPidText) => {
-              clearMessage();
+              clearError();
               setPidText(nextPidText);
             }}
             value={pidText}

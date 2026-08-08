@@ -22,20 +22,13 @@ import { trpc } from "@/utils/trpc";
 import { ProblemPidPreview } from "../_components/problem-pid-preview";
 import { parseProblemPidText } from "../_model/problem-pid-text";
 
-interface ImportMessage {
-  text: string;
-  title: string;
-}
-
-const getProblemSetImportErrorMessage = () => "导入失败，请检查内容后重试。";
-
 export default function AdminProblemSetImportPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [descriptionMarkdown, setDescriptionMarkdown] = useState("");
   const [pidText, setPidText] = useState("");
-  const [message, setMessage] = useState<ImportMessage | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const parsedPids = parseProblemPidText(pidText);
   const createProblemSet = useMutation(
     trpc.admin.problemSets.create.mutationOptions()
@@ -51,43 +44,16 @@ export default function AdminProblemSetImportPage() {
     !hasParseErrors &&
     !createProblemSet.isPending;
 
-  const clearMessage = () => setMessage(null);
+  const clearError = () => setErrorMessage(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage(null);
 
-    if (!trimmedTitle) {
-      setMessage({
-        text: "请填写题单标题。",
-        title: "无法导入",
-      });
+    if (!canSubmit) {
       return;
     }
 
-    if (!hasProblemPids) {
-      setMessage({
-        text: "请至少填写一个题号。",
-        title: "无法导入",
-      });
-      return;
-    }
-
-    if (parsedPids.invalidPids.length > 0) {
-      setMessage({
-        text: "请先修正非法题号。",
-        title: "无法导入",
-      });
-      return;
-    }
-
-    if (parsedPids.duplicatePids.length > 0) {
-      setMessage({
-        text: "请先移除重复题号。",
-        title: "无法导入",
-      });
-      return;
-    }
+    setErrorMessage(null);
 
     try {
       const createdProblemSet = await createProblemSet.mutateAsync({
@@ -101,10 +67,7 @@ export default function AdminProblemSetImportPage() {
       });
       router.push(`/problem-sets/${createdProblemSet.id}` as Route);
     } catch {
-      setMessage({
-        text: getProblemSetImportErrorMessage(),
-        title: "导入失败",
-      });
+      setErrorMessage("导入失败，请检查内容后重试。");
     }
   };
 
@@ -138,12 +101,12 @@ export default function AdminProblemSetImportPage() {
             </div>
           </Card.Header>
           <Card.Content className="grid gap-4">
-            {message ? (
+            {errorMessage ? (
               <Alert status="danger">
                 <Alert.Indicator />
                 <Alert.Content>
-                  <Alert.Title>{message.title}</Alert.Title>
-                  <Alert.Description>{message.text}</Alert.Description>
+                  <Alert.Title>导入失败</Alert.Title>
+                  <Alert.Description>{errorMessage}</Alert.Description>
                 </Alert.Content>
               </Alert>
             ) : null}
@@ -152,9 +115,10 @@ export default function AdminProblemSetImportPage() {
               <TextField
                 fullWidth
                 isDisabled={isFormDisabled}
+                isRequired
                 name="title"
                 onChange={(nextTitle) => {
-                  clearMessage();
+                  clearError();
                   setTitle(nextTitle);
                 }}
                 value={title}
@@ -172,7 +136,7 @@ export default function AdminProblemSetImportPage() {
                 isDisabled={isFormDisabled}
                 name="descriptionMarkdown"
                 onChange={(nextMarkdown) => {
-                  clearMessage();
+                  clearError();
                   setDescriptionMarkdown(nextMarkdown);
                 }}
                 value={descriptionMarkdown}
@@ -194,9 +158,10 @@ export default function AdminProblemSetImportPage() {
               <TextField
                 fullWidth
                 isDisabled={isFormDisabled}
+                isRequired
                 name="pidText"
                 onChange={(nextPidText) => {
-                  clearMessage();
+                  clearError();
                   setPidText(nextPidText);
                 }}
                 value={pidText}
