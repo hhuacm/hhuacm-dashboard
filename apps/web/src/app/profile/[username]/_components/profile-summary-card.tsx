@@ -4,6 +4,7 @@ import type { Route } from "next";
 
 import { InfoItem } from "@/components/info-item";
 import { MemberStatusChip } from "@/components/member-status-chip";
+import { profileFieldConfigs } from "@/utils/profile-fields";
 import type { PublicProfile } from "../_model/public-profile-view";
 
 type PublicProfileSummary = Pick<
@@ -68,10 +69,13 @@ export function ProfileSummaryCard({
             label="状态"
             value={<MemberStatusChip status={profile.profile.memberStatus} />}
           />
-          <InfoItem label="姓名" value={profile.profile.realName} />
-          <InfoItem label="学号" value={profile.profile.studentId} />
-          <InfoItem label="年级" value={profile.profile.grade} />
-          <InfoItem label="专业" value={profile.profile.major} />
+          {profileFieldConfigs.map((field) => (
+            <InfoItem
+              key={field.key}
+              label={field.label}
+              value={profile.profile[field.key]}
+            />
+          ))}
         </dl>
       </Card.Content>
     </Card>
