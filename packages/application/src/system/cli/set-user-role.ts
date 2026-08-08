@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { loadServerEnv } from "../runtime";
+import { loadWebEnv } from "../runtime";
 import { type SystemUserRole, setUserRoleByUsername } from "../user-role";
 
 const toSystemUserRole = (value: string | undefined): SystemUserRole => {
@@ -21,7 +21,7 @@ const getRequiredUsername = (value: string | undefined) => {
 };
 
 const run = async () => {
-  loadServerEnv();
+  loadWebEnv();
 
   const { role: roleValue, username: usernameValue } = parseArgs({
     options: {

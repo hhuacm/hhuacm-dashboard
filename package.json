@@ -27,7 +27,6 @@
     "check-types": "turbo check-types --output-logs=errors-only --ui=stream",
     "dev:web": "turbo -F web dev",
     "dev:refresh-worker": "turbo -F refresh-worker dev",
-    "dev:server": "turbo -F server dev",
     "test": "bun test --only-failures",
     "verify": "bun run fix && bun run check && bun run test",
     "db:local": "turbo -F @hhuacm-dashboard/db db:local",

@@ -8,7 +8,7 @@ const serverStartedAt = new Date();
 
 export const healthProcedure = publicProcedure.query(() => ({
   status: "ok",
-  service: "hhuacm-dashboard API",
+  service: "hhuacm-dashboard Web",
   build: getBuildMetadata(),
   uptimeMs: Date.now() - serverStartedAt.getTime(),
   environment: getNodeEnv(),

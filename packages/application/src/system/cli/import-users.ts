@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { importUsersFromSystemSeedFile } from "../import-users";
-import { loadServerEnv } from "../runtime";
+import { loadWebEnv } from "../runtime";
 
 const getRequiredFilePath = () => {
   const filePath = parseArgs({
@@ -27,7 +27,7 @@ const readJsonFile = async (filePath: string) => {
 };
 
 const run = async () => {
-  loadServerEnv();
+  loadWebEnv();
 
   const filePath = getRequiredFilePath();
   const input = await readJsonFile(filePath);

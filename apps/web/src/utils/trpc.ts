@@ -6,17 +6,7 @@ import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 export const queryClient = new QueryClient();
 
 const trpcClient = createTRPCClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: "/trpc",
-      fetch(url, options) {
-        return fetch(url, {
-          ...options,
-          credentials: "include",
-        });
-      },
-    }),
-  ],
+  links: [httpBatchLink({ url: "/trpc" })],
 });
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({

@@ -8,7 +8,7 @@ import {
   userRelations,
   verification,
 } from "@hhuacm-dashboard/db/schema/auth";
-import { env } from "@hhuacm-dashboard/env/server";
+import { getAuthEnv } from "@hhuacm-dashboard/env/auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { username } from "better-auth/plugins";
@@ -26,9 +26,9 @@ const authSchema = {
 
 export function createAuth() {
   const db = createDb();
+  const env = getAuthEnv();
 
   return betterAuth({
-    basePath: "/api/auth",
     database: drizzleAdapter(db, {
       provider: "sqlite",
 
@@ -43,22 +43,20 @@ export function createAuth() {
         },
       },
     },
-    trustedOrigins: [env.CORS_ORIGIN],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
-    advanced: {
-      defaultCookieAttributes: {
-        sameSite: "lax",
-        secure: env.NODE_ENV === "production",
-        httpOnly: true,
-      },
-    },
     plugins: [username({ usernameNormalization: false })],
   });
 }
 
-export const auth = createAuth();
+let auth: ReturnType<typeof createAuth> | undefined;
+
+export const getAuth = () => {
+  auth ??= createAuth();
+
+  return auth;
+};

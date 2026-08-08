@@ -6,11 +6,11 @@ export const workspaceRoot = fileURLToPath(
   new URL("../../../../", import.meta.url)
 );
 
-export const serverEnvPath = path.join(workspaceRoot, "apps/server/.env");
+export const webEnvPath = path.join(workspaceRoot, "apps/web/.env");
 
-export const loadServerEnv = () => {
+export const loadWebEnv = () => {
   dotenv.config({
-    path: serverEnvPath,
+    path: webEnvPath,
     quiet: true,
   });
 };

@@ -1,18 +1,19 @@
-import { auth } from "@hhuacm-dashboard/auth";
-import { db } from "@hhuacm-dashboard/db";
+import { getAuth } from "@hhuacm-dashboard/auth";
+import { getDb } from "@hhuacm-dashboard/db";
 
 interface CreateContextOptions {
   headers: Headers;
 }
 
 export async function createContext({ headers }: CreateContextOptions) {
+  const auth = getAuth();
   const session = await auth.api.getSession({
     asResponse: false,
     headers,
   });
 
   return {
-    db,
+    db: getDb(),
     session,
   };
 }

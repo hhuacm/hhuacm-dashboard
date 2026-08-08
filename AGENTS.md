@@ -18,14 +18,15 @@ HHUACM Dashboard 面向河海大学 ACM 队的成员管理、训练数据和队�
 ## 架构取舍
 
 ```text
-Browser -> Next.js -> Hono / tRPC -> packages/api
-        -> packages/application -> packages/db
+Browser -> Next.js Route Handlers / tRPC -> packages/api
+Next.js Server Components -> in-process tRPC caller -> packages/api
+packages/api -> packages/application -> packages/db
 
 application read use case -> refresh_request
 refresh-worker -> application refresh job -> external OJ -> cached database state
 ```
 
-`apps/*` 负责进程入口和运行时组装；`packages/api` 适配 transport；`packages/application` 承载应用用例、后台刷新和外部 OJ 同步；`packages/domain` 保存无基础设施依赖的业务事实；`packages/db`、`auth`、`env` 提供基础设施能力。`packages/application` 不应反向依赖 API 或应用入口。
+`apps/web` 是唯一 HTTP 入口，通过 Route Handlers 挂载 tRPC 与 Better Auth；`apps/refresh-worker` 独立执行后台刷新。`apps/*` 负责进程入口和运行时组装；`packages/api` 适配 transport；`packages/application` 承载应用用例、后台刷新和外部 OJ 同步；`packages/domain` 保存无基础设施依赖的业务事实；`packages/db`、`auth`、`env` 提供基础设施能力。`packages/application` 不应反向依赖 API 或应用入口。
 
 `packages/application` 直接使用 Drizzle `Database` 和 schema，并通过临时 libSQL 数据库测试用例。这是有意的轻量选择：除非出现第二种真实持久化适配器，或数据库耦合已经明显阻碍测试和修改，否则不要增加 repository、port 或逐表转发层。
 
@@ -33,7 +34,7 @@ refresh-worker -> application refresh job -> external OJ -> cached database stat
 
 ## 前端与文档
 
-前端遵循 [`DESIGN.md`](DESIGN.md)，优先使用现有 HeroUI V3 模式，并真实呈现加载、错误、空状态、保存中和删除确认。`README.md` 负责项目入口，`docs/tech-stack.md` 负责技术基线，`docs/vps-deployment.md` 负责生产部署；同一操作事实尽量只在一个位置完整说明。
+前端遵循 [`DESIGN.md`](DESIGN.md)，优先使用现有 HeroUI V3 模式，并真实呈现加载、错误、空状态、保存中和删除确认。`README.md` 负责项目入口，`docs/vps-deployment.md` 负责生产部署；同一操作事实尽量只在一个位置完整说明。
 
 ## 常用命令
 

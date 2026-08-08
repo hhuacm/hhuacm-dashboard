@@ -1,6 +1,6 @@
 import { Alert, Card } from "@heroui/react";
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
-import type { inferRouterOutputs } from "@trpc/server";
+import { type inferRouterOutputs, TRPCError } from "@trpc/server";
 import { CheckCircle2, ChevronRight, ListChecks, Plus } from "lucide-react";
 import type { Route } from "next";
 
@@ -89,16 +89,13 @@ function CreateProblemSetLink() {
 }
 
 const isUnauthorizedError = (error: unknown) =>
-  typeof error === "object" &&
-  error !== null &&
-  "data" in error &&
-  (error as { data?: { code?: string } }).data?.code === "UNAUTHORIZED";
+  error instanceof TRPCError && error.code === "UNAUTHORIZED";
 
 const getCurrentUserRole = async (
   caller: Awaited<ReturnType<typeof createServerCaller>>
 ) => {
   try {
-    const account = await caller.account.me.query();
+    const account = await caller.account.me();
 
     return account.role;
   } catch (error) {
@@ -113,8 +110,8 @@ const getCurrentUserRole = async (
 export default async function ProblemSetsPage() {
   const caller = await createServerCaller();
   const [problemSetsResult, currentUserRole] = await Promise.all([
-    caller.problemSet.list
-      .query()
+    caller.problemSet
+      .list()
       .then((problemSets) => ({ problemSets, status: "success" as const }))
       .catch(() => ({ problemSets: [], status: "error" as const })),
     getCurrentUserRole(caller),

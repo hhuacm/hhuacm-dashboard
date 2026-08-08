@@ -3,10 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./auth": "./src/auth.ts",
     "./db": "./src/db.ts",
-    "./runtime": "./src/runtime.ts",
-    "./server": "./src/server.ts",
-    "./web": "./src/web.ts"
+    "./runtime": "./src/runtime.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

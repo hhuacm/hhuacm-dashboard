@@ -1,29 +1,14 @@
-import {
-  getServerInternalUrl,
-  shouldUseLocalWebApiRewrites,
-} from "@hhuacm-dashboard/env/web";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async rewrites() {
-    if (!shouldUseLocalWebApiRewrites()) {
-      return [];
-    }
-
-    const serverInternalUrl = getServerInternalUrl();
-
-    return [
-      {
-        destination: `${serverInternalUrl}/trpc/:path*`,
-        source: "/trpc/:path*",
-      },
-      {
-        destination: `${serverInternalUrl}/api/auth/:path*`,
-        source: "/api/auth/:path*",
-      },
-    ];
-  },
   output: "standalone",
+  // Bun selects these web exports at runtime; include them in Next's Node trace.
+  outputFileTracingIncludes: {
+    "/*": [
+      "../../node_modules/.bun/@libsql+isomorphic-fetch@*/node_modules/@libsql/isomorphic-fetch/**/*",
+      "../../node_modules/.bun/@libsql+isomorphic-ws@*/node_modules/@libsql/isomorphic-ws/**/*",
+    ],
+  },
   typedRoutes: true,
   reactCompiler: true,
 };

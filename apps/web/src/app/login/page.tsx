@@ -132,7 +132,7 @@ function LoginPageContent() {
         await session.refetch();
         setSubmitting(false);
       } catch {
-        setError("认证服务暂时不可用，请确认后端和数据库已启动。");
+        setError("认证服务暂时不可用，请稍后重试。");
         setSubmitting(false);
       }
     },

@@ -16,8 +16,6 @@ const configureAuthEnv = (databaseUrl: string) => {
   process.env.DATABASE_AUTH_TOKEN = "";
   process.env.BETTER_AUTH_SECRET = "temporary-secret-for-auth-bootstrap-test";
   process.env.BETTER_AUTH_URL = "http://localhost:3000";
-  process.env.CORS_ORIGIN = "http://localhost:3001";
-  process.env.NODE_ENV = "test";
 };
 
 describe("auth bootstrap", () => {

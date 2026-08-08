@@ -20,9 +20,6 @@
     // `bun run db:local` 产生的本地 libSQL/Turso 数据文件。
     "packages/db/local.db": true,
     "packages/db/local.db-*": true,
-    // `bun run compile` 可能产生的单文件 server 可执行产物。
-    "apps/server/server": true,
-    "apps/server/server.map": true,
     // 测试报告和工具缓存。
     "**/coverage": true,
     "**/.cache": true
@@ -45,8 +42,6 @@
     "**/*.tsbuildinfo": true,
     "packages/db/local.db": true,
     "packages/db/local.db-*": true,
-    "apps/server/server": true,
-    "apps/server/server.map": true,
     "**/coverage": true,
     "**/.cache": true,
     "bun.lock": true

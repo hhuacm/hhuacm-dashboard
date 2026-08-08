@@ -6,9 +6,9 @@ import { resolveLibsqlAuthToken } from "../libsql-auth-token";
 import { synchronizeDatabase } from "../sync";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const serverEnvPath = resolve(packageRoot, "../../apps/server/.env");
+const webEnvPath = resolve(packageRoot, "../../apps/web/.env");
 
-dotenv.config({ path: serverEnvPath });
+dotenv.config({ path: webEnvPath });
 
 const fail = (message: string): never => {
   throw new Error(`[db:sync] ${message}`);
@@ -21,7 +21,7 @@ const readDatabaseUrl = (): string => {
     return databaseUrl;
   }
 
-  return fail(`DATABASE_URL is missing. Expected it in ${serverEnvPath}.`);
+  return fail(`DATABASE_URL is missing. Expected it in ${webEnvPath}.`);
 };
 
 const createDbClient = () => {

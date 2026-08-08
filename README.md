@@ -10,8 +10,7 @@ HHUACM Dashboard 是面向河海大学 ACM 队的成员与数据管理系统，�
 
 ```text
 Browser
-  -> Next.js Web
-  -> Hono / tRPC
+  -> Next.js / tRPC
   -> application use case
   -> libSQL / Turso
 
@@ -24,14 +23,13 @@ application read use case
 
 页面读取本地缓存；当 OJ 数据或题目元数据缺失、过期时，应用用例只写入刷新请求，由独立 worker 完成外部请求和缓存更新。当前队列按单个 worker 实例设计。
 
-主要技术包括 Bun、Turborepo、Next.js、React、Hono、tRPC、Drizzle ORM、libSQL / Turso、Better Auth、Tailwind CSS v4、HeroUI V3、React Hook Form 和 Zod。
+主要技术包括 Bun、Turborepo、Next.js、React、tRPC、Drizzle ORM、libSQL / Turso、Better Auth、Tailwind CSS v4、HeroUI V3、React Hook Form 和 Zod。
 
 ## 仓库结构
 
 ```text
 apps/
-  web/             Next.js 页面、交互与 UI
-  server/          Hono 进程入口、tRPC 与认证端点
+  web/             Next.js 页面、交互、tRPC 与认证端点
   refresh-worker/  后台刷新进程
 
 packages/
@@ -57,11 +55,11 @@ brew install tursodatabase/tap/turso
 
 ```bash
 bun install
-cp apps/server/.env.example apps/server/.env
+cp apps/web/.env.example apps/web/.env
 cp apps/refresh-worker/.env.example apps/refresh-worker/.env
 ```
 
-`apps/web/.env` 通常不需要创建；本地开发默认把服务端请求转发到 `http://localhost:3000`。需要覆盖时，再复制 `apps/web/.env.example` 并修改 `SERVER_INTERNAL_URL`。
+`apps/web/.env` 保存数据库连接与 Better Auth 配置；示例值对应本地 Web 和 libSQL 端口。
 
 在一个终端启动本地 libSQL 服务：
 
@@ -75,7 +73,7 @@ bun run db:local
 bun run db:sync
 ```
 
-随后启动 Web、API 和刷新 worker：
+随后启动 Web 和刷新 worker：
 
 ```bash
 bun run dev
@@ -84,14 +82,12 @@ bun run dev
 默认地址：
 
 - Web：<http://localhost:3001>
-- API：<http://localhost:3000>
 - 本地 libSQL：<http://127.0.0.1:8080>
 
-浏览器使用同源 `/trpc` 和 `/api/auth`；本地由 Next.js rewrite 转发到 API。也可以只启动某个进程：
+Next.js 直接提供同源 `/trpc` 和 `/api/auth`。也可以只启动某个进程：
 
 ```bash
 bun run dev:web
-bun run dev:server
 bun run dev:refresh-worker
 ```
 
@@ -115,19 +111,18 @@ bun run test
 
 ## 部署
 
-仓库提供统一应用镜像和 Compose 编排。默认启动 Web、API 与刷新 worker，并将 Web/API 绑定到宿主机 `127.0.0.1`，供 Nginx 或 1Panel 反向代理接入。
+仓库提供统一应用镜像和 Compose 编排。默认启动 Web 与刷新 worker，并将 Web 绑定到宿主机 `127.0.0.1`，供 Nginx 或 1Panel 反向代理接入。
 
 ```bash
 cp .env.example .env
 docker compose pull
-docker compose run --rm server bun dist/db-sync.js
+docker compose run --rm web bun run --cwd runtime db:sync
 docker compose up -d --no-build
 ```
 
 生产环境还需注意：
 
-- `BETTER_AUTH_URL` 与 `CORS_ORIGIN` 应使用用户访问的同一站点 origin。
-- Web 容器通过 `SERVER_INTERNAL_URL` 访问 API 容器，例如 `http://server:3000`。
+- `BETTER_AUTH_URL` 应使用用户访问的站点 origin。
 - 同一数据库只运行一个 `refresh-worker`。
 - 空数据库中的第一个成功注册用户会成为管理员；部署前应确认注册策略和公开页面的成员字段可见范围符合实际需求。
 
@@ -137,5 +132,4 @@ docker compose up -d --no-build
 
 - [`AGENTS.md`](AGENTS.md)：项目特有的协作规则、系统模型和架构约束。
 - [`DESIGN.md`](DESIGN.md)：前端产品气质、布局、颜色、组件和交互规则。
-- [`docs/tech-stack.md`](docs/tech-stack.md)：技术栈、运行时拓扑和 TypeScript 基线。
 - [`docs/vps-deployment.md`](docs/vps-deployment.md)：VPS、Turso、Compose 与 Nginx 部署流程。

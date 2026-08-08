@@ -21,8 +21,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { username: routeUsername } = await params;
   const username = decodeURIComponent(routeUsername);
   const caller = await createServerCaller();
-  const profileResult = await caller.profile.get
-    .query({ username })
+  const profileResult = await caller.profile
+    .get({ username })
     .then((profile) => ({ profile, status: "success" as const }))
     .catch(() => ({ profile: null, status: "error" as const }));
   const profile = profileResult.profile;

@@ -10,11 +10,10 @@ VPS 不负责构建镜像，只负责保存 `compose.yaml`、`.env`，拉取镜�
 
 ## 部署形态
 
-生产部署包含三个容器：
+生产部署包含两个容器：
 
 ```text
-web             Next.js 生产服务，监听容器内 3000
-server          Hono / tRPC / Better Auth API，监听容器内 3000
+web             Next.js 页面、tRPC 与 Better Auth，监听容器内 3000
 refresh-worker  后台刷新进程，无公开 HTTP 端口
 ```
 
@@ -22,7 +21,6 @@ refresh-worker  后台刷新进程，无公开 HTTP 端口
 
 ```text
 127.0.0.1:3001 -> web:3000
-127.0.0.1:3000 -> server:3000
 ```
 
 外部访问链路：
@@ -30,14 +28,8 @@ refresh-worker  后台刷新进程，无公开 HTTP 端口
 ```text
 Browser
   -> HTTPS / Nginx
-  -> /trpc 和 /api/auth 转发到 127.0.0.1:3000
-  -> 其他路径转发到 127.0.0.1:3001
-```
-
-Web 容器内的服务端渲染请求不会绕公网域名，而是通过 Compose 网络访问：
-
-```text
-SERVER_INTERNAL_URL=http://server:3000
+  -> 127.0.0.1:3001
+  -> Next.js 页面、/trpc 和 /api/auth
 ```
 
 ## 前置条件
@@ -104,15 +96,12 @@ IMAGE_TAG=main
 
 WEB_HOST=127.0.0.1
 WEB_PORT=3001
-SERVER_HOST=127.0.0.1
-SERVER_PORT=3000
 
 DATABASE_URL=libsql://...
 DATABASE_AUTH_TOKEN=...
 
 BETTER_AUTH_SECRET=replace-with-a-random-secret-of-at-least-32-chars
 BETTER_AUTH_URL=https://dashboard.example.com
-CORS_ORIGIN=https://dashboard.example.com
 ```
 
 `BETTER_AUTH_SECRET` 必须长期稳定。可以在 VPS 上生成：
@@ -121,7 +110,7 @@ CORS_ORIGIN=https://dashboard.example.com
 openssl rand -base64 48
 ```
 
-`BETTER_AUTH_URL` 和 `CORS_ORIGIN` 应填写用户实际访问的同一个公网 origin，包含协议，不带路径：
+`BETTER_AUTH_URL` 应填写用户实际访问的公网 origin，包含协议，不带路径：
 
 ```text
 https://dashboard.example.com
@@ -144,10 +133,10 @@ docker compose pull
 第一次启动应用前，使用镜像内的数据库同步命令同步 schema：
 
 ```bash
-docker compose run --rm server bun dist/db-sync.js
+docker compose run --rm web bun run --cwd runtime db:sync
 ```
 
-这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。已有生产数据后，执行结构变更前仍应检查迁移内容并做好备份。
+这条命令会读取 Compose 注入给 `web` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。已有生产数据后，执行结构变更前仍应检查迁移内容并做好备份。
 
 ## 启动容器
 
@@ -170,25 +159,9 @@ docker compose logs --tail=100
 
 ## 配置 Nginx
 
-宿主机 Nginx 可以按路径分流：
+宿主机 Nginx 将整个站点转发到 Web：
 
 ```nginx
-location ^~ /trpc {
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_pass http://127.0.0.1:3000;
-}
-
-location ^~ /api/auth {
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_pass http://127.0.0.1:3000;
-}
-
 location / {
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;
@@ -198,12 +171,10 @@ location / {
 }
 ```
 
-如果使用 1Panel 管理 Nginx，保持同样的路径转发关系即可：
+如果使用 1Panel 管理 Nginx，只需配置一个转发目标：
 
 ```text
-/trpc     -> http://127.0.0.1:3000
-/api/auth -> http://127.0.0.1:3000
-/         -> http://127.0.0.1:3001
+/ -> http://127.0.0.1:3001
 ```
 
 ## 创建首个管理员
@@ -219,13 +190,13 @@ location / {
 如果需要手动修复权限，可以在 VPS 上执行：
 
 ```bash
-docker compose run --rm server bun dist/set-user-role.js --role admin --username <username>
+docker compose run --rm web bun run --cwd runtime system:grant-admin --username <username>
 ```
 
 撤销管理员：
 
 ```bash
-docker compose run --rm server bun dist/set-user-role.js --role user --username <username>
+docker compose run --rm web bun run --cwd runtime system:revoke-admin --username <username>
 ```
 
 ## 更新版本
@@ -236,7 +207,7 @@ docker compose run --rm server bun dist/set-user-role.js --role user --username 
 cd /path/to/hhuacm-dashboard-config &&
   sudo docker compose pull &&
   sudo docker compose down &&
-  sudo docker compose run --rm server bun dist/db-sync.js &&
+  sudo docker compose run --rm web bun run --cwd runtime db:sync &&
   sudo docker compose up -d --no-build
 ```
 
@@ -252,7 +223,6 @@ docker compose ps
 
 ```bash
 docker compose logs -f web
-docker compose logs -f server
 docker compose logs -f refresh-worker
 ```
 
@@ -260,13 +230,12 @@ docker compose logs -f refresh-worker
 
 ```bash
 curl -I http://127.0.0.1:3001
-curl -I http://127.0.0.1:3000
 ```
 
 常见问题：
 
 - `DATABASE_URL is required`：VPS `.env` 没有被 Compose 读取，或变量为空。
 - `BETTER_AUTH_SECRET` 校验失败：生产 secret 少于 32 个字符。
-- 登录后状态异常：确认 `BETTER_AUTH_URL`、`CORS_ORIGIN` 和公网域名一致，并确认 Nginx 走 HTTPS。
-- 浏览器页面能打开但 tRPC/auth 失败：检查 Nginx 是否把 `/trpc` 和 `/api/auth` 转发到了 `SERVER_PORT`。
+- 登录后状态异常：确认 `BETTER_AUTH_URL` 和公网域名一致，并确认 Nginx 走 HTTPS。
+- 浏览器页面能打开但 tRPC/auth 失败：检查 Web 容器日志及数据库、认证环境变量。
 - 数据刷新没有变化：确认只有一个 `refresh-worker` 在运行，并查看 worker 日志。

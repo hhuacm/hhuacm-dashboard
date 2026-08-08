@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const nodeEnvSchema = z
+const nodeEnvSchema = z
   .enum(["development", "production", "test"])
   .default("development");
 

@@ -1,17 +1,13 @@
-"use client";
-
-import { Alert, Button, Card, Chip } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { Alert, Card, Chip } from "@heroui/react";
 import { ListChecks, Sparkles, Trophy, UserRound } from "lucide-react";
-import type { Route } from "next";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { AppShell } from "@/components/app-shell";
 import { MarkdownContent } from "@/components/markdown-content";
-import { trpc } from "@/utils/trpc";
+import { ServerAppShell } from "@/components/server-app-shell";
+import { createServerCaller } from "@/utils/server-trpc";
 
-type HealthTone = "danger" | "success" | "warning";
+type HealthTone = "danger" | "success";
 
 interface HealthPresentation {
   label: string;
@@ -43,36 +39,16 @@ interface SystemOverviewCardProps {
   healthDetails: OverviewDetail[];
   healthMessage?: string;
   isError: boolean;
-  isLoading: boolean;
   selectionUsers: number;
   totalUsers: number;
 }
 
-const getHealthPresentation = (
-  isLoading: boolean,
-  isError: boolean
-): HealthPresentation => {
-  if (isLoading) {
-    return {
-      label: "连接中",
-      tone: "warning",
-    };
-  }
+const getHealthPresentation = (isError: boolean): HealthPresentation =>
+  isError
+    ? { label: "不可用", tone: "danger" }
+    : { label: "在线", tone: "success" };
 
-  if (isError) {
-    return {
-      label: "不可用",
-      tone: "danger",
-    };
-  }
-
-  return {
-    label: "在线",
-    tone: "success",
-  };
-};
-
-const formatDateTime = (value: null | string | undefined) => {
+const formatDateTime = (value: null | string) => {
   if (!value) {
     return "-";
   }
@@ -159,17 +135,13 @@ function SystemOverviewCard({
   healthDetails,
   healthMessage,
   isError,
-  isLoading,
   selectionUsers,
   totalUsers,
 }: SystemOverviewCardProps) {
-  const totalValue = isLoading ? "-" : totalUsers;
-  const selectionValue = isLoading ? "-" : selectionUsers;
-  const activeValue = isLoading ? "-" : activeUsers;
   const memberDetails = [
-    { label: "总用户", value: totalValue },
-    { label: "选拔中", value: selectionValue },
-    { label: "服役中", value: activeValue },
+    { label: "总用户", value: totalUsers },
+    { label: "选拔中", value: selectionUsers },
+    { label: "服役中", value: activeUsers },
   ];
 
   return (
@@ -226,7 +198,7 @@ function SystemOverviewCard({
         </OverviewSection>
 
         {healthMessage ? (
-          <Alert status={health.tone === "danger" ? "danger" : "default"}>
+          <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Description>{healthMessage}</Alert.Description>
@@ -239,8 +211,6 @@ function SystemOverviewCard({
 }
 
 function QuickLinksCard() {
-  const router = useRouter();
-
   return (
     <Card>
       <Card.Header>
@@ -251,65 +221,53 @@ function QuickLinksCard() {
       <Card.Content className="grid gap-5">
         <OverviewSection title="个人与练习">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/problem-sets" as Route)}
-              size="lg"
-              variant="outline"
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/problem-sets"
             >
               <ListChecks className="size-4" />
               题单
-            </Button>
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/profile" as Route)}
-              size="lg"
-              variant="outline"
+            </Link>
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/profile"
             >
               <UserRound className="size-4" />
               个人主页
-            </Button>
+            </Link>
           </div>
         </OverviewSection>
 
         <OverviewSection title="排行榜">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/rank/codeforces" as Route)}
-              size="lg"
-              variant="outline"
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/rank/codeforces"
             >
               <Trophy className="size-4" />
               Codeforces
-            </Button>
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/rank/atcoder" as Route)}
-              size="lg"
-              variant="outline"
+            </Link>
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/rank/atcoder"
             >
               <Trophy className="size-4" />
               AtCoder
-            </Button>
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/rank/luogu" as Route)}
-              size="lg"
-              variant="outline"
+            </Link>
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/rank/luogu"
             >
               <Trophy className="size-4" />
               洛谷
-            </Button>
-            <Button
-              className="w-full justify-start"
-              onPress={() => router.push("/rank/nowcoder" as Route)}
-              size="lg"
-              variant="outline"
+            </Link>
+            <Link
+              className="button button--lg button--outline w-full justify-start"
+              href="/rank/nowcoder"
             >
               <Trophy className="size-4" />
               牛客
-            </Button>
+            </Link>
           </div>
         </OverviewSection>
       </Card.Content>
@@ -317,29 +275,37 @@ function QuickLinksCard() {
   );
 }
 
-export default function Home() {
-  const health = useQuery(trpc.health.queryOptions());
-  const homeNotice = useQuery(trpc.dashboard.homeNotice.queryOptions());
-  const dashboardSummary = useQuery(trpc.dashboard.summary.queryOptions());
-  const healthPresentation = getHealthPresentation(
-    health.isLoading,
-    health.isError
-  );
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const caller = await createServerCaller();
+  const [homeNotice, dashboardSummary, health] = await Promise.all([
+    caller.dashboard.homeNotice().catch(() => ({ markdown: "" })),
+    caller.dashboard.summary().then(
+      (summary) => ({ isError: false, summary }),
+      () => ({ isError: true, summary: null })
+    ),
+    caller.health().then(
+      (data) => ({ data, isError: false }),
+      () => ({ data: null, isError: true })
+    ),
+  ]);
+  const healthPresentation = getHealthPresentation(health.isError);
 
   return (
-    <AppShell
+    <ServerAppShell
       description="队务工作台"
       icon={<Sparkles className="size-4" />}
       title="HHUACM Dashboard"
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="grid gap-6">
-          <HomeNoticeCard markdown={homeNotice.data?.markdown ?? ""} />
+          <HomeNoticeCard markdown={homeNotice.markdown} />
           <QuickLinksCard />
         </div>
 
         <SystemOverviewCard
-          activeUsers={dashboardSummary.data?.activeUsers ?? 0}
+          activeUsers={dashboardSummary.summary?.activeUsers ?? 0}
           health={healthPresentation}
           healthDetails={[
             { label: "服务名称", value: health.data?.service ?? "-" },
@@ -369,16 +335,13 @@ export default function Home() {
             },
           ]}
           healthMessage={
-            health.isError
-              ? "后端暂时不可用。启动 API 服务后这里会自动恢复。"
-              : undefined
+            health.isError ? "服务状态读取失败，请稍后刷新页面。" : undefined
           }
           isError={dashboardSummary.isError}
-          isLoading={dashboardSummary.isLoading}
-          selectionUsers={dashboardSummary.data?.selectionUsers ?? 0}
-          totalUsers={dashboardSummary.data?.totalUsers ?? 0}
+          selectionUsers={dashboardSummary.summary?.selectionUsers ?? 0}
+          totalUsers={dashboardSummary.summary?.totalUsers ?? 0}
         />
       </div>
-    </AppShell>
+    </ServerAppShell>
   );
 }

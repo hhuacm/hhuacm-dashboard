@@ -3,7 +3,7 @@ import { defineConfig } from "drizzle-kit";
 import { resolveLibsqlAuthToken } from "./src/libsql-auth-token";
 
 dotenv.config({
-  path: "../../apps/server/.env",
+  path: "../../apps/web/.env",
 });
 
 const databaseUrl = process.env.DATABASE_URL ?? "file:local.db";
