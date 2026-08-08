@@ -1,4 +1,4 @@
-import { Alert, Card, Chip } from "@heroui/react";
+import { Alert, Card } from "@heroui/react";
 import { ListChecks, Sparkles, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -6,13 +6,7 @@ import type { ReactNode } from "react";
 import { MarkdownContent } from "@/components/markdown-content";
 import { ServerAppShell } from "@/components/server-app-shell";
 import { createServerCaller } from "@/utils/server-trpc";
-
-type HealthTone = "danger" | "success";
-
-interface HealthPresentation {
-  label: string;
-  tone: HealthTone;
-}
+import { getSystemInfo } from "@/utils/system-info";
 
 interface OverviewDetail {
   label: string;
@@ -35,18 +29,11 @@ interface OverviewSectionProps {
 
 interface SystemOverviewCardProps {
   activeUsers: number;
-  health: HealthPresentation;
-  healthDetails: OverviewDetail[];
-  healthMessage?: string;
   isError: boolean;
   selectionUsers: number;
+  systemDetails: OverviewDetail[];
   totalUsers: number;
 }
-
-const getHealthPresentation = (isError: boolean): HealthPresentation =>
-  isError
-    ? { label: "不可用", tone: "danger" }
-    : { label: "在线", tone: "success" };
 
 const formatDateTime = (value: null | string) => {
   if (!value) {
@@ -131,11 +118,9 @@ function OverviewSection({ children, title }: OverviewSectionProps) {
 
 function SystemOverviewCard({
   activeUsers,
-  health,
-  healthDetails,
-  healthMessage,
   isError,
   selectionUsers,
+  systemDetails,
   totalUsers,
 }: SystemOverviewCardProps) {
   const memberDetails = [
@@ -147,12 +132,7 @@ function SystemOverviewCard({
   return (
     <Card>
       <Card.Header>
-        <div className="flex items-center justify-between gap-4">
-          <Card.Title className="text-xl">系统概览</Card.Title>
-          <Chip color={health.tone} size="md" variant="soft">
-            {health.label}
-          </Chip>
-        </div>
+        <Card.Title className="text-xl">系统概览</Card.Title>
       </Card.Header>
 
       <Card.Content className="grid gap-5">
@@ -183,7 +163,7 @@ function SystemOverviewCard({
 
         <OverviewSection title="服务">
           <dl className="grid divide-y divide-border">
-            {healthDetails.map((detail) => (
+            {systemDetails.map((detail) => (
               <div
                 className="grid gap-1 py-2 first:pt-0 last:pb-0"
                 key={detail.label}
@@ -196,15 +176,6 @@ function SystemOverviewCard({
             ))}
           </dl>
         </OverviewSection>
-
-        {healthMessage ? (
-          <Alert status="danger">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Description>{healthMessage}</Alert.Description>
-            </Alert.Content>
-          </Alert>
-        ) : null}
       </Card.Content>
     </Card>
   );
@@ -279,18 +250,14 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const caller = await createServerCaller();
-  const [homeNotice, dashboardSummary, health] = await Promise.all([
+  const systemInfo = getSystemInfo();
+  const [homeNotice, dashboardSummary] = await Promise.all([
     caller.dashboard.homeNotice().catch(() => ({ markdown: "" })),
     caller.dashboard.summary().then(
       (summary) => ({ isError: false, summary }),
       () => ({ isError: true, summary: null })
     ),
-    caller.health().then(
-      (data) => ({ data, isError: false }),
-      () => ({ data: null, isError: true })
-    ),
   ]);
-  const healthPresentation = getHealthPresentation(health.isError);
 
   return (
     <ServerAppShell
@@ -306,39 +273,27 @@ export default async function Home() {
 
         <SystemOverviewCard
           activeUsers={dashboardSummary.summary?.activeUsers ?? 0}
-          health={healthPresentation}
-          healthDetails={[
-            { label: "服务名称", value: health.data?.service ?? "-" },
+          isError={dashboardSummary.isError}
+          selectionUsers={dashboardSummary.summary?.selectionUsers ?? 0}
+          systemDetails={[
+            { label: "服务名称", value: systemInfo.service },
             {
               label: "代码版本",
-              value: health.data ? (
-                <BuildRevision {...health.data.build} />
-              ) : (
-                "-"
-              ),
+              value: <BuildRevision {...systemInfo.build} />,
             },
             {
               label: "运行时",
-              value: health.data
-                ? `${health.data.runtime.name} ${health.data.runtime.version}`
-                : "-",
+              value: `${systemInfo.runtime.name} ${systemInfo.runtime.version}`,
             },
             {
               label: "系统",
-              value: health.data
-                ? `${health.data.system.platform} ${health.data.system.arch} ${health.data.system.release}`
-                : "-",
+              value: `${systemInfo.system.platform} ${systemInfo.system.arch} ${systemInfo.system.release}`,
             },
             {
               label: "运行时长",
-              value: formatUptime(health.data?.uptimeMs),
+              value: formatUptime(systemInfo.uptimeMs),
             },
           ]}
-          healthMessage={
-            health.isError ? "服务状态读取失败，请稍后刷新页面。" : undefined
-          }
-          isError={dashboardSummary.isError}
-          selectionUsers={dashboardSummary.summary?.selectionUsers ?? 0}
           totalUsers={dashboardSummary.summary?.totalUsers ?? 0}
         />
       </div>

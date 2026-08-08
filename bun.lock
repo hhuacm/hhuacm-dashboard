@@ -67,7 +67,6 @@
         "@hhuacm-dashboard/auth": "workspace:*",
         "@hhuacm-dashboard/db": "workspace:*",
         "@hhuacm-dashboard/domain": "workspace:*",
-        "@hhuacm-dashboard/env": "workspace:*",
         "@trpc/server": "catalog:",
         "drizzle-orm": "catalog:",
         "zod": "catalog:",
