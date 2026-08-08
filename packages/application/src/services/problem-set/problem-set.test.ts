@@ -220,32 +220,7 @@ describe("problem sets", () => {
     );
   });
 
-  it("updates metadata without replacing problems", async () => {
-    const db = await createServiceTestDb();
-    const created = await createProblemSet(db, {
-      descriptionMarkdown: "旧说明",
-      pids: ["P1563"],
-      title: "旧标题",
-    });
-    await db.delete(refreshRequest);
-
-    const updated = await updateProblemSet(db, {
-      descriptionMarkdown: "新说明",
-      id: created.id,
-      title: "新标题",
-    });
-    const problems = await db.select().from(problemSetProblem);
-    const requests = await db.select().from(refreshRequest);
-
-    expect(updated.title).toBe("新标题");
-    expect(updated.descriptionMarkdown).toBe("新说明");
-    expect(problems.map((problem) => problem.pid)).toEqual(["P1563"]);
-    expect(requests.map((request) => [request.kind, request.targetId])).toEqual(
-      [["luogu.problemDetails", "P1563"]]
-    );
-  });
-
-  it("replaces problems and preserves existing details for reused PIDs", async () => {
+  it("replaces the full snapshot and preserves details for reused PIDs", async () => {
     const db = await createServiceTestDb();
     const created = await createProblemSet(db, {
       descriptionMarkdown: "",
@@ -258,15 +233,20 @@ describe("problem sets", () => {
       .where(eq(problemSetProblem.pid, "P1563"));
     await db.delete(refreshRequest);
 
-    await updateProblemSet(db, {
+    const updated = await updateProblemSet(db, {
+      descriptionMarkdown: "新说明",
       id: created.id,
       pids: ["P1328", "P1563", "P2615"],
+      title: "进阶题单",
     });
     const problems = await db
       .select()
       .from(problemSetProblem)
       .orderBy(problemSetProblem.sortOrder);
+    const requests = await db.select().from(refreshRequest);
 
+    expect(updated.title).toBe("进阶题单");
+    expect(updated.descriptionMarkdown).toBe("新说明");
     expect(problems.map((problem) => problem.pid)).toEqual([
       "P1328",
       "P1563",
@@ -275,6 +255,11 @@ describe("problem sets", () => {
     expect(problems.find((problem) => problem.pid === "P1563")?.title).toBe(
       "玩具谜题"
     );
+    expect(requests.map((request) => request.targetId)).toEqual([
+      "P1328",
+      "P1563",
+      "P2615",
+    ]);
   });
 
   it("lists completions for eligible users by current problem set PIDs", async () => {
@@ -367,5 +352,21 @@ describe("problem sets", () => {
 
     expect(problemSets).toHaveLength(0);
     expect(problems).toHaveLength(0);
+  });
+
+  it("throws NOT_FOUND when updating or deleting a missing problem set", async () => {
+    const db = await createServiceTestDb();
+
+    await expect(
+      updateProblemSet(db, {
+        descriptionMarkdown: "",
+        id: "missing-set",
+        pids: ["P1563"],
+        title: "基础题单",
+      })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(deleteProblemSet(db, "missing-set")).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 });

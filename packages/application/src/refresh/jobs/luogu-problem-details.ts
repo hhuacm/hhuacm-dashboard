@@ -5,6 +5,7 @@ import {
   enrichProblemSetProblemsByPid,
   type LuoguProblemLoader,
 } from "../../services/luogu/problem-details";
+import type { RefreshQueueDatabase } from "../request-store";
 import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
 
 const missingProblemDetailsFields = {
@@ -20,7 +21,7 @@ export const handleLuoguProblemDetailsRequest = async (
 };
 
 export const enqueueLuoguProblemDetailsJobs = async (
-  db: Database,
+  db: RefreshQueueDatabase,
   pids: string[]
 ) => {
   let count = 0;

@@ -82,21 +82,10 @@ export const adminProblemSetInputSchema = z.object({
   title: trimmedStringSchema,
 });
 
-export const adminProblemSetUpdateInputSchema = problemSetIdInputSchema
-  .extend({
-    descriptionMarkdown: z.string().optional(),
-    pids: z.array(problemSetPidSchema).min(1).optional(),
-    title: trimmedStringSchema.optional(),
-  })
-  .refine(
-    (input) =>
-      input.descriptionMarkdown !== undefined ||
-      input.pids !== undefined ||
-      input.title !== undefined,
-    {
-      message: "Problem set update requires at least one field",
-    }
-  );
+export const adminProblemSetUpdateInputSchema =
+  adminProblemSetInputSchema.extend({
+    id: trimmedStringSchema,
+  });
 
 export const adminHomeNoticeInputSchema = z.object({
   markdown: z.string(),

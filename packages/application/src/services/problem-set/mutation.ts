@@ -1,12 +1,13 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { problemSet } from "@hhuacm-dashboard/db/schema/problem-set";
 import { eq } from "drizzle-orm";
+import { ApplicationError } from "../../errors";
 import { enqueueLuoguProblemDetailsJobs } from "../../refresh/jobs/luogu-problem-details";
 import {
   normalizeProblemPids,
   replaceProblemSetProblems,
 } from "./problem-list";
-import { getProblemSet, getProblemSetOrThrow } from "./query";
+import { getProblemSet } from "./query";
 
 interface ProblemSetInput {
   descriptionMarkdown: string;
@@ -14,11 +15,8 @@ interface ProblemSetInput {
   title: string;
 }
 
-interface ProblemSetUpdateInput {
-  descriptionMarkdown?: string;
+interface ProblemSetUpdateInput extends ProblemSetInput {
   id: string;
-  pids?: string[];
-  title?: string;
 }
 
 const problemSetFields = {
@@ -48,11 +46,10 @@ export const createProblemSet = async (
       pids,
       problemSetId: createdProblemSet.id,
     });
+    await enqueueLuoguProblemDetailsJobs(tx, pids);
 
     return createdProblemSet;
   });
-
-  await enqueueLuoguProblemDetailsJobs(db, pids);
 
   return await getProblemSet(db, {
     currentUserId: null,
@@ -64,41 +61,30 @@ export const updateProblemSet = async (
   db: Database,
   input: ProblemSetUpdateInput
 ) => {
-  await getProblemSetOrThrow(db, input.id);
-  const pids =
-    input.pids === undefined ? null : normalizeProblemPids(input.pids);
+  const pids = normalizeProblemPids(input.pids);
 
   await db.transaction(async (tx) => {
-    const values = {
-      ...(input.descriptionMarkdown === undefined
-        ? {}
-        : { descriptionMarkdown: input.descriptionMarkdown }),
-      ...(input.title === undefined ? {} : { title: input.title }),
-      ...(input.descriptionMarkdown === undefined &&
-      input.pids === undefined &&
-      input.title === undefined
-        ? {}
-        : { updatedAt: new Date() }),
-    };
+    const updatedProblemSet = await tx
+      .update(problemSet)
+      .set({
+        descriptionMarkdown: input.descriptionMarkdown,
+        title: input.title,
+        updatedAt: new Date(),
+      })
+      .where(eq(problemSet.id, input.id))
+      .returning({ id: problemSet.id })
+      .get();
 
-    if (Object.keys(values).length > 0) {
-      await tx
-        .update(problemSet)
-        .set(values)
-        .where(eq(problemSet.id, input.id));
+    if (!updatedProblemSet) {
+      throw new ApplicationError({ code: "NOT_FOUND" });
     }
 
-    if (pids !== null) {
-      await replaceProblemSetProblems(tx, {
-        pids,
-        problemSetId: input.id,
-      });
-    }
+    await replaceProblemSetProblems(tx, {
+      pids,
+      problemSetId: input.id,
+    });
+    await enqueueLuoguProblemDetailsJobs(tx, pids);
   });
-
-  if (pids !== null) {
-    await enqueueLuoguProblemDetailsJobs(db, pids);
-  }
 
   return await getProblemSet(db, {
     currentUserId: null,
@@ -107,8 +93,15 @@ export const updateProblemSet = async (
 };
 
 export const deleteProblemSet = async (db: Database, id: string) => {
-  await getProblemSetOrThrow(db, id);
-  await db.delete(problemSet).where(eq(problemSet.id, id));
+  const deletedProblemSet = await db
+    .delete(problemSet)
+    .where(eq(problemSet.id, id))
+    .returning({ id: problemSet.id })
+    .get();
 
-  return { id };
+  if (!deletedProblemSet) {
+    throw new ApplicationError({ code: "NOT_FOUND" });
+  }
+
+  return deletedProblemSet;
 };
