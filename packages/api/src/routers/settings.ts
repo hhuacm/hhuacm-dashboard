@@ -22,7 +22,6 @@ export const settingsRouter = router({
     update: protectedProcedure.input(profileUpdateInputSchema).mutation(
       async ({ ctx, input }) =>
         await updateUserProfile(ctx.db, {
-          notFoundCode: "NOT_FOUND",
           userId: ctx.session.user.id,
           values: input,
         })

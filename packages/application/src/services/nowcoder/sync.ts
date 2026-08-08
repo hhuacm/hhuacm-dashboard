@@ -56,7 +56,7 @@ export const syncNowcoderAccountStats = async (
     acceptedProblemCount === null ? {} : { acceptedProblemCount };
 
   return await db.transaction(async (tx) => {
-    const [stats] = await tx
+    const stats = await tx
       .insert(nowcoderAccountStats)
       .values({
         acceptedProblemCount,
@@ -76,11 +76,8 @@ export const syncNowcoderAccountStats = async (
         },
         target: nowcoderAccountStats.accountId,
       })
-      .returning(nowcoderStatsFields);
-
-    if (!stats) {
-      throw new Error(`Nowcoder stats write failed for ${account.externalId}`);
-    }
+      .returning(nowcoderStatsFields)
+      .get();
 
     if (account.handle !== ratingBasic.nickname) {
       await tx
@@ -101,7 +98,7 @@ export const markNowcoderAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  const [stats] = await db
+  return await db
     .insert(nowcoderAccountStats)
     .values({
       accountId: account.id,
@@ -115,13 +112,8 @@ export const markNowcoderAccountStatsRefreshFailed = async (
       },
       target: nowcoderAccountStats.accountId,
     })
-    .returning(nowcoderStatsFields);
-
-  if (!stats) {
-    throw new Error(`Nowcoder failure write failed for ${account.externalId}`);
-  }
-
-  return stats;
+    .returning(nowcoderStatsFields)
+    .get();
 };
 
 export const deleteNowcoderStats = async (

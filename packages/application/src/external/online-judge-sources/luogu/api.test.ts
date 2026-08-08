@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { mockFetchRequests, mockJsonResponse } from "../../test-fetch";
+import { mockFetchRequests } from "../../test-fetch";
 import { luoguSource } from "./api";
 
 const userData = {
@@ -141,59 +141,6 @@ const createRedirectResponse = () =>
   Response.redirect("https://www.luogu.com.cn/user/97238/practice");
 
 describe("luoguSource", () => {
-  it("throws when user search response has no users array", async () => {
-    mockJsonResponse({});
-
-    await expect(
-      luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).rejects.toThrow("Luogu user/search returned invalid JSON");
-  });
-
-  it("loads user search results", async () => {
-    mockJsonResponse({
-      users: [
-        {
-          avatar: "https://cdn.luogu.com.cn/upload/usericon/1.png",
-          background: "",
-          badge: null,
-          ccfLevel: 0,
-          color: "Red",
-          isAdmin: false,
-          isBanned: false,
-          name: "kkksc03",
-          slogan: "",
-          uid: 1,
-          xcpcLevel: 0,
-        },
-      ],
-    });
-
-    await expect(
-      luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).resolves.toEqual({
-      users: [
-        expect.objectContaining({
-          name: "kkksc03",
-          uid: 1,
-        }),
-      ],
-    });
-  });
-
-  it("throws when user search users have an invalid raw shape", async () => {
-    mockJsonResponse({
-      users: [
-        {
-          name: "missing-uid",
-        },
-      ],
-    });
-
-    await expect(
-      luoguSource.searchUsers({ keyword: "kkksc03" })
-    ).rejects.toThrow("Luogu user/search returned invalid JSON");
-  });
-
   it("loads practice data after warming the Luogu CDN cookie", async () => {
     const requests = mockFetchRequests([
       createCdnRedirectResponse("C3VK=first"),

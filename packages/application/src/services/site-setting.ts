@@ -21,7 +21,7 @@ export const updateHomeNoticeMarkdown = async (
   db: Database,
   markdown: string
 ) => {
-  const [setting] = await db
+  const setting = await db
     .insert(siteSetting)
     .values({
       key: homeNoticeMarkdownKey,
@@ -34,7 +34,8 @@ export const updateHomeNoticeMarkdown = async (
       },
       target: siteSetting.key,
     })
-    .returning({ value: siteSetting.value });
+    .returning({ value: siteSetting.value })
+    .get();
 
-  return setting?.value ?? markdown;
+  return setting.value;
 };

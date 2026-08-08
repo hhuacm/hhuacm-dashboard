@@ -1,7 +1,5 @@
 import { Chip } from "@heroui/react";
 import {
-  defaultMemberStatus,
-  isMemberStatus,
   type MemberStatus,
   memberStatusLabels,
 } from "@hhuacm-dashboard/domain";
@@ -21,13 +19,11 @@ export function MemberStatusChip({
   status,
 }: {
   size?: "md" | "sm";
-  status: null | string | undefined;
+  status: MemberStatus;
 }) {
-  const memberStatus = isMemberStatus(status) ? status : defaultMemberStatus;
-
   return (
-    <Chip color={memberStatusColors[memberStatus]} size={size} variant="soft">
-      {memberStatusLabels[memberStatus]}
+    <Chip color={memberStatusColors[status]} size={size} variant="soft">
+      {memberStatusLabels[status]}
     </Chip>
   );
 }

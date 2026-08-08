@@ -25,12 +25,6 @@ const luoguUserSchema = z.looseObject({
   xcpcLevel: z.number(),
 });
 
-const luoguUserSearchResultSchema = z.looseObject({
-  users: z.array(luoguUserSchema),
-});
-
-export type LuoguUserSearchResult = z.infer<typeof luoguUserSearchResultSchema>;
-
 const luoguProblemSummarySchema = z.looseObject({
   difficulty: z.number(),
   name: z.string(),
@@ -123,21 +117,7 @@ const luoguPageResponseSchema = z.looseObject({
   status: z.number(),
 });
 
-const buildLuoguUrl = (
-  path: string,
-  searchParams: Record<string, string> = {}
-) => {
-  const url = new URL(path, luoguBaseUrl);
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    url.searchParams.set(key, value);
-  }
-
-  return url;
-};
-
-const buildLuoguUserSearchUrl = (keyword: string) =>
-  buildLuoguUrl("/api/user/search", { keyword });
+const buildLuoguUrl = (path: string) => new URL(path, luoguBaseUrl);
 
 const buildLuoguProblemUrl = (pid: string) => buildLuoguUrl(`/problem/${pid}`);
 
@@ -272,31 +252,6 @@ const fetchLuoguPageData = async (url: URL) => {
   return (await response.json()) as unknown;
 };
 
-const searchUsers = async (params: {
-  keyword: string;
-}): Promise<LuoguUserSearchResult> => {
-  const url = buildLuoguUserSearchUrl(params.keyword);
-
-  const response = await requestExternalResource({
-    label: "Luogu user/search",
-    request: async (signal) => await fetch(url, { signal }),
-    timeoutMs: requestTimeoutMs,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Luogu user/search HTTP ${response.status}`);
-  }
-
-  const payload: unknown = await response.json();
-  const data = luoguUserSearchResultSchema.safeParse(payload);
-
-  if (!data.success) {
-    throw new Error("Luogu user/search returned invalid JSON");
-  }
-
-  return data.data;
-};
-
 const user = async (params: { uid: number }): Promise<LuoguUserPageData> => {
   const payload = await fetchLuoguPageData(buildLuoguUserUrl(params.uid));
   const data = luoguPageResponseSchema.safeParse(payload);
@@ -357,6 +312,5 @@ const practice = async (params: {
 export const luoguSource = {
   practice,
   problem,
-  searchUsers,
   user,
 };

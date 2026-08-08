@@ -13,11 +13,10 @@ import {
   getVisibleAdminUsersDisplayColumns,
   isAdminUsersSortColumn,
 } from "../_model/admin-users-table-columns";
-import {
-  type AdminUsersSort,
-  type AdminUserTableRow,
-  getAdminUsernameLabel,
-  type SortDirection,
+import type {
+  AdminUsersSort,
+  AdminUserTableRow,
+  SortDirection,
 } from "../helpers";
 
 interface AdminUsersTableProps extends AdminUsersTableActions {
@@ -136,35 +135,31 @@ export function AdminUsersTable({
             ))}
           </Table.Header>
           <Table.Body>
-            {users.map((user, userIndex) => {
-              const usernameLabel = getAdminUsernameLabel(user);
-
-              return (
-                <Table.Row
-                  className="h-14"
-                  id={user.id}
-                  key={user.id}
-                  textValue={usernameLabel}
-                >
-                  {visibleColumns.map((column) => (
-                    <Table.Cell
-                      className={clsx(
-                        "whitespace-nowrap",
-                        columnAlignClassNames[column.align],
-                        column.cellClassName
-                      )}
-                      key={column.id}
-                    >
-                      {column.renderCell({
-                        actions,
-                        row: user,
-                        rowIndex: userIndex,
-                      })}
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-              );
-            })}
+            {users.map((user, userIndex) => (
+              <Table.Row
+                className="h-14"
+                id={user.id}
+                key={user.id}
+                textValue={user.username}
+              >
+                {visibleColumns.map((column) => (
+                  <Table.Cell
+                    className={clsx(
+                      "whitespace-nowrap",
+                      columnAlignClassNames[column.align],
+                      column.cellClassName
+                    )}
+                    key={column.id}
+                  >
+                    {column.renderCell({
+                      actions,
+                      row: user,
+                      rowIndex: userIndex,
+                    })}
+                  </Table.Cell>
+                ))}
+              </Table.Row>
+            ))}
           </Table.Body>
         </Table.Content>
       </Table.ScrollContainer>

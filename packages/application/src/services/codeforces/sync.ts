@@ -76,7 +76,7 @@ export const syncCodeforcesAccountStats = async (
       : new Date(userInfo.lastOnlineTimeSeconds * 1000);
 
   return await db.transaction(async (tx) => {
-    const [stats] = await tx
+    const stats = await tx
       .insert(codeforcesAccountStats)
       .values({
         acceptedProblemCount: summary.acceptedProblemCount,
@@ -102,13 +102,8 @@ export const syncCodeforcesAccountStats = async (
         },
         target: codeforcesAccountStats.accountId,
       })
-      .returning(codeforcesStatsFields);
-
-    if (!stats) {
-      throw new Error(
-        `Codeforces stats write failed for ${account.externalId}`
-      );
-    }
+      .returning(codeforcesStatsFields)
+      .get();
 
     if (account.handle !== userInfo.handle) {
       await tx
@@ -129,7 +124,7 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  const [stats] = await db
+  return await db
     .insert(codeforcesAccountStats)
     .values({
       accountId: account.id,
@@ -143,13 +138,6 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
       },
       target: codeforcesAccountStats.accountId,
     })
-    .returning(codeforcesStatsFields);
-
-  if (!stats) {
-    throw new Error(
-      `Codeforces failure write failed for ${account.externalId}: ${lastError}`
-    );
-  }
-
-  return stats;
+    .returning(codeforcesStatsFields)
+    .get();
 };

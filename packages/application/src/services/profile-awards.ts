@@ -147,7 +147,7 @@ export const syncUserAwardsFromLuogu = async (
   return await db.transaction(async (tx) => {
     await replaceLuoguUserAwards(tx, account, awards);
 
-    const [sync] = await tx
+    return await tx
       .insert(userAwardSync)
       .values({
         fetchedAt,
@@ -164,13 +164,8 @@ export const syncUserAwardsFromLuogu = async (
         },
         target: [userAwardSync.userId, userAwardSync.source],
       })
-      .returning(awardSyncFields);
-
-    if (!sync) {
-      throw new Error(`User award sync write failed for ${account.externalId}`);
-    }
-
-    return sync;
+      .returning(awardSyncFields)
+      .get();
   });
 };
 
@@ -182,7 +177,7 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  const [sync] = await db
+  return await db
     .insert(userAwardSync)
     .values({
       lastAttemptedAt: now,
@@ -197,15 +192,8 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
       },
       target: [userAwardSync.userId, userAwardSync.source],
     })
-    .returning(awardSyncFields);
-
-  if (!sync) {
-    throw new Error(
-      `User award failure write failed for ${account.externalId}`
-    );
-  }
-
-  return sync;
+    .returning(awardSyncFields)
+    .get();
 };
 
 export const getAwardsForPublicProfile = async (

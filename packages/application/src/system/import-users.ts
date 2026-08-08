@@ -153,7 +153,7 @@ const createImportedUser = async (
   let refreshRequestCount = 0;
 
   for (const accountSeed of input.seedUser.ojAccounts ?? []) {
-    const [createdOjAccount] = await db
+    const createdOjAccount = await db
       .insert(userOjAccount)
       .values({
         externalId: accountSeed.externalId,
@@ -164,11 +164,8 @@ const createImportedUser = async (
       .returning({
         id: userOjAccount.id,
         platform: userOjAccount.platform,
-      });
-
-    if (!createdOjAccount) {
-      continue;
-    }
+      })
+      .get();
 
     refreshRequestCount += await requestOjAccountRefreshEffectsIfNeeded(
       db,
@@ -189,16 +186,11 @@ export const importUsersFromSystemSeedFile = async (
 
   validateSeedUsers(users);
 
-  const passwordHashesByUsername = new Map(
-    await Promise.all(
-      users.map(
-        async (seedUser) =>
-          [
-            seedUser.username,
-            await hashPassword(defaultImportedUserPassword),
-          ] as const
-      )
-    )
+  const usersWithPasswordHashes = await Promise.all(
+    users.map(async (seedUser) => ({
+      passwordHash: await hashPassword(defaultImportedUserPassword),
+      seedUser,
+    }))
   );
 
   return await db.transaction(async (tx) => {
@@ -212,15 +204,7 @@ export const importUsersFromSystemSeedFile = async (
       userCount: users.length,
     };
 
-    for (const seedUser of users) {
-      const passwordHash = passwordHashesByUsername.get(seedUser.username);
-
-      if (!passwordHash) {
-        throw new SystemUserImportError(
-          `Missing password hash for ${seedUser.username}`
-        );
-      }
-
+    for (const { passwordHash, seedUser } of usersWithPasswordHashes) {
       const result = await createImportedUser(tx, {
         passwordHash,
         seedUser,

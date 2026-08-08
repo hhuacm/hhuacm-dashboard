@@ -224,14 +224,13 @@ export const getSettingsProfile = async (db: Database, userId: string) => {
 export const updateUserProfile = async (
   db: Database,
   input: {
-    notFoundCode: "INTERNAL_SERVER_ERROR" | "NOT_FOUND";
     userId: string;
     values: ProfileUpdateValues;
   }
 ) => {
   await getTargetUser(db, input.userId);
 
-  const [profile] = await db
+  const profile = await db
     .insert(userProfile)
     .values({
       ...input.values,
@@ -243,11 +242,8 @@ export const updateUserProfile = async (
       },
       target: userProfile.userId,
     })
-    .returning(profileFields);
-
-  if (!profile) {
-    throw new ApplicationError({ code: input.notFoundCode });
-  }
+    .returning(profileFields)
+    .get();
 
   return {
     ...profile,

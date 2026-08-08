@@ -1,7 +1,6 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { problemSet } from "@hhuacm-dashboard/db/schema/problem-set";
 import { eq } from "drizzle-orm";
-import { ApplicationError } from "../../errors";
 import { enqueueLuoguProblemDetailsJobs } from "../../refresh/jobs/luogu-problem-details";
 import {
   normalizeProblemPids,
@@ -36,17 +35,14 @@ export const createProblemSet = async (
 ) => {
   const pids = normalizeProblemPids(input.pids);
   const item = await db.transaction(async (tx) => {
-    const [createdProblemSet] = await tx
+    const createdProblemSet = await tx
       .insert(problemSet)
       .values({
         descriptionMarkdown: input.descriptionMarkdown,
         title: input.title,
       })
-      .returning(problemSetFields);
-
-    if (!createdProblemSet) {
-      throw new ApplicationError({ code: "INTERNAL_SERVER_ERROR" });
-    }
+      .returning(problemSetFields)
+      .get();
 
     await replaceProblemSetProblems(tx, {
       pids,

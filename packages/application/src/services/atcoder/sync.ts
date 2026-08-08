@@ -60,7 +60,7 @@ export const syncAtcoderAccountStats = async (
   );
   const fetchedAt = now;
 
-  const [stats] = await db
+  const stats = await db
     .insert(atcoderAccountStats)
     .values({
       accountId: account.id,
@@ -80,11 +80,8 @@ export const syncAtcoderAccountStats = async (
       },
       target: atcoderAccountStats.accountId,
     })
-    .returning(atcoderStatsFields);
-
-  if (!stats) {
-    throw new Error(`AtCoder stats write failed for ${account.externalId}`);
-  }
+    .returning(atcoderStatsFields)
+    .get();
 
   return stats;
 };
@@ -97,7 +94,7 @@ export const markAtcoderAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  const [stats] = await db
+  return await db
     .insert(atcoderAccountStats)
     .values({
       accountId: account.id,
@@ -111,13 +108,8 @@ export const markAtcoderAccountStatsRefreshFailed = async (
       },
       target: atcoderAccountStats.accountId,
     })
-    .returning(atcoderStatsFields);
-
-  if (!stats) {
-    throw new Error(`AtCoder failure write failed for ${account.externalId}`);
-  }
-
-  return stats;
+    .returning(atcoderStatsFields)
+    .get();
 };
 
 export const deleteAtcoderStats = async (

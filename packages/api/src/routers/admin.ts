@@ -83,7 +83,6 @@ export const adminRouter = router({
       .mutation(
         async ({ ctx, input }) =>
           await updateUserProfile(ctx.db, {
-            notFoundCode: "INTERNAL_SERVER_ERROR",
             userId: input.userId,
             values: input.values,
           })

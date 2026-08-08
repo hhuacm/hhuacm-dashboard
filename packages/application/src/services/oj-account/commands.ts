@@ -32,7 +32,7 @@ interface OjAccountDeleteInput {
 
 const createOjAccount = async (db: Database, input: OjAccountInput) =>
   await db.transaction(async (tx) => {
-    const [account] = await tx
+    const account = await tx
       .insert(userOjAccount)
       .values({
         externalId: input.externalId,
@@ -40,11 +40,8 @@ const createOjAccount = async (db: Database, input: OjAccountInput) =>
         platform: input.platform,
         userId: input.userId,
       })
-      .returning(internalOjAccountFields);
-
-    if (!account) {
-      throw new ApplicationError({ code: "INTERNAL_SERVER_ERROR" });
-    }
+      .returning(internalOjAccountFields)
+      .get();
 
     await requestOjAccountRefreshEffectsIfNeeded(tx, account, input.userId);
 

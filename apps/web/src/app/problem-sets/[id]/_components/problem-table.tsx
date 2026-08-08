@@ -11,7 +11,6 @@ import {
   problemTableColumnClassNames,
 } from "../_model/problem-set-detail-view";
 import { DifficultyChip, ProblemStatusChip } from "./problem-status";
-import { ProblemTitleLink } from "./problem-title-link";
 
 interface ProblemTableProps {
   problems: ProblemSetProblem[];
@@ -127,7 +126,17 @@ export function ProblemTable({ problems }: ProblemTableProps) {
                         </LinkedProblemText>
                       </Table.Cell>
                       <Table.Cell className="min-w-0 overflow-hidden">
-                        <ProblemTitleLink href={href} title={problem.title} />
+                        <a
+                          className="inline-flex min-w-0 max-w-full font-medium text-accent underline-offset-4 hover:underline focus-visible:underline"
+                          href={href}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          title={problem.title}
+                        >
+                          <span className="block min-w-0 truncate">
+                            {problem.title}
+                          </span>
+                        </a>
                       </Table.Cell>
                       <Table.Cell className={difficultyColumnClassName}>
                         <div className="flex justify-center">

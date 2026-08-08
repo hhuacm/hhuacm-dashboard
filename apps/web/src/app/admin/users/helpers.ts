@@ -66,16 +66,6 @@ export const emptyAdminUsersFilters: AdminUsersFilters = {
   ojPlatforms: [],
 };
 
-export const getAdminUsernameLabel = (user: { username: string }) => {
-  const username = user.username.trim();
-
-  if (username) {
-    return username;
-  }
-
-  return "未设置";
-};
-
 export const isMemberStatusFilterValue = (
   value: string
 ): value is MemberStatus => isMemberStatus(value);

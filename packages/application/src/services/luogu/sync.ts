@@ -70,10 +70,6 @@ const writeAcceptedProblems = async (
     [...problemsByPid.values()],
     acceptedProblemChunkSize
   )) {
-    if (chunk.length === 0) {
-      continue;
-    }
-
     await tx.insert(luoguAcceptedProblem).values(
       chunk.map((problem) => ({
         accountId: account.id,
@@ -112,7 +108,7 @@ export const syncLuoguAccountStats = async (
         .where(eq(userOjAccount.id, account.id));
     }
 
-    const [stats] = await tx
+    return await tx
       .insert(luoguAccountStats)
       .values({
         acceptedProblemCount: summary.acceptedProblemCount,
@@ -134,13 +130,8 @@ export const syncLuoguAccountStats = async (
         },
         target: luoguAccountStats.accountId,
       })
-      .returning(luoguStatsFields);
-
-    if (!stats) {
-      throw new Error(`Luogu stats write failed for ${account.externalId}`);
-    }
-
-    return stats;
+      .returning(luoguStatsFields)
+      .get();
   });
 };
 
@@ -152,7 +143,7 @@ export const markLuoguAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  const [stats] = await db
+  return await db
     .insert(luoguAccountStats)
     .values({
       accountId: account.id,
@@ -166,13 +157,8 @@ export const markLuoguAccountStatsRefreshFailed = async (
       },
       target: luoguAccountStats.accountId,
     })
-    .returning(luoguStatsFields);
-
-  if (!stats) {
-    throw new Error(`Luogu failure write failed for ${account.externalId}`);
-  }
-
-  return stats;
+    .returning(luoguStatsFields)
+    .get();
 };
 
 export const deleteLuoguStats = async (

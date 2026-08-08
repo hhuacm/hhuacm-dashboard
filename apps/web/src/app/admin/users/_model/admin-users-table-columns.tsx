@@ -14,13 +14,12 @@ import type { TableColumnVisibilityConfig } from "@/components/column-visibility
 import { MemberStatusChip } from "@/components/member-status-chip";
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import { getProfileDisplayValue } from "@/utils/profile-fields";
-import {
-  type AdminUserOjAccount,
-  type AdminUsersSort,
-  type AdminUserTableRow,
-  getAdminUsernameLabel,
-  type SortColumn,
-  type UserRole,
+import type {
+  AdminUserOjAccount,
+  AdminUsersSort,
+  AdminUserTableRow,
+  SortColumn,
+  UserRole,
 } from "../helpers";
 
 export const adminUsersColumnVisibilityStorageKey =
@@ -255,7 +254,7 @@ export const adminUsersDisplayColumns: readonly AdminUsersDisplayColumn[] = [
     label: "用户名",
     minWidth: 176,
     renderCell: ({ row }) => (
-      <span className="block truncate">{getAdminUsernameLabel(row)}</span>
+      <span className="block truncate">{row.username}</span>
     ),
     sortColumn: "username",
     visibility: "required",

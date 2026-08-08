@@ -12,7 +12,10 @@ import {
   Spinner,
   TextField,
 } from "@heroui/react";
-import { getGradeOptionsWithCurrentValue } from "@hhuacm-dashboard/domain";
+import {
+  getGradeOptionsWithCurrentValue,
+  type MemberStatus,
+} from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save } from "lucide-react";
 import { type Key, useState } from "react";
@@ -39,7 +42,7 @@ export interface UserBasicInfoMessage {
 }
 
 export type UserBasicInfoProfile = ProfileData & {
-  memberStatus?: null | string;
+  memberStatus: MemberStatus;
 };
 
 interface UserBasicInfoSectionProps {
@@ -49,7 +52,7 @@ interface UserBasicInfoSectionProps {
   message: null | UserBasicInfoMessage;
   onClearMessage?: () => void;
   onSubmit: (values: ProfileUpdateValues) => Promise<void>;
-  profile: null | UserBasicInfoProfile | undefined;
+  profile: UserBasicInfoProfile | undefined;
 }
 
 interface BasicInfoFieldInputProps {
@@ -277,7 +280,13 @@ export function UserBasicInfoSection({
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <InfoItem
               label="状态"
-              value={<MemberStatusChip status={profile?.memberStatus} />}
+              value={
+                profile ? (
+                  <MemberStatusChip status={profile.memberStatus} />
+                ) : (
+                  "未填写"
+                )
+              }
             />
             {profileFieldConfigs.map((field) => (
               <InfoItem
