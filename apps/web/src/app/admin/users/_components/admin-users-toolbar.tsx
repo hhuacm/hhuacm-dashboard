@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Checkbox,
-  CheckboxGroup,
-  Label,
-  Popover,
-  Spinner,
-} from "@heroui/react";
+import { Button, Checkbox, CheckboxGroup, Label, Popover } from "@heroui/react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
 import { ColumnVisibilityMenu } from "@/components/column-visibility";
@@ -17,13 +10,12 @@ import {
   adminUsersColumns,
 } from "../_model/admin-users-table-columns";
 import type {
+  AdminUsersFilterOptions,
   AdminUsersFilters,
-  AdminUsersMetadata,
   FilterOption,
 } from "../helpers";
 
 interface FilterMenuProps {
-  isDisabled?: boolean;
   label: string;
   onChange: (values: string[]) => void;
   options: FilterOption[];
@@ -31,17 +23,15 @@ interface FilterMenuProps {
 }
 
 interface AdminUsersToolbarProps {
+  filterOptions: AdminUsersFilterOptions;
   filters: AdminUsersFilters;
   hasActiveFilters: boolean;
-  metadata: AdminUsersMetadata | undefined;
-  metadataIsLoading: boolean;
   onClearFilters: () => void;
   onFilterChange: (key: keyof AdminUsersFilters, values: string[]) => void;
   visibleColumnControls: AdminUsersVisibleColumnControls;
 }
 
 function FilterMenu({
-  isDisabled = false,
   label,
   onChange,
   options,
@@ -52,7 +42,7 @@ function FilterMenu({
 
   return (
     <Popover>
-      <Button isDisabled={isDisabled} size="sm" variant="outline">
+      <Button size="sm" variant="outline">
         <SlidersHorizontal className="size-4" />
         {buttonLabel}
         <ChevronDown className="size-4" />
@@ -89,10 +79,9 @@ function FilterMenu({
 }
 
 export function AdminUsersToolbar({
+  filterOptions,
   filters,
   hasActiveFilters,
-  metadata,
-  metadataIsLoading,
   onClearFilters,
   onFilterChange,
   visibleColumnControls,
@@ -100,24 +89,21 @@ export function AdminUsersToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <FilterMenu
-        isDisabled={metadataIsLoading}
         label="状态"
         onChange={(values) => onFilterChange("memberStatuses", values)}
-        options={metadata?.memberStatuses ?? []}
+        options={filterOptions.memberStatuses}
         selectedValues={filters.memberStatuses}
       />
       <FilterMenu
-        isDisabled={metadataIsLoading}
         label="年级"
         onChange={(values) => onFilterChange("grades", values)}
-        options={metadata?.grades ?? []}
+        options={filterOptions.grades}
         selectedValues={filters.grades}
       />
       <FilterMenu
-        isDisabled={metadataIsLoading}
         label="OJ"
         onChange={(values) => onFilterChange("ojPlatforms", values)}
-        options={metadata?.ojPlatforms ?? []}
+        options={filterOptions.ojPlatforms}
         selectedValues={filters.ojPlatforms}
       />
       <Button
@@ -135,12 +121,6 @@ export function AdminUsersToolbar({
         onVisibleChange={visibleColumnControls.setColumnVisible}
         visibleColumnIds={visibleColumnControls.visibleColumnIds}
       />
-      {metadataIsLoading ? (
-        <span className="inline-flex items-center gap-2 text-muted text-sm">
-          <Spinner color="current" size="sm" />
-          正在读取筛选项
-        </span>
-      ) : null}
     </div>
   );
 }

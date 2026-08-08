@@ -4,7 +4,11 @@ import {
   isMemberStatus,
   isOjPlatform,
   type MemberStatus,
+  memberStatuses,
+  memberStatusLabels,
   type OjPlatform,
+  ojPlatformLabels,
+  ojPlatforms,
 } from "@hhuacm-dashboard/domain";
 import type { inferRouterOutputs } from "@trpc/server";
 
@@ -33,7 +37,10 @@ export type SortColumn = (typeof sortableColumns)[number];
 export type SortDirection = "ascending" | "descending";
 export type UserRole = AdminUsersRouter["get"]["role"];
 
-export type FilterOption = AdminUsersRouter["metadata"]["grades"][number];
+export interface FilterOption {
+  label: string;
+  value: string;
+}
 
 export interface AdminUsersFilters {
   grades: string[];
@@ -49,8 +56,13 @@ export interface AdminUsersSort {
 export type AdminUserOjAccount = AdminUsersRouter["get"]["ojAccounts"][number];
 export type AdminUserProfile = AdminUsersRouter["get"]["profile"];
 export type AdminUserDetail = AdminUsersRouter["get"];
-export type AdminUserTableRow = AdminUsersRouter["list"]["items"][number];
-export type AdminUsersMetadata = AdminUsersRouter["metadata"];
+export type AdminUserTableRow = AdminUsersRouter["list"][number];
+
+export interface AdminUsersFilterOptions {
+  grades: FilterOption[];
+  memberStatuses: FilterOption[];
+  ojPlatforms: FilterOption[];
+}
 
 export type AdminProfileFormValues = ProfileFormValues & {
   memberStatus: MemberStatus;
@@ -77,6 +89,66 @@ export const hasFilters = (filters: AdminUsersFilters) =>
   filters.grades.length > 0 ||
   filters.memberStatuses.length > 0 ||
   filters.ojPlatforms.length > 0;
+
+const textCollator = new Intl.Collator("zh-CN", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+const memberStatusFilterOptions = memberStatuses.map((status) => ({
+  label: memberStatusLabels[status],
+  value: status,
+}));
+
+const ojPlatformFilterOptions = ojPlatforms.map((platform) => ({
+  label: ojPlatformLabels[platform],
+  value: platform,
+}));
+
+export const getAdminUsersFilterOptions = (
+  users: AdminUserTableRow[]
+): AdminUsersFilterOptions => ({
+  grades: [
+    ...new Set(users.flatMap((user) => (user.grade ? [user.grade] : []))),
+  ]
+    .sort((left, right) => textCollator.compare(left, right))
+    .map((grade) => ({ label: grade, value: grade })),
+  memberStatuses: memberStatusFilterOptions,
+  ojPlatforms: ojPlatformFilterOptions,
+});
+
+const getSortValue = (user: AdminUserTableRow, column: SortColumn) =>
+  user[column] ?? "";
+
+export const getVisibleAdminUsers = (
+  users: AdminUserTableRow[],
+  filters: AdminUsersFilters,
+  sort: AdminUsersSort
+) => {
+  const filteredUsers = users.filter(
+    (user) =>
+      (filters.grades.length === 0 ||
+        (user.grade !== null && filters.grades.includes(user.grade))) &&
+      (filters.memberStatuses.length === 0 ||
+        filters.memberStatuses.includes(user.memberStatus)) &&
+      (filters.ojPlatforms.length === 0 ||
+        user.ojAccounts.some((account) =>
+          filters.ojPlatforms.includes(account.platform)
+        ))
+  );
+  const direction = sort.direction === "ascending" ? 1 : -1;
+
+  return filteredUsers.toSorted((left, right) => {
+    const comparison = textCollator.compare(
+      getSortValue(left, sort.column),
+      getSortValue(right, sort.column)
+    );
+
+    return comparison === 0
+      ? textCollator.compare(left.id, right.id)
+      : comparison * direction;
+  });
+};
 
 const getErrorText = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("message" in error)) {

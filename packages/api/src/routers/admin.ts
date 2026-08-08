@@ -1,7 +1,6 @@
 import { deleteAdminUser } from "@hhuacm-dashboard/application/services/admin-users/delete-user";
 import { getAdminUser } from "@hhuacm-dashboard/application/services/admin-users/detail";
 import { listAdminUsers } from "@hhuacm-dashboard/application/services/admin-users/list-query";
-import { getAdminUsersMetadata } from "@hhuacm-dashboard/application/services/admin-users/metadata";
 import {
   deleteOjAccount,
   upsertOjAccount,
@@ -27,7 +26,6 @@ import {
   adminUserOjAccountDeleteInputSchema,
   adminUserOjAccountInputSchema,
   adminUserProfileUpdateInputSchema,
-  adminUsersListInputSchema,
   problemSetIdInputSchema,
 } from "./schemas";
 
@@ -65,12 +63,7 @@ export const adminRouter = router({
       .query(
         async ({ ctx, input }) => await getAdminUser(ctx.db, input.userId)
       ),
-    list: adminProcedure
-      .input(adminUsersListInputSchema)
-      .query(async ({ ctx, input }) => await listAdminUsers(ctx.db, input)),
-    metadata: adminProcedure.query(
-      async ({ ctx }) => await getAdminUsersMetadata(ctx.db)
-    ),
+    list: adminProcedure.query(async ({ ctx }) => await listAdminUsers(ctx.db)),
     delete: adminProcedure.input(adminUserDeleteInputSchema).mutation(
       async ({ ctx, input }) =>
         await deleteAdminUser(ctx.db, {

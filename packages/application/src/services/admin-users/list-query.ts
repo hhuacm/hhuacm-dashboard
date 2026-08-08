@@ -2,107 +2,9 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { userProfile } from "@hhuacm-dashboard/db/schema/profile";
 import { defaultMemberStatus } from "@hhuacm-dashboard/domain";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  exists,
-  inArray,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 
-import type {
-  AdminUserOjAccount,
-  AdminUsersListInput,
-  AdminUsersSortColumn,
-  Database,
-} from "./types";
-
-const usernameSortExpression = sql<string>`coalesce(${user.username}, '')`;
-const memberStatusSortExpression = sql<string>`coalesce(${userProfile.memberStatus}, ${defaultMemberStatus})`;
-
-const getAdminUsersSortExpression = (column: AdminUsersSortColumn) => {
-  if (column === "email") {
-    return user.email;
-  }
-
-  if (column === "grade") {
-    return userProfile.grade;
-  }
-
-  if (column === "major") {
-    return userProfile.major;
-  }
-
-  if (column === "memberStatus") {
-    return memberStatusSortExpression;
-  }
-
-  if (column === "realName") {
-    return userProfile.realName;
-  }
-
-  if (column === "studentId") {
-    return userProfile.studentId;
-  }
-
-  return usernameSortExpression;
-};
-
-const getAdminUsersOrderBy = (sort: AdminUsersListInput["sort"]) => {
-  if (!sort) {
-    return [asc(usernameSortExpression), asc(user.email), asc(user.id)];
-  }
-
-  const sortExpression = getAdminUsersSortExpression(sort.column);
-  const primaryOrder =
-    sort.direction === "descending"
-      ? desc(sortExpression)
-      : asc(sortExpression);
-
-  if (sort.column === "username") {
-    return [primaryOrder, asc(user.email), asc(user.id)];
-  }
-
-  return [primaryOrder, asc(user.id)];
-};
-
-const getAdminUsersWhereCondition = (
-  db: Database,
-  filters: AdminUsersListInput["filters"]
-) => {
-  const filterConditions: SQL[] = [];
-
-  if (filters?.memberStatuses?.length) {
-    filterConditions.push(
-      inArray(memberStatusSortExpression, filters.memberStatuses)
-    );
-  }
-
-  if (filters?.grades?.length) {
-    filterConditions.push(inArray(userProfile.grade, filters.grades));
-  }
-
-  if (filters?.ojPlatforms?.length) {
-    filterConditions.push(
-      exists(
-        db
-          .select({ id: userOjAccount.id })
-          .from(userOjAccount)
-          .where(
-            and(
-              eq(userOjAccount.userId, user.id),
-              inArray(userOjAccount.platform, filters.ojPlatforms)
-            )
-          )
-      )
-    );
-  }
-
-  return filterConditions.length > 0 ? and(...filterConditions) : undefined;
-};
+import type { AdminUserOjAccount, Database } from "./types";
 
 const groupOjAccountsByUserId = (
   accounts: Array<AdminUserOjAccount & { userId: string }>
@@ -141,11 +43,7 @@ const listOjAccountsForUsers = async (db: Database, userIds: string[]) => {
   return groupOjAccountsByUserId(ojAccounts);
 };
 
-export const listAdminUsers = async (
-  db: Database,
-  input: AdminUsersListInput
-) => {
-  const whereCondition = getAdminUsersWhereCondition(db, input.filters);
+export const listAdminUsers = async (db: Database) => {
   const users = await db
     .select({
       email: user.email,
@@ -160,18 +58,14 @@ export const listAdminUsers = async (
     })
     .from(user)
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
-    .where(whereCondition)
-    .orderBy(...getAdminUsersOrderBy(input.sort));
+    .orderBy(asc(user.username), asc(user.email), asc(user.id));
 
   const userIds = users.map((currentUser) => currentUser.id);
   const ojAccountsByUserId = await listOjAccountsForUsers(db, userIds);
 
-  return {
-    items: users.map((currentUser) => ({
-      ...currentUser,
-      memberStatus: currentUser.memberStatus ?? defaultMemberStatus,
-      ojAccounts: ojAccountsByUserId.get(currentUser.id) ?? [],
-    })),
-    total: users.length,
-  };
+  return users.map((currentUser) => ({
+    ...currentUser,
+    memberStatus: currentUser.memberStatus ?? defaultMemberStatus,
+    ojAccounts: ojAccountsByUserId.get(currentUser.id) ?? [],
+  }));
 };

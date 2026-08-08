@@ -24,6 +24,8 @@ import {
   type AdminUserTableRow,
   emptyAdminUsersFilters,
   getAdminEditErrorMessage,
+  getAdminUsersFilterOptions,
+  getVisibleAdminUsers,
   hasFilters,
   isMemberStatusFilterValue,
   isOjPlatformFilterValue,
@@ -127,23 +129,15 @@ function AdminUsersPageContent() {
     sort,
     visibleColumnControls.visibleColumnIds
   );
-  const listInput = {
-    filters: hasActiveFilters ? filters : undefined,
-    sort: visibleSort,
-  };
-  const listQueryKey = trpc.admin.users.list.queryKey(listInput);
+  const listQueryKey = trpc.admin.users.list.queryKey();
   const usersQuery = useQuery(
-    trpc.admin.users.list.queryOptions(listInput, {
+    trpc.admin.users.list.queryOptions(undefined, {
       retry: false,
     })
   );
-  const metadataQuery = useQuery(
-    trpc.admin.users.metadata.queryOptions(undefined, {
-      retry: false,
-    })
-  );
-  const users = usersQuery.data?.items ?? [];
-  const total = usersQuery.data?.total ?? 0;
+  const allUsers = usersQuery.data ?? [];
+  const users = getVisibleAdminUsers(allUsers, filters, visibleSort);
+  const filterOptions = getAdminUsersFilterOptions(allUsers);
   const listStatus = (() => {
     if (usersQuery.isPending) {
       return "loading";
@@ -155,15 +149,8 @@ function AdminUsersPageContent() {
 
     return usersQuery.isFetching ? "refreshing" : "ready";
   })();
-  const metadataStatus = (() => {
-    if (metadataQuery.isPending) {
-      return "loading";
-    }
-
-    return metadataQuery.isError ? "error" : "ready";
-  })();
   const requestedUser = targetUsername
-    ? (users.find((user) => user.username === targetUsername) ?? null)
+    ? (allUsers.find((user) => user.username === targetUsername) ?? null)
     : null;
   const selectedUser = editTargetUser ?? requestedUser;
   const deleteUser = useMutation(
@@ -210,18 +197,17 @@ function AdminUsersPageContent() {
     >
       <div className="grid gap-6">
         <AdminUsersTableSection
+          filterOptions={filterOptions}
           filters={filters}
           hasActiveFilters={hasActiveFilters}
           listStatus={listStatus}
-          metadata={metadataQuery.data}
-          metadataStatus={metadataStatus}
           onClearFilters={handleClearFilters}
           onDeleteUser={handleDeleteUser}
           onEditUser={handleEditUser}
           onFilterChange={handleFilterChange}
           onSortChange={setSort}
           sort={visibleSort}
-          total={total}
+          total={allUsers.length}
           users={users}
           visibleColumnControls={visibleColumnControls}
         />

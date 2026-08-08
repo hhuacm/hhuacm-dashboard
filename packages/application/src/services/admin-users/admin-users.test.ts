@@ -10,7 +10,6 @@ import { createServiceTestDb } from "../test-db";
 import { deleteAdminUser } from "./delete-user";
 import { getAdminUser } from "./detail";
 import { listAdminUsers } from "./list-query";
-import { getAdminUsersMetadata } from "./metadata";
 import type { Database } from "./types";
 
 const createUser = async (
@@ -79,9 +78,9 @@ const createOjAccount = async (
 };
 
 const listUserIds = async (db: Database) => {
-  const result = await listAdminUsers(db, {});
+  const users = await listAdminUsers(db);
 
-  return result.items.map((item) => item.id);
+  return users.map((item) => item.id);
 };
 
 describe("admin users", () => {
@@ -103,86 +102,20 @@ describe("admin users", () => {
     await createOjAccount(db, { platform: "luogu", userId: "alpha" });
     await createOjAccount(db, { platform: "codeforces", userId: "alpha" });
 
-    const result = await listAdminUsers(db, {});
-    const alpha = result.items.find((item) => item.id === "alpha");
-    const missingProfile = result.items.find(
-      (item) => item.id === "no-profile"
-    );
+    const users = await listAdminUsers(db);
+    const alpha = users.find((item) => item.id === "alpha");
+    const missingProfile = users.find((item) => item.id === "no-profile");
 
-    expect(result.items.map((item) => item.id)).toEqual([
+    expect(users.map((item) => item.id)).toEqual([
       "alpha",
       "beta",
       "no-profile",
     ]);
-    expect(result.total).toBe(3);
     expect(alpha?.ojAccounts.map((account) => account.platform)).toEqual([
       "codeforces",
       "luogu",
     ]);
     expect(missingProfile?.memberStatus).toBe("selection");
-  });
-
-  it("sorts users by a selected profile column", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      grade: "25级",
-      id: "young",
-      realName: "Young",
-    });
-    await createUser(db, {
-      grade: "23级",
-      id: "senior",
-      realName: "Senior",
-    });
-
-    const result = await listAdminUsers(db, {
-      sort: {
-        column: "grade",
-        direction: "descending",
-      },
-    });
-
-    expect(result.items.map((item) => item.id)).toEqual(["young", "senior"]);
-  });
-
-  it("filters users by member status, grade, and OJ platform", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      grade: "24级",
-      id: "target",
-      memberStatus: "active",
-    });
-    await createUser(db, {
-      grade: "24级",
-      id: "missing-platform",
-      memberStatus: "active",
-    });
-    await createUser(db, {
-      grade: "23级",
-      id: "wrong-grade",
-      memberStatus: "active",
-    });
-    await createUser(db, {
-      grade: "24级",
-      id: "wrong-status",
-      memberStatus: "retired",
-    });
-    await createOjAccount(db, { platform: "codeforces", userId: "target" });
-    await createOjAccount(db, {
-      platform: "luogu",
-      userId: "missing-platform",
-    });
-
-    const result = await listAdminUsers(db, {
-      filters: {
-        grades: ["24级"],
-        memberStatuses: ["active"],
-        ojPlatforms: ["codeforces"],
-      },
-    });
-
-    expect(result.items.map((item) => item.id)).toEqual(["target"]);
-    expect(result.total).toBe(1);
   });
 
   it("returns admin user details with default profile values", async () => {
@@ -214,32 +147,6 @@ describe("admin users", () => {
         handle: "detailLuogu",
         platform: "luogu",
       },
-    ]);
-  });
-
-  it("returns admin users metadata", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, { grade: "24级", id: "a" });
-    await createUser(db, { grade: "23级", id: "b" });
-    await createUser(db, { id: "c" });
-
-    const metadata = await getAdminUsersMetadata(db);
-
-    expect(metadata.grades).toEqual([
-      { label: "23级", value: "23级" },
-      { label: "24级", value: "24级" },
-    ]);
-    expect(metadata.memberStatuses.map((status) => status.value)).toEqual([
-      "selection",
-      "active",
-      "retired",
-      "frozen",
-    ]);
-    expect(metadata.ojPlatforms.map((platform) => platform.value)).toEqual([
-      "luogu",
-      "codeforces",
-      "atcoder",
-      "nowcoder",
     ]);
   });
 

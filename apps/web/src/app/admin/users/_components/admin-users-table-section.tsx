@@ -4,8 +4,8 @@ import { Alert, Card, Spinner } from "@heroui/react";
 
 import type { AdminUsersVisibleColumnControls } from "../_model/admin-users-table-columns";
 import type {
+  AdminUsersFilterOptions,
   AdminUsersFilters,
-  AdminUsersMetadata,
   AdminUsersSort,
   AdminUserTableRow,
 } from "../helpers";
@@ -13,14 +13,12 @@ import { AdminUsersTable } from "./admin-users-table";
 import { AdminUsersToolbar } from "./admin-users-toolbar";
 
 type AdminUsersListStatus = "error" | "loading" | "ready" | "refreshing";
-type AdminUsersMetadataStatus = "error" | "loading" | "ready";
 
 interface AdminUsersTableSectionProps {
+  filterOptions: AdminUsersFilterOptions;
   filters: AdminUsersFilters;
   hasActiveFilters: boolean;
   listStatus: AdminUsersListStatus;
-  metadata: AdminUsersMetadata | undefined;
-  metadataStatus: AdminUsersMetadataStatus;
   onClearFilters: () => void;
   onDeleteUser: (user: AdminUserTableRow) => void;
   onEditUser: (user: AdminUserTableRow) => void;
@@ -33,11 +31,10 @@ interface AdminUsersTableSectionProps {
 }
 
 export function AdminUsersTableSection({
+  filterOptions,
   filters,
   hasActiveFilters,
   listStatus,
-  metadata,
-  metadataStatus,
   onClearFilters,
   onDeleteUser,
   onEditUser,
@@ -62,31 +59,21 @@ export function AdminUsersTableSection({
                 刷新中
               </span>
             ) : null}
-            <span>全部显示</span>
+            <span>
+              {hasActiveFilters ? `显示 ${users.length} 个` : "全部显示"}
+            </span>
           </div>
         </div>
       </Card.Header>
       <Card.Content className="grid gap-4">
         <AdminUsersToolbar
+          filterOptions={filterOptions}
           filters={filters}
           hasActiveFilters={hasActiveFilters}
-          metadata={metadata}
-          metadataIsLoading={metadataStatus === "loading"}
           onClearFilters={onClearFilters}
           onFilterChange={onFilterChange}
           visibleColumnControls={visibleColumnControls}
         />
-
-        {metadataStatus === "error" ? (
-          <Alert status="danger">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Description>
-                筛选项加载失败，请刷新页面后重试。
-              </Alert.Description>
-            </Alert.Content>
-          </Alert>
-        ) : null}
 
         {listStatus === "loading" ? (
           <Alert>

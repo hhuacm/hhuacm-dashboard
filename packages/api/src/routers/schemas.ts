@@ -45,34 +45,6 @@ export const adminUserInputSchema = z.object({
   userId: trimmedStringSchema,
 });
 
-const adminUsersSortColumnSchema = z.enum([
-  "email",
-  "grade",
-  "major",
-  "memberStatus",
-  "realName",
-  "studentId",
-  "username",
-]);
-
-const adminUsersSortDirectionSchema = z.enum(["ascending", "descending"]);
-
-export const adminUsersListInputSchema = z.object({
-  filters: z
-    .object({
-      grades: z.array(z.string().trim().min(1)).optional(),
-      memberStatuses: z.array(z.enum(memberStatuses)).optional(),
-      ojPlatforms: z.array(z.enum(ojPlatforms)).optional(),
-    })
-    .optional(),
-  sort: z
-    .object({
-      column: adminUsersSortColumnSchema,
-      direction: adminUsersSortDirectionSchema,
-    })
-    .optional(),
-});
-
 export const adminUserDeleteInputSchema = adminUserInputSchema.extend({
   usernameConfirmation: trimmedStringSchema,
 });
