@@ -1,6 +1,5 @@
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import {
-  defaultMemberStatus,
   isMemberStatus,
   isOjPlatform,
   type MemberStatus,
@@ -14,7 +13,6 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import {
   buildProfileFormValues,
-  emptyProfileFormValues,
   getChangedProfileValues,
   hasProfileUpdateValues,
   type ProfileFormValues,
@@ -36,7 +34,8 @@ type AdminUsersRouter = RouterOutputs["admin"]["users"];
 
 export type SortColumn = (typeof sortableColumns)[number];
 export type SortDirection = "ascending" | "descending";
-export type UserRole = AdminUsersRouter["get"]["role"];
+export type AdminUserTableRow = AdminUsersRouter["list"][number];
+export type UserRole = AdminUserTableRow["role"];
 
 export interface FilterOption {
   label: string;
@@ -54,10 +53,7 @@ export interface AdminUsersSort {
   direction: SortDirection;
 }
 
-export type AdminUserOjAccount = AdminUsersRouter["get"]["ojAccounts"][number];
-export type AdminUserProfile = AdminUsersRouter["get"]["profile"];
-export type AdminUserDetail = AdminUsersRouter["get"];
-export type AdminUserTableRow = AdminUsersRouter["list"][number];
+export type AdminUserOjAccount = AdminUserTableRow["ojAccounts"][number];
 
 export interface AdminUsersFilterOptions {
   grades: FilterOption[];
@@ -109,9 +105,7 @@ const ojPlatformFilterOptions = ojPlatforms.map((platform) => ({
 export const getAdminUsersFilterOptions = (
   users: AdminUserTableRow[]
 ): AdminUsersFilterOptions => ({
-  grades: [
-    ...new Set(users.flatMap((user) => (user.grade ? [user.grade] : []))),
-  ]
+  grades: [...new Set(users.map((user) => user.grade))]
     .sort((left, right) => textCollator.compare(left, right))
     .map((grade) => ({ label: grade, value: grade })),
   memberStatuses: memberStatusFilterOptions,
@@ -128,8 +122,7 @@ export const getVisibleAdminUsers = (
 ) => {
   const filteredUsers = users.filter(
     (user) =>
-      (filters.grades.length === 0 ||
-        (user.grade !== null && filters.grades.includes(user.grade))) &&
+      (filters.grades.length === 0 || filters.grades.includes(user.grade)) &&
       (filters.memberStatuses.length === 0 ||
         filters.memberStatuses.includes(user.memberStatus)) &&
       (filters.ojPlatforms.length === 0 ||
@@ -196,10 +189,10 @@ export const getAdminEditErrorMessage = (error: unknown) => {
 };
 
 export const buildAdminProfileFormValues = (
-  profile: AdminUserProfile | undefined
+  user: AdminUserTableRow
 ): AdminProfileFormValues => ({
-  ...(profile ? buildProfileFormValues(profile) : emptyProfileFormValues),
-  memberStatus: profile?.memberStatus ?? defaultMemberStatus,
+  ...buildProfileFormValues(user),
+  memberStatus: user.memberStatus,
 });
 
 export const getChangedAdminProfileValues = (

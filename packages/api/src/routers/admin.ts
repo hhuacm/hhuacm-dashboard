@@ -1,5 +1,4 @@
 import { deleteAdminUser } from "@hhuacm-dashboard/application/services/admin-users/delete-user";
-import { getAdminUser } from "@hhuacm-dashboard/application/services/admin-users/detail";
 import { listAdminUsers } from "@hhuacm-dashboard/application/services/admin-users/list-query";
 import {
   deleteOjAccount,
@@ -22,7 +21,6 @@ import {
   adminProblemSetInputSchema,
   adminProblemSetUpdateInputSchema,
   adminUserDeleteInputSchema,
-  adminUserInputSchema,
   adminUserOjAccountDeleteInputSchema,
   adminUserOjAccountInputSchema,
   adminUserProfileUpdateInputSchema,
@@ -58,11 +56,6 @@ export const adminRouter = router({
       })),
   }),
   users: router({
-    get: adminProcedure
-      .input(adminUserInputSchema)
-      .query(
-        async ({ ctx, input }) => await getAdminUser(ctx.db, input.userId)
-      ),
     list: adminProcedure.query(async ({ ctx }) => await listAdminUsers(ctx.db)),
     delete: adminProcedure.input(adminUserDeleteInputSchema).mutation(
       async ({ ctx, input }) =>

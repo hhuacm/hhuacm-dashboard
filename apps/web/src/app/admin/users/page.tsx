@@ -58,8 +58,7 @@ function AdminUsersPageContent() {
     column: "username",
     direction: "ascending",
   });
-  const [editTargetUser, setEditTargetUser] =
-    useState<AdminUserTableRow | null>(null);
+  const [editTargetUserId, setEditTargetUserId] = useState<string | null>(null);
   const [deleteTargetUser, setDeleteTargetUser] =
     useState<AdminUserTableRow | null>(null);
   const [deleteConfirmationValue, setDeleteConfirmationValue] = useState("");
@@ -93,11 +92,11 @@ function AdminUsersPageContent() {
   };
 
   const handleEditUser = (nextUser: AdminUserTableRow) => {
-    setEditTargetUser(nextUser);
+    setEditTargetUserId(nextUser.id);
   };
 
   const closeEditDialog = () => {
-    setEditTargetUser(null);
+    setEditTargetUserId(null);
 
     if (targetUsername) {
       router.replace("/admin/users" as Route);
@@ -152,7 +151,10 @@ function AdminUsersPageContent() {
   const requestedUser = targetUsername
     ? (allUsers.find((user) => user.username === targetUsername) ?? null)
     : null;
-  const selectedUser = editTargetUser ?? requestedUser;
+  const selectedUserId = editTargetUserId ?? requestedUser?.id;
+  const selectedUser = selectedUserId
+    ? (allUsers.find((user) => user.id === selectedUserId) ?? null)
+    : null;
   const deleteUser = useMutation(
     trpc.admin.users.delete.mutationOptions({
       onError: (error) => {
@@ -224,11 +226,7 @@ function AdminUsersPageContent() {
           }}
           user={deleteTargetUser}
         />
-        <AdminUserEditDialog
-          listQueryKey={listQueryKey}
-          onClose={closeEditDialog}
-          user={selectedUser}
-        />
+        <AdminUserEditDialog onClose={closeEditDialog} user={selectedUser} />
       </div>
     </AppShell>
   );

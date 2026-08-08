@@ -22,12 +22,7 @@ import {
   ojPlatformLabels,
   ojPlatforms,
 } from "@hhuacm-dashboard/domain";
-import {
-  type QueryKey,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type Key, useState } from "react";
 
@@ -40,7 +35,6 @@ import {
 import { trpc } from "@/utils/trpc";
 import {
   type AdminProfileFormValues,
-  type AdminUserDetail,
   type AdminUserOjAccount,
   type AdminUserTableRow,
   buildAdminProfileFormValues,
@@ -51,29 +45,21 @@ import {
 } from "../helpers";
 
 interface AdminUserEditDialogProps {
-  listQueryKey: QueryKey;
   onClose: () => void;
   user: AdminUserTableRow | null;
 }
 
 interface AdminUserBasicInfoEditorProps {
-  detail: AdminUserDetail | undefined;
-  isLoading: boolean;
-  listQueryKey: QueryKey;
-  userId: string;
+  user: AdminUserTableRow;
 }
 
 interface AdminUserOjAccountEditorProps {
   accounts: AdminUserOjAccount[];
-  isLoading: boolean;
-  listQueryKey: QueryKey;
   userId: string;
 }
 
 interface AdminUserOjAccountRowProps {
   account: AdminUserOjAccount | undefined;
-  isLoading: boolean;
-  listQueryKey: QueryKey;
   platform: OjPlatform;
   userId: string;
 }
@@ -91,14 +77,12 @@ interface EditorMessage {
   tone: "danger" | "success";
 }
 
-const getProfileSnapshotKey = (detail: AdminUserDetail | undefined) => {
-  if (!detail) {
-    return "loading";
-  }
+const adminUsersListQueryKey = trpc.admin.users.list.queryKey();
 
-  const { grade, major, memberStatus, realName, studentId } = detail.profile;
+const getProfileSnapshotKey = (user: AdminUserTableRow) => {
+  const { grade, major, memberStatus, realName, studentId } = user;
 
-  return [detail.id, memberStatus, grade, major, realName, studentId].join(":");
+  return [user.id, memberStatus, grade, major, realName, studentId].join(":");
 };
 
 interface AdminProfileDraft {
@@ -106,15 +90,10 @@ interface AdminProfileDraft {
   values: AdminProfileFormValues;
 }
 
-function AdminUserBasicInfoEditor({
-  detail,
-  isLoading,
-  listQueryKey,
-  userId,
-}: AdminUserBasicInfoEditorProps) {
+function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
   const queryClient = useQueryClient();
-  const profileSnapshotKey = getProfileSnapshotKey(detail);
-  const originalFormValues = buildAdminProfileFormValues(detail?.profile);
+  const profileSnapshotKey = getProfileSnapshotKey(user);
+  const originalFormValues = buildAdminProfileFormValues(user);
   const [draft, setDraft] = useState<AdminProfileDraft>({
     sourceKey: profileSnapshotKey,
     values: originalFormValues,
@@ -140,12 +119,9 @@ function AdminUserBasicInfoEditor({
         });
       },
       onSuccess: async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: trpc.admin.users.get.queryKey({ userId }),
-          }),
-          queryClient.invalidateQueries({ queryKey: listQueryKey }),
-        ]);
+        await queryClient.invalidateQueries({
+          queryKey: adminUsersListQueryKey,
+        });
         setMessage({
           text: "基础信息已保存。",
           tone: "success",
@@ -195,7 +171,7 @@ function AdminUserBasicInfoEditor({
     }
 
     await updateProfile.mutateAsync({
-      userId,
+      userId: user.id,
       values: changedValues,
     });
   };
@@ -206,12 +182,6 @@ function AdminUserBasicInfoEditor({
         <div>
           <h3 className="font-semibold text-base">基础信息</h3>
         </div>
-        {isLoading ? (
-          <span className="inline-flex items-center gap-2 text-muted text-sm">
-            <Spinner color="current" size="sm" />
-            正在读取
-          </span>
-        ) : null}
       </div>
 
       {message ? (
@@ -227,7 +197,7 @@ function AdminUserBasicInfoEditor({
         <div className="grid gap-4 px-0.5 pt-3 pb-0.5 sm:grid-cols-2">
           <Select
             fullWidth
-            isDisabled={isLoading || updateProfile.isPending}
+            isDisabled={updateProfile.isPending}
             onSelectionChange={handleStatusChange}
             selectedKey={formValues.memberStatus}
             variant="secondary"
@@ -260,7 +230,7 @@ function AdminUserBasicInfoEditor({
             field.key === "grade" ? (
               <Select
                 fullWidth
-                isDisabled={isLoading || updateProfile.isPending}
+                isDisabled={updateProfile.isPending}
                 key={field.key}
                 onSelectionChange={(key) =>
                   handleInputChange(
@@ -294,7 +264,7 @@ function AdminUserBasicInfoEditor({
             ) : (
               <TextField
                 fullWidth
-                isDisabled={isLoading || updateProfile.isPending}
+                isDisabled={updateProfile.isPending}
                 key={field.key}
                 name={field.key}
                 onChange={(nextValue) =>
@@ -317,7 +287,7 @@ function AdminUserBasicInfoEditor({
         </div>
         <div className="flex justify-end">
           <Button
-            isDisabled={isLoading || !hasChanges}
+            isDisabled={!hasChanges}
             isPending={updateProfile.isPending}
             type="submit"
           >
@@ -403,8 +373,6 @@ function AdminUserOjAccountDeleteDialog({
 
 function AdminUserOjAccountRow({
   account,
-  isLoading,
-  listQueryKey,
   platform,
   userId,
 }: AdminUserOjAccountRowProps) {
@@ -414,14 +382,10 @@ function AdminUserOjAccountRow({
   const [deleteTargetPlatform, setDeleteTargetPlatform] =
     useState<OjPlatform | null>(null);
 
-  const invalidateUserData = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: trpc.admin.users.get.queryKey({ userId }),
-      }),
-      queryClient.invalidateQueries({ queryKey: listQueryKey }),
-    ]);
-  };
+  const invalidateUserData = async () =>
+    await queryClient.invalidateQueries({
+      queryKey: adminUsersListQueryKey,
+    });
   const upsertAccount = useMutation(
     trpc.admin.users.upsertOjAccount.mutationOptions({
       onError: (error) => {
@@ -512,7 +476,7 @@ function AdminUserOjAccountRow({
         </div>
         <TextField
           fullWidth
-          isDisabled={isLoading || isBusy}
+          isDisabled={isBusy}
           name={`${platform}-external-id`}
           onChange={(nextValue) => {
             setMessage(null);
@@ -535,7 +499,7 @@ function AdminUserOjAccountRow({
         ) : null}
         <div className="flex items-end gap-2">
           <Button
-            isDisabled={isLoading || !canSave || deleteAccount.isPending}
+            isDisabled={!canSave || deleteAccount.isPending}
             isPending={upsertAccount.isPending}
             type="submit"
             variant={account ? "secondary" : undefined}
@@ -548,7 +512,7 @@ function AdminUserOjAccountRow({
             )}
           </Button>
           <Button
-            isDisabled={isLoading || !account || upsertAccount.isPending}
+            isDisabled={!account || upsertAccount.isPending}
             onPress={() => setDeleteTargetPlatform(platform)}
             variant="danger"
           >
@@ -582,8 +546,6 @@ function AdminUserOjAccountRow({
 
 function AdminUserOjAccountEditor({
   accounts,
-  isLoading,
-  listQueryKey,
   userId,
 }: AdminUserOjAccountEditorProps) {
   return (
@@ -598,9 +560,7 @@ function AdminUserOjAccountEditor({
           return (
             <AdminUserOjAccountRow
               account={account}
-              isLoading={isLoading}
               key={`${platform}:${account?.externalId ?? ""}`}
-              listQueryKey={listQueryKey}
               platform={platform}
               userId={userId}
             />
@@ -612,21 +572,9 @@ function AdminUserOjAccountEditor({
 }
 
 export function AdminUserEditDialog({
-  listQueryKey,
   onClose,
   user,
 }: AdminUserEditDialogProps) {
-  const userId = user?.id ?? "";
-  const detailQuery = useQuery(
-    trpc.admin.users.get.queryOptions(
-      { userId },
-      {
-        enabled: Boolean(userId),
-        retry: false,
-      }
-    )
-  );
-  const detail = detailQuery.data;
   const isOpen = Boolean(user);
 
   return (
@@ -648,51 +596,26 @@ export function AdminUserEditDialog({
             <Modal.Heading>编辑用户</Modal.Heading>
           </Modal.Header>
           <Modal.Body className="grid max-h-[72vh] gap-5 overflow-y-auto px-0.5 pt-3 pb-0.5">
-            <div className="grid gap-2 rounded-md border border-border bg-surface p-3 text-sm sm:grid-cols-2">
-              <div>
-                <span className="text-muted">注册用户名</span>
-                <p className="mt-1 break-all font-mono">
-                  {detail?.username ?? user?.username}
-                </p>
-              </div>
-              <div>
-                <span className="text-muted">邮箱</span>
-                <p className="mt-1 break-all">{detail?.email ?? user?.email}</p>
-              </div>
-            </div>
+            {user ? (
+              <>
+                <div className="grid gap-2 rounded-md border border-border bg-surface p-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <span className="text-muted">注册用户名</span>
+                    <p className="mt-1 break-all font-mono">{user.username}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted">邮箱</span>
+                    <p className="mt-1 break-all">{user.email}</p>
+                  </div>
+                </div>
 
-            {detailQuery.isPending ? (
-              <Alert>
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Description>正在读取用户信息。</Alert.Description>
-                </Alert.Content>
-              </Alert>
+                <AdminUserBasicInfoEditor user={user} />
+                <AdminUserOjAccountEditor
+                  accounts={user.ojAccounts}
+                  userId={user.id}
+                />
+              </>
             ) : null}
-
-            {detailQuery.isError ? (
-              <Alert status="danger">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Description>
-                    用户信息加载失败，请刷新列表后重试。
-                  </Alert.Description>
-                </Alert.Content>
-              </Alert>
-            ) : null}
-
-            <AdminUserBasicInfoEditor
-              detail={detail}
-              isLoading={detailQuery.isPending}
-              listQueryKey={listQueryKey}
-              userId={userId}
-            />
-            <AdminUserOjAccountEditor
-              accounts={detail?.ojAccounts ?? []}
-              isLoading={detailQuery.isPending}
-              listQueryKey={listQueryKey}
-              userId={userId}
-            />
           </Modal.Body>
           <Modal.Footer>
             <Button onPress={onClose} variant="secondary">

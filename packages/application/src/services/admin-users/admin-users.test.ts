@@ -7,7 +7,6 @@ import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
 import { sql } from "drizzle-orm";
 import { createServiceTestDb } from "../test-db";
 import { deleteAdminUser } from "./delete-user";
-import { getAdminUser } from "./detail";
 import { listAdminUsers } from "./list-query";
 import type { Database } from "./types";
 
@@ -78,9 +77,13 @@ describe("admin users", () => {
       realName: "Beta",
     });
     await createUser(db, {
+      email: "alpha@example.com",
+      grade: "24级",
       id: "alpha",
+      major: "计算机科学与技术",
       memberStatus: "selection",
       realName: "Alpha",
+      studentId: "20240001",
     });
     await createUser(db, {
       id: "no-profile",
@@ -97,43 +100,36 @@ describe("admin users", () => {
       "beta",
       "no-profile",
     ]);
-    expect(alpha?.ojAccounts.map((account) => account.platform)).toEqual([
-      "codeforces",
-      "luogu",
-    ]);
-    expect(missingProfile?.memberStatus).toBe("selection");
-  });
-
-  it("returns admin user details with default profile values", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      email: "detail@example.com",
-      id: "detail-user",
-      username: "detail",
+    expect(alpha).toEqual({
+      email: "alpha@example.com",
+      grade: "24级",
+      id: "alpha",
+      major: "计算机科学与技术",
+      memberStatus: "selection",
+      ojAccounts: [
+        {
+          externalId: "alpha-codeforces",
+          handle: "alpha-codeforces",
+          platform: "codeforces",
+        },
+        {
+          externalId: "alpha-luogu",
+          handle: "alpha-luogu",
+          platform: "luogu",
+        },
+      ],
+      realName: "Alpha",
+      role: "user",
+      studentId: "20240001",
+      username: "alpha",
     });
-    await createOjAccount(db, {
-      handle: "detailLuogu",
-      platform: "luogu",
-      userId: "detail-user",
-    });
-
-    const result = await getAdminUser(db, "detail-user");
-
-    expect(result.username).toBe("detail");
-    expect(result.profile).toEqual({
+    expect(missingProfile).toMatchObject({
       grade: "未知",
       major: "未知",
       memberStatus: "selection",
       realName: "未知",
       studentId: "未知",
     });
-    expect(result.ojAccounts).toEqual([
-      {
-        externalId: "detailLuogu",
-        handle: "detailLuogu",
-        platform: "luogu",
-      },
-    ]);
   });
 
   it("rejects deleting admins, non-frozen users, and wrong confirmations", async () => {
