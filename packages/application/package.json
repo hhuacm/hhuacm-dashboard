@@ -14,7 +14,6 @@
   "dependencies": {
     "@hhuacm-dashboard/db": "workspace:*",
     "@hhuacm-dashboard/domain": "workspace:*",
-    "better-auth": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"

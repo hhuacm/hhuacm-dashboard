@@ -6,11 +6,12 @@ import {
   Card,
   Checkbox,
   CheckboxGroup,
+  Input,
   Label,
-  NumberField,
   Popover,
   Spinner,
   Table,
+  TextField,
 } from "@heroui/react";
 import {
   type CurrentMemberStatus,
@@ -19,7 +20,7 @@ import {
 } from "@hhuacm-dashboard/domain";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 
 import { authClient } from "@/utils/auth-client";
@@ -84,30 +85,22 @@ function CompletionCountFilter({
           <Popover.Heading className="font-semibold text-sm">
             完成数筛选
           </Popover.Heading>
-          <NumberField
-            className="w-full min-w-0 gap-2"
+          <TextField
             fullWidth
-            key={value === undefined ? "empty" : "valued"}
-            minValue={0}
-            name="minCompletedCount"
-            onChange={onChange}
-            step={1}
-            value={value}
-            variant="secondary"
+            onChange={(nextValue) =>
+              onChange(nextValue ? Number(nextValue) : undefined)
+            }
+            value={value?.toString() ?? ""}
           >
             <Label>最低完成数</Label>
-            <NumberField.Group className="flex w-full min-w-0 max-w-full overflow-hidden">
-              <NumberField.Input className="w-0 min-w-0 flex-1" />
-              <div className="flex h-full w-6 shrink-0 flex-col border-field-placeholder/15 border-l">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 pt-0.5 text-muted">
-                  <ChevronUp aria-hidden="true" className="size-3" />
-                </NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 pb-0.5 text-muted">
-                  <ChevronDown aria-hidden="true" className="size-3" />
-                </NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
+            <Input
+              inputMode="numeric"
+              min={0}
+              step={1}
+              type="number"
+              variant="secondary"
+            />
+          </TextField>
           <p className="text-muted text-xs leading-5">
             显示不少于该数值的成员。
           </p>
