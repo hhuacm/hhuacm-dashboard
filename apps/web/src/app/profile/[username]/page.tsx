@@ -4,7 +4,7 @@ import { UserRound } from "lucide-react";
 import type { Route } from "next";
 
 import { ServerAppShell } from "@/components/server-app-shell";
-import { createServerCaller } from "@/utils/server-trpc";
+import { createServerRequest } from "@/utils/server-trpc";
 import { OjAccountsSection } from "./_components/oj-accounts-section";
 import { ProfileAwardsSection } from "./_components/profile-awards-section";
 import { ProfileSummaryCard } from "./_components/profile-summary-card";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const { username: routeUsername } = await params;
   const username = decodeURIComponent(routeUsername);
-  const caller = await createServerCaller();
+  const { caller } = await createServerRequest();
   const profileResult = await caller.profile
     .get({ username })
     .then((profile) => ({ profile, status: "success" as const }))

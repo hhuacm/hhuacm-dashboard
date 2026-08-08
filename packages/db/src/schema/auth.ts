@@ -3,6 +3,7 @@ import { relations, sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const userRoles = ["user", "admin"] as const;
+export const defaultUserRole = "user" satisfies (typeof userRoles)[number];
 
 const unknownMemberFieldValue = "未知";
 
@@ -22,7 +23,7 @@ export const user = sqliteTable("user", {
   image: text("image"),
   username: text("username").notNull().unique(),
   displayUsername: text("display_username"),
-  role: text("role", { enum: userRoles }).default("user").notNull(),
+  role: text("role", { enum: userRoles }).default(defaultUserRole).notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .notNull(),

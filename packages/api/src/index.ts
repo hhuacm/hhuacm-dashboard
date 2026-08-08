@@ -1,7 +1,5 @@
 import { isApplicationError } from "@hhuacm-dashboard/application/errors";
-import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { initTRPC, TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 
 import type { Context } from "./context";
 
@@ -39,21 +37,10 @@ export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
   });
 });
 
-export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  const [currentUser] = await ctx.db
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, ctx.session.user.id))
-    .limit(1);
-
-  if (currentUser?.role !== "admin") {
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.role !== "admin") {
     throw new TRPCError({ code: "FORBIDDEN" });
   }
 
-  return next({
-    ctx: {
-      ...ctx,
-      userRole: currentUser.role,
-    },
-  });
+  return next();
 });

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import { ServerAppShell } from "@/components/server-app-shell";
-import { createServerCaller } from "@/utils/server-trpc";
+import { createServerRequest } from "@/utils/server-trpc";
 import { getSystemInfo } from "@/utils/system-info";
 
 interface OverviewDetail {
@@ -249,7 +249,7 @@ function QuickLinksCard() {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const caller = await createServerCaller();
+  const { caller } = await createServerRequest();
   const systemInfo = getSystemInfo();
   const [homeNotice, dashboardSummary] = await Promise.all([
     caller.dashboard.homeNotice().catch(() => ({ markdown: "" })),

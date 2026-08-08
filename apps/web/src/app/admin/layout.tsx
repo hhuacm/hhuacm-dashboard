@@ -1,37 +1,22 @@
 "use client";
 
 import { Alert, Spinner } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
 import { LayoutDashboard } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { authClient } from "@/utils/auth-client";
-import { trpc } from "@/utils/trpc";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-      retry: false,
-    })
-  );
-  const isGuest = !(session.isPending || user);
-  const isMember = Boolean(
-    user &&
-      !accountMe.isError &&
-      accountMe.data &&
-      accountMe.data.role !== "admin"
-  );
-  const isAdmin = !accountMe.isError && accountMe.data?.role === "admin";
-  const hasAccessError = Boolean(
-    user && !accountMe.isPending && (accountMe.isError || !accountMe.data)
-  );
+  const isGuest = !(session.error || session.isPending || user);
+  const isMember = Boolean(user && user.role !== "admin");
+  const isAdmin = user?.role === "admin";
+  const hasAccessError = Boolean(session.error);
 
   useEffect(() => {
     if (isGuest) {

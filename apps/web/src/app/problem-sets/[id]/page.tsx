@@ -27,18 +27,13 @@ export default function ProblemSetDetailPage({
   const queryClient = useQueryClient();
   const { id } = use(params);
   const session = authClient.useSession();
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(session.data?.user),
-    })
-  );
   const problemSetQuery = useQuery(trpc.problemSet.get.queryOptions({ id }));
   const problemSet = problemSetQuery.data;
   const title = problemSet?.title ?? "题单";
   const description = problemSet
     ? `${problemSet.problems.length} 题`
     : "题单详情";
-  const isAdmin = accountMe.data?.role === "admin";
+  const isAdmin = session.data?.user.role === "admin";
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteConfirmationValue, setDeleteConfirmationValue] = useState("");
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<null | string>(

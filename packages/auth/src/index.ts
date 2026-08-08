@@ -2,10 +2,12 @@ import { createDb } from "@hhuacm-dashboard/db";
 import {
   account,
   accountRelations,
+  defaultUserRole,
   session,
   sessionRelations,
   user,
   userRelations,
+  userRoles,
   verification,
 } from "@hhuacm-dashboard/db/schema/auth";
 import { isValidGradeOption } from "@hhuacm-dashboard/domain";
@@ -70,6 +72,11 @@ export function createAuth() {
           returned: false,
           type: "string",
           validator: { input: requiredMemberFieldSchema },
+        },
+        role: {
+          defaultValue: defaultUserRole,
+          input: false,
+          type: [...userRoles],
         },
         studentId: {
           required: true,

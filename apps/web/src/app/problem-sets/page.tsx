@@ -1,11 +1,11 @@
 import { Alert, Card } from "@heroui/react";
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
-import { type inferRouterOutputs, TRPCError } from "@trpc/server";
+import type { inferRouterOutputs } from "@trpc/server";
 import { CheckCircle2, ChevronRight, ListChecks, Plus } from "lucide-react";
 import type { Route } from "next";
 
 import { ServerAppShell } from "@/components/server-app-shell";
-import { createServerCaller } from "@/utils/server-trpc";
+import { createServerRequest } from "@/utils/server-trpc";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type ProblemSetCardProps = Pick<
@@ -88,37 +88,15 @@ function CreateProblemSetLink() {
   );
 }
 
-const isUnauthorizedError = (error: unknown) =>
-  error instanceof TRPCError && error.code === "UNAUTHORIZED";
-
-const getCurrentUserRole = async (
-  caller: Awaited<ReturnType<typeof createServerCaller>>
-) => {
-  try {
-    const account = await caller.account.me();
-
-    return account.role;
-  } catch (error) {
-    if (isUnauthorizedError(error)) {
-      return null;
-    }
-
-    throw error;
-  }
-};
-
 export default async function ProblemSetsPage() {
-  const caller = await createServerCaller();
-  const [problemSetsResult, currentUserRole] = await Promise.all([
-    caller.problemSet
-      .list()
-      .then((problemSets) => ({ problemSets, status: "success" as const }))
-      .catch(() => ({ problemSets: [], status: "error" as const })),
-    getCurrentUserRole(caller),
-  ]);
+  const { caller, session } = await createServerRequest();
+  const problemSetsResult = await caller.problemSet
+    .list()
+    .then((problemSets) => ({ problemSets, status: "success" as const }))
+    .catch(() => ({ problemSets: [], status: "error" as const }));
   const isProblemSetsError = problemSetsResult.status === "error";
   const problemSets = problemSetsResult.problemSets;
-  const isAdmin = currentUserRole === "admin";
+  const isAdmin = session?.user.role === "admin";
 
   return (
     <ServerAppShell

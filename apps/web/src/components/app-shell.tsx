@@ -1,7 +1,6 @@
 "use client";
 
 import { Button, Dropdown, Label, Separator } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Home,
   LayoutDashboard,
@@ -17,7 +16,6 @@ import type { ReactNode } from "react";
 import { type Key, useState } from "react";
 
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
-import { trpc } from "@/utils/trpc";
 import { AppShellLayout, type AppShellMaxWidth } from "./app-shell-layout";
 
 const usernameVisibleLength = 20;
@@ -165,12 +163,7 @@ export function AppShellHeaderActions({ action }: { action?: ReactNode }) {
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
-  const accountMe = useQuery(
-    trpc.account.me.queryOptions(undefined, {
-      enabled: Boolean(user),
-    })
-  );
-  const isAdmin = accountMe.data?.role === "admin";
+  const isAdmin = user?.role === "admin";
   const username = user ? getUsernameLabel(user) : "";
 
   const handleLogout = async () => {
