@@ -95,7 +95,7 @@ bun run dev:server
 bun run dev:refresh-worker
 ```
 
-`db:sync` 会识别空库、已纳入迁移管理的数据库，以及与初始基线兼容的既有数据库；随后执行 Drizzle 迁移，并检查数据库完整性、外键和视图。
+`db:sync` 会执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。
 
 ## 验证
 

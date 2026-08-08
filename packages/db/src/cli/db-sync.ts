@@ -40,12 +40,7 @@ const main = async () => {
   const client = createDbClient();
 
   try {
-    const result = await synchronizeDatabase(client);
-
-    if (result.adoptedBaseline) {
-      console.log("[db:sync] Database baseline adopted.");
-    }
-
+    await synchronizeDatabase(client);
     console.log("[db:sync] Database migrations are applied.");
   } finally {
     client.close();

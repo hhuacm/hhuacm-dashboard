@@ -147,9 +147,7 @@ docker compose pull
 docker compose run --rm server bun dist/db-sync.js
 ```
 
-这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，识别数据库状态，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。
-
-空数据库会直接执行迁移；与初始 schema 完整匹配但尚未记录迁移的既有数据库会先接管为基线；不完整或无法识别的既有 schema 会拒绝同步。已有生产数据后，执行结构变更前仍应检查迁移内容并做好备份。
+这条命令会读取 Compose 注入给 `server` 服务的 `DATABASE_URL` 和 `DATABASE_AUTH_TOKEN`，执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。已有生产数据后，执行结构变更前仍应检查迁移内容并做好备份。
 
 ## 启动容器
 
