@@ -55,12 +55,6 @@ export default function ProfileSettingsPage() {
     }
   };
 
-  const handlePasswordChanged = async () => {
-    await authClient.signOut();
-    await session.refetch();
-    router.replace("/login?redirect=/settings/profile");
-  };
-
   useEffect(() => {
     if (!(session.isPending || user)) {
       router.replace("/login?redirect=/settings/profile");
@@ -190,7 +184,6 @@ export default function ProfileSettingsPage() {
       <PasswordChangeDialog
         isOpen={isPasswordDialogOpen}
         onClose={() => setIsPasswordDialogOpen(false)}
-        onPasswordChanged={handlePasswordChanged}
       />
     </AppShell>
   );

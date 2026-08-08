@@ -13,17 +13,11 @@ import { authClient } from "@/utils/auth-client";
 interface PasswordChangeDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onPasswordChanged: () => Promise<void>;
 }
 
 interface PasswordChangeMessage {
   text: string;
   tone: "danger" | "success";
-}
-
-interface AuthErrorLike {
-  code?: string;
-  message?: string;
 }
 
 interface PasswordChangeFormValues {
@@ -38,154 +32,113 @@ const emptyPasswordChangeFormValues: PasswordChangeFormValues = {
   newPassword: "",
 };
 
+const passwordFields = [
+  {
+    autoComplete: "current-password",
+    label: "当前密码",
+    name: "currentPassword",
+    placeholder: "输入当前密码",
+  },
+  {
+    autoComplete: "new-password",
+    label: "新密码",
+    name: "newPassword",
+    placeholder: "至少 8 个字符",
+  },
+  {
+    autoComplete: "new-password",
+    label: "确认新密码",
+    name: "confirmPassword",
+    placeholder: "再次输入新密码",
+  },
+] as const satisfies readonly {
+  autoComplete: "current-password" | "new-password";
+  label: string;
+  name: keyof PasswordChangeFormValues;
+  placeholder: string;
+}[];
+
 const passwordChangeFormSchema = z
   .object({
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, "请再次输入新密码。"),
     currentPassword: z.string().min(1, "请输入当前密码。"),
-    newPassword: z.string(),
+    newPassword: z
+      .string()
+      .min(1, "请输入新密码。")
+      .min(8, "新密码至少需要 8 个字符。"),
   })
-  .superRefine((values, context) => {
-    if (!values.newPassword) {
-      context.addIssue({
-        code: "custom",
-        message: "请输入新密码。",
-        path: ["newPassword"],
-      });
-    } else if (values.newPassword.length < 8) {
-      context.addIssue({
-        code: "custom",
-        message: "新密码至少需要 8 个字符。",
-        path: ["newPassword"],
-      });
-    }
-
-    if (!values.confirmPassword) {
-      context.addIssue({
-        code: "custom",
-        message: "请再次输入新密码。",
-        path: ["confirmPassword"],
-      });
-    } else if (
-      values.newPassword &&
-      values.confirmPassword !== values.newPassword
-    ) {
-      context.addIssue({
-        code: "custom",
-        message: "两次输入的新密码不一致。",
-        path: ["confirmPassword"],
-      });
-    }
+  .refine((values) => values.confirmPassword === values.newPassword, {
+    message: "两次输入的新密码不一致。",
+    path: ["confirmPassword"],
   }) satisfies z.ZodType<PasswordChangeFormValues>;
 
-const getPasswordChangeErrorMessage = (
-  error: AuthErrorLike | null | undefined
-) => {
-  const code = error?.code ?? "";
-  const message = error?.message ?? "";
-
-  if (code === "INVALID_PASSWORD" || message.includes("Invalid password")) {
-    return "当前密码不正确。";
-  }
-
-  if (
-    code === "PASSWORD_TOO_SHORT" ||
-    message.includes("Password is too short") ||
-    message.includes("too short")
-  ) {
-    return "新密码至少需要 8 个字符。";
-  }
-
-  if (code === "CREDENTIAL_ACCOUNT_NOT_FOUND") {
-    return "当前账号没有可修改的密码。";
-  }
-
-  if (
-    code === "FAILED_TO_GET_SESSION" ||
-    code === "SESSION_EXPIRED" ||
-    code === "SESSION_NOT_FRESH" ||
-    message.includes("Session")
-  ) {
-    return "登录状态已失效，请重新登录。";
-  }
-
-  return "修改密码失败，请稍后再试。";
+const passwordChangeErrorMessages: Record<string, string> = {
+  CREDENTIAL_ACCOUNT_NOT_FOUND: "当前账号没有可修改的密码。",
+  FAILED_TO_GET_SESSION: "登录状态已失效，请重新登录。",
+  INVALID_PASSWORD: "当前密码不正确。",
+  PASSWORD_TOO_SHORT: "新密码至少需要 8 个字符。",
+  SESSION_EXPIRED: "登录状态已失效，请重新登录。",
+  SESSION_NOT_FRESH: "登录状态已失效，请重新登录。",
 };
+
+const getPasswordChangeErrorMessage = (code?: string) =>
+  passwordChangeErrorMessages[code ?? ""] ?? "修改密码失败，请稍后再试。";
 
 export function PasswordChangeDialog({
   isOpen,
   onClose,
-  onPasswordChanged,
 }: PasswordChangeDialogProps) {
   const [message, setMessage] = useState<PasswordChangeMessage | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<PasswordChangeFormValues>({
     defaultValues: emptyPasswordChangeFormValues,
     resolver: zodResolver(passwordChangeFormSchema),
   });
-  const { control, handleSubmit: handleFormSubmit, reset } = form;
+  const {
+    control,
+    formState: { isSubmitting },
+    handleSubmit: handleFormSubmit,
+    reset,
+  } = form;
 
   const closeDialog = () => {
     if (isSubmitting) {
       return;
     }
 
-    reset(emptyPasswordChangeFormValues);
+    reset();
     setMessage(null);
     onClose();
-  };
-
-  const handleInputChange = (
-    value: string,
-    onChange: (value: string) => void
-  ) => {
-    setMessage(null);
-    onChange(value);
   };
 
   const handleSubmit = handleFormSubmit(
     async (values) => {
       setMessage(null);
-      setIsSubmitting(true);
 
       try {
         const response = await authClient.changePassword({
           currentPassword: values.currentPassword,
           newPassword: values.newPassword,
+          revokeOtherSessions: true,
         });
 
         if (response.error) {
           setMessage({
-            text: getPasswordChangeErrorMessage(response.error),
+            text: getPasswordChangeErrorMessage(response.error.code),
             tone: "danger",
           });
-          setIsSubmitting(false);
           return;
         }
+
+        reset();
+        setMessage({
+          text: "密码已更新，其他设备上的登录已退出。",
+          tone: "success",
+        });
       } catch {
         setMessage({
           text: "认证服务暂时不可用，请稍后再试。",
           tone: "danger",
         });
-        setIsSubmitting(false);
-        return;
-      }
-
-      setIsSubmitting(false);
-      reset(emptyPasswordChangeFormValues);
-      setMessage({
-        text: "密码已更新，正在退出登录。",
-        tone: "success",
-      });
-      setIsSubmitting(true);
-
-      try {
-        await onPasswordChanged();
-      } catch {
-        setMessage({
-          text: "密码已更新，但自动退出登录失败，请手动退出后重新登录。",
-          tone: "danger",
-        });
-        setIsSubmitting(false);
       }
     },
     (errors) => {
@@ -222,59 +175,27 @@ export function PasswordChangeDialog({
                 </Alert>
               ) : null}
 
-              <Controller
-                control={control}
-                name="currentPassword"
-                render={({ field }) => (
-                  <PasswordField
-                    autoComplete="current-password"
-                    isDisabled={isSubmitting}
-                    label="当前密码"
-                    name={field.name}
-                    onChange={(value) =>
-                      handleInputChange(value, field.onChange)
-                    }
-                    placeholder="输入当前密码"
-                    value={field.value}
-                  />
-                )}
-              />
-
-              <Controller
-                control={control}
-                name="newPassword"
-                render={({ field }) => (
-                  <PasswordField
-                    autoComplete="new-password"
-                    isDisabled={isSubmitting}
-                    label="新密码"
-                    name={field.name}
-                    onChange={(value) =>
-                      handleInputChange(value, field.onChange)
-                    }
-                    placeholder="至少 8 个字符"
-                    value={field.value}
-                  />
-                )}
-              />
-
-              <Controller
-                control={control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <PasswordField
-                    autoComplete="new-password"
-                    isDisabled={isSubmitting}
-                    label="确认新密码"
-                    name={field.name}
-                    onChange={(value) =>
-                      handleInputChange(value, field.onChange)
-                    }
-                    placeholder="再次输入新密码"
-                    value={field.value}
-                  />
-                )}
-              />
+              {passwordFields.map((config) => (
+                <Controller
+                  control={control}
+                  key={config.name}
+                  name={config.name}
+                  render={({ field }) => (
+                    <PasswordField
+                      autoComplete={config.autoComplete}
+                      isDisabled={isSubmitting}
+                      label={config.label}
+                      name={field.name}
+                      onChange={(value) => {
+                        setMessage(null);
+                        field.onChange(value);
+                      }}
+                      placeholder={config.placeholder}
+                      value={field.value}
+                    />
+                  )}
+                />
+              ))}
             </Modal.Body>
             <Modal.Footer>
               <Button
