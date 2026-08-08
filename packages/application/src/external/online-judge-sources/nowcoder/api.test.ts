@@ -141,19 +141,31 @@ describe("nowcoderSource", () => {
     ).resolves.toBe(1234);
   });
 
-  it("returns null when practice-coding stats are missing", async () => {
+  it("loads a zero accepted practice problem count", async () => {
+    mockTextResponse(createPracticeCodingHtml(0));
+
+    await expect(
+      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
+    ).resolves.toBe(0);
+  });
+
+  it("throws when practice-coding stats are missing", async () => {
     mockTextResponse("<html><title>牛客竞赛</title></html>");
 
     await expect(
       nowcoderSource.acceptedPracticeProblemCount({ uid: 999_999_999 })
-    ).resolves.toBeNull();
+    ).rejects.toThrow(
+      "Nowcoder practice-coding 999999999 has no valid accepted problem count"
+    );
   });
 
-  it("returns null when accepted practice problem count is invalid", async () => {
+  it("throws when accepted practice problem count is invalid", async () => {
     mockTextResponse(createPracticeCodingHtml("暂无"));
 
     await expect(
       nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
-    ).resolves.toBeNull();
+    ).rejects.toThrow(
+      "Nowcoder practice-coding 660255087 has no valid accepted problem count"
+    );
   });
 });

@@ -47,13 +47,11 @@ export const syncNowcoderAccountStats = async (
   const loadAcceptedPracticeProblemCount =
     loaders.loadAcceptedPracticeProblemCount ??
     nowcoderSource.acceptedPracticeProblemCount;
-  const ratingBasic = await loadRatingBasic({ uid });
-  const acceptedProblemCount = await loadAcceptedPracticeProblemCount({ uid })
-    .then((count) => count)
-    .catch(() => null);
+  const [acceptedProblemCount, ratingBasic] = await Promise.all([
+    loadAcceptedPracticeProblemCount({ uid }),
+    loadRatingBasic({ uid }),
+  ]);
   const fetchedAt = now;
-  const acceptedProblemCountUpdate =
-    acceptedProblemCount === null ? {} : { acceptedProblemCount };
 
   return await db.transaction(async (tx) => {
     const stats = await tx
@@ -68,7 +66,7 @@ export const syncNowcoderAccountStats = async (
       })
       .onConflictDoUpdate({
         set: {
-          ...acceptedProblemCountUpdate,
+          acceptedProblemCount,
           fetchedAt,
           lastAttemptedAt: fetchedAt,
           lastError: null,

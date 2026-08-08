@@ -114,7 +114,7 @@ const ratingBasic = async (params: {
 
 const acceptedPracticeProblemCount = async (params: {
   uid: number;
-}): Promise<null | number> => {
+}): Promise<number> => {
   const response = await requestExternalResource({
     label: `Nowcoder practice-coding ${params.uid}`,
     request: async (signal) =>
@@ -127,7 +127,15 @@ const acceptedPracticeProblemCount = async (params: {
     );
   }
 
-  return parseAcceptedPracticeProblemCount(await response.text());
+  const count = parseAcceptedPracticeProblemCount(await response.text());
+
+  if (count === null) {
+    throw new Error(
+      `Nowcoder practice-coding ${params.uid} has no valid accepted problem count`
+    );
+  }
+
+  return count;
 };
 
 export const nowcoderSource = {

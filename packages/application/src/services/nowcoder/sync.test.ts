@@ -108,63 +108,34 @@ describe("Nowcoder sync", () => {
     ]);
   });
 
-  it("keeps existing accepted problem count when the practice page has no new count", async () => {
+  it("keeps the existing snapshot when the practice page request fails", async () => {
     const db = await createServiceTestDb();
     const account = await createNowcoderAccount(db);
+    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
 
-    await syncNowcoderAccountStats(
-      db,
-      account,
-      new Date("2026-01-01T00:00:00.000Z"),
-      {
-        loadAcceptedPracticeProblemCount: async () => 312,
-        loadRatingBasic: async () => createRatingBasic({ rating: 1609 }),
-      }
-    );
-    await syncNowcoderAccountStats(
-      db,
-      { ...account, handle: "F0rL1ght" },
-      new Date("2026-01-02T00:00:00.000Z"),
-      {
-        loadAcceptedPracticeProblemCount: async () => null,
-        loadRatingBasic: async () => createRatingBasic({ rating: 1610 }),
-      }
-    );
+    await syncNowcoderAccountStats(db, account, fetchedAt, {
+      loadAcceptedPracticeProblemCount: async () => 312,
+      loadRatingBasic: async () => createRatingBasic({ rating: 1609 }),
+    });
+    await expect(
+      syncNowcoderAccountStats(
+        db,
+        { ...account, handle: "F0rL1ght" },
+        new Date("2026-01-02T00:00:00.000Z"),
+        {
+          loadAcceptedPracticeProblemCount: () =>
+            Promise.reject(new Error("practice failed")),
+          loadRatingBasic: async () => createRatingBasic({ rating: 1610 }),
+        }
+      )
+    ).rejects.toThrow("practice failed");
 
     const [stats] = await db.select().from(nowcoderAccountStats);
 
-    expect(stats?.rating).toBe(1610);
+    expect(stats?.rating).toBe(1609);
     expect(stats?.acceptedProblemCount).toBe(312);
-  });
-
-  it("keeps existing accepted problem count when the practice page request fails", async () => {
-    const db = await createServiceTestDb();
-    const account = await createNowcoderAccount(db);
-
-    await syncNowcoderAccountStats(
-      db,
-      account,
-      new Date("2026-01-01T00:00:00.000Z"),
-      {
-        loadAcceptedPracticeProblemCount: async () => 312,
-        loadRatingBasic: async () => createRatingBasic({ rating: 1609 }),
-      }
-    );
-    await syncNowcoderAccountStats(
-      db,
-      { ...account, handle: "F0rL1ght" },
-      new Date("2026-01-02T00:00:00.000Z"),
-      {
-        loadAcceptedPracticeProblemCount: () =>
-          Promise.reject(new Error("practice failed")),
-        loadRatingBasic: async () => createRatingBasic({ rating: 1610 }),
-      }
-    );
-
-    const [stats] = await db.select().from(nowcoderAccountStats);
-
-    expect(stats?.rating).toBe(1610);
-    expect(stats?.acceptedProblemCount).toBe(312);
+    expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
+    expect(stats?.lastAttemptedAt.toISOString()).toBe(fetchedAt.toISOString());
     expect(stats?.lastError).toBeNull();
   });
 
