@@ -5,6 +5,7 @@ export const profileFieldConfigs = [
   { autoComplete: "organization-title", key: "major", label: "专业" },
 ] as const;
 
+export type ProfileFieldConfig = (typeof profileFieldConfigs)[number];
 export type ProfileFieldKey = (typeof profileFieldConfigs)[number]["key"];
 export type ProfileFormValues = Record<ProfileFieldKey, string>;
 export type ProfileData = Record<ProfileFieldKey, string>;

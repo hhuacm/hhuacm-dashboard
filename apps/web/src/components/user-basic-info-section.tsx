@@ -1,24 +1,10 @@
 "use client";
 
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  ListBox,
-  Modal,
-  Select,
-  Spinner,
-  TextField,
-} from "@heroui/react";
-import {
-  getGradeOptionsWithCurrentValue,
-  type MemberStatus,
-} from "@hhuacm-dashboard/domain";
+import { Alert, Button, Card, Form, Modal, Spinner } from "@heroui/react";
+import type { MemberStatus } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Save } from "lucide-react";
-import { type Key, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -31,9 +17,9 @@ import {
   type ProfileUpdateValues,
   profileFieldConfigs,
 } from "@/utils/profile-fields";
-import { DirtyFieldLabel } from "./dirty-field-label";
 import { InfoItem } from "./info-item";
 import { MemberStatusChip } from "./member-status-chip";
+import { ProfileFieldInput } from "./profile-field-input";
 
 export interface UserBasicInfoMessage {
   text: string;
@@ -54,15 +40,6 @@ interface UserBasicInfoSectionProps {
   profile: UserBasicInfoProfile | undefined;
 }
 
-interface BasicInfoFieldInputProps {
-  field: (typeof profileFieldConfigs)[number];
-  gradeOptions: string[];
-  isChanged?: boolean;
-  isDisabled?: boolean;
-  onChange: (value: string) => void;
-  value: string;
-}
-
 const profileFormSchema = z.object({
   grade: z.string().trim().min(1, "请选择年级"),
   major: z.string().trim().min(1, "请输入专业"),
@@ -77,65 +54,6 @@ const getErrorMessage = (error: unknown) => {
 
   return "保存失败，请稍后再试。";
 };
-
-function BasicInfoFieldInput({
-  field,
-  gradeOptions,
-  isChanged = false,
-  isDisabled = false,
-  onChange,
-  value,
-}: BasicInfoFieldInputProps) {
-  if (field.key === "grade") {
-    const handleGradeChange = (key: Key | null) => {
-      onChange(typeof key === "string" ? key : "");
-    };
-
-    return (
-      <Select
-        fullWidth
-        isDisabled={isDisabled}
-        onSelectionChange={handleGradeChange}
-        placeholder="请选择年级"
-        selectedKey={value || null}
-        variant="secondary"
-      >
-        <DirtyFieldLabel isChanged={isChanged} label={field.label} />
-        <Select.Trigger>
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {gradeOptions.map((option) => (
-              <ListBox.Item id={option} key={option} textValue={option}>
-                {option}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
-    );
-  }
-
-  return (
-    <TextField
-      fullWidth
-      isDisabled={isDisabled}
-      name={field.key}
-      onChange={onChange}
-      value={value}
-    >
-      <DirtyFieldLabel isChanged={isChanged} label={field.label} />
-      <Input
-        autoComplete={field.autoComplete}
-        placeholder={`请输入${field.label}`}
-        variant="secondary"
-      />
-    </TextField>
-  );
-}
 
 export function UserBasicInfoSection({
   isError,
@@ -170,10 +88,6 @@ export function UserBasicInfoSection({
     originalFormValues
   );
   const hasProfileChanges = hasProfileUpdateValues(changedProfileValues);
-  const gradeOptions = getGradeOptionsWithCurrentValue(
-    originalFormValues.grade
-  );
-
   const openEditor = () => {
     if (!profile) {
       return;
@@ -326,9 +240,8 @@ export function UserBasicInfoSection({
                       key={field.key}
                       name={field.key}
                       render={({ field: formField }) => (
-                        <BasicInfoFieldInput
+                        <ProfileFieldInput
                           field={field}
-                          gradeOptions={gradeOptions}
                           isChanged={field.key in changedProfileValues}
                           isDisabled={isLoading || isSaving}
                           onChange={(value) =>

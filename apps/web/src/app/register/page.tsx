@@ -9,23 +9,22 @@ import {
   Form,
   Input,
   Label,
-  ListBox,
-  Select,
   Separator,
   Spinner,
   TextField,
 } from "@heroui/react";
-import { getGradeOptions, isValidGradeOption } from "@hhuacm-dashboard/domain";
+import { isValidGradeOption } from "@hhuacm-dashboard/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { type Key, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app-shell";
 import { PasswordField } from "@/components/password-field";
+import { ProfileFieldInput } from "@/components/profile-field-input";
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import {
   emptyProfileFormValues,
@@ -84,80 +83,12 @@ const getRegisterErrorMessage = (message: string | undefined) => {
   return message;
 };
 
-interface RegisterProfileFieldInputProps {
-  field: (typeof profileFieldConfigs)[number];
-  gradeOptions: string[];
-  isDisabled?: boolean;
-  onChange: (value: string) => void;
-  value: string;
-}
-
-function RegisterProfileFieldInput({
-  field,
-  gradeOptions,
-  isDisabled = false,
-  onChange,
-  value,
-}: RegisterProfileFieldInputProps) {
-  if (field.key === "grade") {
-    const handleGradeChange = (key: Key | null) => {
-      onChange(typeof key === "string" ? key : "");
-    };
-
-    return (
-      <Select
-        fullWidth
-        isDisabled={isDisabled}
-        onSelectionChange={handleGradeChange}
-        placeholder="请选择年级"
-        selectedKey={value || null}
-        variant="secondary"
-      >
-        <Label>{field.label}</Label>
-        <Select.Trigger>
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover>
-          <ListBox>
-            {gradeOptions.map((option) => (
-              <ListBox.Item id={option} key={option} textValue={option}>
-                {option}
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
-      </Select>
-    );
-  }
-
-  return (
-    <TextField
-      fullWidth
-      isDisabled={isDisabled}
-      key={field.key}
-      name={field.key}
-      onChange={onChange}
-      value={value}
-    >
-      <Label>{field.label}</Label>
-      <Input
-        autoComplete={field.autoComplete}
-        placeholder={`请输入${field.label}`}
-        variant="secondary"
-      />
-    </TextField>
-  );
-}
-
 export default function RegisterPage() {
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const gradeOptions = getGradeOptions();
   const form = useForm<RegisterFormValues>({
     defaultValues: emptyRegisterFormValues,
     resolver: zodResolver(registerFormSchema),
@@ -325,9 +256,8 @@ export default function RegisterPage() {
                           key={field.key}
                           name={field.key}
                           render={({ field: profileField }) => (
-                            <RegisterProfileFieldInput
+                            <ProfileFieldInput
                               field={field}
-                              gradeOptions={gradeOptions}
                               isDisabled={submitting}
                               onChange={profileField.onChange}
                               value={profileField.value}

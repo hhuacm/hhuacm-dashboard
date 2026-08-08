@@ -14,7 +14,6 @@ import {
   TextField,
 } from "@heroui/react";
 import {
-  getGradeOptionsWithCurrentValue,
   isMemberStatus,
   memberStatuses,
   memberStatusLabels,
@@ -27,6 +26,7 @@ import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import { ProfileFieldInput } from "@/components/profile-field-input";
 import { ojAccountExternalIdPlaceholders } from "@/utils/oj-platforms";
 import {
   type ProfileFieldKey,
@@ -107,9 +107,6 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
     originalFormValues
   );
   const hasChanges = hasAdminProfileUpdateValues(changedValues);
-  const gradeOptions = getGradeOptionsWithCurrentValue(
-    originalFormValues.grade
-  );
   const updateProfile = useMutation(
     trpc.admin.users.updateProfile.mutationOptions({
       onError: (error) => {
@@ -226,64 +223,16 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
             </Select.Popover>
           </Select>
 
-          {profileFieldConfigs.map((field) =>
-            field.key === "grade" ? (
-              <Select
-                fullWidth
-                isDisabled={updateProfile.isPending}
-                key={field.key}
-                onSelectionChange={(key) =>
-                  handleInputChange(
-                    field.key,
-                    typeof key === "string" ? key : ""
-                  )
-                }
-                placeholder="请选择年级"
-                selectedKey={formValues.grade || null}
-                variant="secondary"
-              >
-                <DirtyFieldLabel
-                  isChanged={field.key in changedValues}
-                  label={field.label}
-                />
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {gradeOptions.map((option) => (
-                      <ListBox.Item id={option} key={option} textValue={option}>
-                        {option}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            ) : (
-              <TextField
-                fullWidth
-                isDisabled={updateProfile.isPending}
-                key={field.key}
-                name={field.key}
-                onChange={(nextValue) =>
-                  handleInputChange(field.key, nextValue)
-                }
-                value={formValues[field.key]}
-              >
-                <DirtyFieldLabel
-                  isChanged={field.key in changedValues}
-                  label={field.label}
-                />
-                <Input
-                  autoComplete={field.autoComplete}
-                  placeholder={`请输入${field.label}`}
-                  variant="secondary"
-                />
-              </TextField>
-            )
-          )}
+          {profileFieldConfigs.map((field) => (
+            <ProfileFieldInput
+              field={field}
+              isChanged={field.key in changedValues}
+              isDisabled={updateProfile.isPending}
+              key={field.key}
+              onChange={(nextValue) => handleInputChange(field.key, nextValue)}
+              value={formValues[field.key]}
+            />
+          ))}
         </div>
         <div className="flex justify-end">
           <Button
