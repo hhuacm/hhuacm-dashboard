@@ -6,12 +6,10 @@ import {
   Button,
   Chip,
   Form,
-  Input,
   ListBox,
   Modal,
   Select,
   Spinner,
-  TextField,
 } from "@heroui/react";
 import {
   isMemberStatus,
@@ -26,8 +24,8 @@ import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { type FormEvent, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import { OjAccountExternalIdField } from "@/components/oj-account-external-id-field";
 import { ProfileFieldInput } from "@/components/profile-field-input";
-import { ojAccountExternalIdPlaceholders } from "@/utils/oj-platforms";
 import {
   type ProfileFieldKey,
   profileFieldConfigs,
@@ -423,23 +421,16 @@ function AdminUserOjAccountRow({
             {platformLabel}
           </Chip>
         </div>
-        <TextField
-          fullWidth
+        <OjAccountExternalIdField
+          isChanged={isChanged}
           isDisabled={isBusy}
-          name={`${platform}-external-id`}
           onChange={(nextValue) => {
             setMessage(null);
             setExternalId(nextValue);
           }}
+          platform={platform}
           value={externalId}
-        >
-          <DirtyFieldLabel isChanged={isChanged} label="账号标识" />
-          <Input
-            autoComplete="off"
-            placeholder={ojAccountExternalIdPlaceholders[platform]}
-            variant="secondary"
-          />
-        </TextField>
+        />
         {account && account.externalId !== account.handle ? (
           <p className="-mt-2 break-all text-muted text-xs md:col-start-2">
             当前展示名：

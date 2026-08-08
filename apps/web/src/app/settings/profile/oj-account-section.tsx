@@ -7,13 +7,11 @@ import {
   Card,
   Chip,
   Form,
-  Input,
   Label,
   ListBox,
   Modal,
   Select,
   Spinner,
-  TextField,
 } from "@heroui/react";
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
 import { isOjPlatform, type OjPlatform } from "@hhuacm-dashboard/domain";
@@ -25,11 +23,10 @@ import Image from "next/image";
 import { type Key, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { DirtyFieldLabel } from "@/components/dirty-field-label";
+import { OjAccountExternalIdField } from "@/components/oj-account-external-id-field";
 import {
   buildOjProfileUrl,
   getOjPlatformConfig,
-  ojAccountExternalIdPlaceholders,
   ojPlatformConfigs,
 } from "@/utils/oj-platforms";
 import { trpc } from "@/utils/trpc";
@@ -569,28 +566,16 @@ export function OjAccountSection({
                   control={control}
                   name="externalId"
                   render={({ field }) => (
-                    <TextField
-                      fullWidth
+                    <OjAccountExternalIdField
+                      isChanged={isExternalIdChanged}
                       isDisabled={isSaving}
-                      name={field.name}
                       onChange={(value) => {
                         setDialogMessage(null);
                         field.onChange(value);
                       }}
+                      platform={formValues.platform}
                       value={field.value}
-                    >
-                      <DirtyFieldLabel
-                        isChanged={isExternalIdChanged}
-                        label="账号标识"
-                      />
-                      <Input
-                        autoComplete="off"
-                        placeholder={
-                          ojAccountExternalIdPlaceholders[formValues.platform]
-                        }
-                        variant="secondary"
-                      />
-                    </TextField>
+                    />
                   )}
                 />
               </Modal.Body>
