@@ -11,8 +11,6 @@ import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../_shared/access-feedback";
-import { useAdminAccess } from "../_shared/use-admin-access";
 
 const jsonIndent = 2;
 
@@ -105,10 +103,8 @@ function ExportResult({
 export default function AdminExportPage() {
   const router = useRouter();
   const [isCopied, setIsCopied] = useState(false);
-  const { isAdmin, status } = useAdminAccess();
   const exportQuery = useQuery(
     trpc.admin.export.queryOptions(undefined, {
-      enabled: Boolean(isAdmin),
       retry: false,
     })
   );
@@ -170,65 +166,61 @@ export default function AdminExportPage() {
       title="系统导出"
     >
       <div className="grid gap-6">
-        <AccessFeedback loginReturnLabel="系统导出" status={status} />
-
-        {isAdmin ? (
-          <Card>
-            <Card.Header className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <Card.Title className="text-xl">系统最小种子文件</Card.Title>
-                <Card.Description>
-                  JSON 仅包含用户、OJ 账号标识、题单和非默认站点设置。
-                </Card.Description>
+        <Card>
+          <Card.Header className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <Card.Title className="text-xl">系统最小种子文件</Card.Title>
+              <Card.Description>
+                JSON 仅包含用户、OJ 账号标识、题单和非默认站点设置。
+              </Card.Description>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                isDisabled={!exportJson}
+                onPress={handleCopy}
+                size="sm"
+                variant="outline"
+              >
+                {isCopied ? (
+                  <Check className="size-4" />
+                ) : (
+                  <Clipboard className="size-4" />
+                )}
+                {isCopied ? "已复制" : "复制 JSON"}
+              </Button>
+              <Button
+                isDisabled={!exportJson}
+                onPress={handleDownload}
+                size="sm"
+              >
+                <Download className="size-4" />
+                下载 JSON
+              </Button>
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {exportQuery.isPending ? (
+              <div className="flex items-center gap-3">
+                <Spinner color="current" size="sm" />
+                <p className="font-medium">正在生成系统导出。</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  isDisabled={!exportJson}
-                  onPress={handleCopy}
-                  size="sm"
-                  variant="outline"
-                >
-                  {isCopied ? (
-                    <Check className="size-4" />
-                  ) : (
-                    <Clipboard className="size-4" />
-                  )}
-                  {isCopied ? "已复制" : "复制 JSON"}
-                </Button>
-                <Button
-                  isDisabled={!exportJson}
-                  onPress={handleDownload}
-                  size="sm"
-                >
-                  <Download className="size-4" />
-                  下载 JSON
-                </Button>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {exportQuery.isPending ? (
-                <div className="flex items-center gap-3">
-                  <Spinner color="current" size="sm" />
-                  <p className="font-medium">正在生成系统导出。</p>
-                </div>
-              ) : null}
+            ) : null}
 
-              {exportQuery.isError ? (
-                <Alert status="danger">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Title>导出失败</Alert.Title>
-                    <Alert.Description>请刷新页面后重试。</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              ) : null}
+            {exportQuery.isError ? (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>导出失败</Alert.Title>
+                  <Alert.Description>请刷新页面后重试。</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            ) : null}
 
-              {exportQuery.data ? (
-                <ExportResult data={exportQuery.data} exportJson={exportJson} />
-              ) : null}
-            </Card.Content>
-          </Card>
-        ) : null}
+            {exportQuery.data ? (
+              <ExportResult data={exportQuery.data} exportJson={exportJson} />
+            ) : null}
+          </Card.Content>
+        </Card>
       </div>
     </AppShell>
   );

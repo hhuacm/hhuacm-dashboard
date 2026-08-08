@@ -9,8 +9,6 @@ import { use } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../../../_shared/access-feedback";
-import { useAdminAccess } from "../../../_shared/use-admin-access";
 import { ProblemSetEditor } from "./_components/problem-set-editor";
 
 interface AdminProblemSetEditPageProps {
@@ -24,15 +22,7 @@ export default function AdminProblemSetEditPage({
 }: AdminProblemSetEditPageProps) {
   const router = useRouter();
   const { id } = use(params);
-  const { isAdmin, status } = useAdminAccess();
-  const problemSetQuery = useQuery(
-    trpc.problemSet.get.queryOptions(
-      { id },
-      {
-        enabled: isAdmin,
-      }
-    )
-  );
+  const problemSetQuery = useQuery(trpc.problemSet.get.queryOptions({ id }));
   const shellAction = (
     <Button
       onPress={() => router.push(`/problem-sets/${id}` as Route)}
@@ -53,16 +43,14 @@ export default function AdminProblemSetEditPage({
       title="编辑题单"
     >
       <div className="grid gap-6">
-        <AccessFeedback loginReturnLabel="编辑题单" status={status} />
-
-        {isAdmin && problemSetQuery.isPending ? (
+        {problemSetQuery.isPending ? (
           <div className="flex items-center gap-3">
             <Spinner color="current" size="sm" />
             <p className="font-medium">正在加载题单。</p>
           </div>
         ) : null}
 
-        {isAdmin && problemSetQuery.isError ? (
+        {problemSetQuery.isError ? (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -72,7 +60,7 @@ export default function AdminProblemSetEditPage({
           </Alert>
         ) : null}
 
-        {isAdmin && problemSetQuery.data ? (
+        {problemSetQuery.data ? (
           <ProblemSetEditor
             key={problemSetQuery.data.id}
             problemSet={problemSetQuery.data}

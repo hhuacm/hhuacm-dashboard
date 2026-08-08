@@ -10,8 +10,6 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../_shared/access-feedback";
-import { useAdminAccess } from "../_shared/use-admin-access";
 import { AdminUserDeleteDialog } from "./_components/admin-user-delete-dialog";
 import { AdminUserEditDialog } from "./_components/admin-user-edit-dialog";
 import { AdminUsersTableSection } from "./_components/admin-users-table-section";
@@ -50,7 +48,6 @@ function AdminUsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { isAdmin, status } = useAdminAccess();
   const targetUsername = searchParams.get("username");
   const [filters, setFilters] = useState<AdminUsersFilters>(
     emptyAdminUsersFilters
@@ -137,13 +134,11 @@ function AdminUsersPageContent() {
   const listQueryKey = trpc.admin.users.list.queryKey(listInput);
   const usersQuery = useQuery(
     trpc.admin.users.list.queryOptions(listInput, {
-      enabled: isAdmin,
       retry: false,
     })
   );
   const metadataQuery = useQuery(
     trpc.admin.users.metadata.queryOptions(undefined, {
-      enabled: isAdmin,
       retry: false,
     })
   );
@@ -214,26 +209,22 @@ function AdminUsersPageContent() {
       title="用户列表"
     >
       <div className="grid gap-6">
-        <AccessFeedback loginReturnLabel="用户列表" status={status} />
-
-        {isAdmin ? (
-          <AdminUsersTableSection
-            filters={filters}
-            hasActiveFilters={hasActiveFilters}
-            listStatus={listStatus}
-            metadata={metadataQuery.data}
-            metadataStatus={metadataStatus}
-            onClearFilters={handleClearFilters}
-            onDeleteUser={handleDeleteUser}
-            onEditUser={handleEditUser}
-            onFilterChange={handleFilterChange}
-            onSortChange={setSort}
-            sort={visibleSort}
-            total={total}
-            users={users}
-            visibleColumnControls={visibleColumnControls}
-          />
-        ) : null}
+        <AdminUsersTableSection
+          filters={filters}
+          hasActiveFilters={hasActiveFilters}
+          listStatus={listStatus}
+          metadata={metadataQuery.data}
+          metadataStatus={metadataStatus}
+          onClearFilters={handleClearFilters}
+          onDeleteUser={handleDeleteUser}
+          onEditUser={handleEditUser}
+          onFilterChange={handleFilterChange}
+          onSortChange={setSort}
+          sort={visibleSort}
+          total={total}
+          users={users}
+          visibleColumnControls={visibleColumnControls}
+        />
 
         <AdminUserDeleteDialog
           confirmationValue={deleteConfirmationValue}

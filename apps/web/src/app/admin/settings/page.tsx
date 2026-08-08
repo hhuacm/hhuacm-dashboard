@@ -18,8 +18,6 @@ import { type FormEvent, type ReactNode, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import { trpc } from "@/utils/trpc";
-import { AccessFeedback } from "../_shared/access-feedback";
-import { useAdminAccess } from "../_shared/use-admin-access";
 
 interface SettingsMessage {
   text: string;
@@ -162,10 +160,8 @@ function HomeNoticeSettingsEditor({
 
 export default function AdminSettingsPage() {
   const router = useRouter();
-  const { isAdmin, status } = useAdminAccess();
   const homeNotice = useQuery(
     trpc.dashboard.homeNotice.queryOptions(undefined, {
-      enabled: isAdmin,
       retry: false,
     })
   );
@@ -189,44 +185,40 @@ export default function AdminSettingsPage() {
       title="全局设置"
     >
       <div className="grid gap-4">
-        <AccessFeedback loginReturnLabel="全局设置" status={status} />
+        <Card>
+          <Card.Header>
+            <div>
+              <Card.Title className="text-xl">站点全局配置</Card.Title>
+            </div>
+          </Card.Header>
+          <Card.Content className="grid gap-4">
+            {homeNotice.isPending ? (
+              <Alert>
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>正在读取全局设置。</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            ) : null}
 
-        {isAdmin ? (
-          <Card>
-            <Card.Header>
-              <div>
-                <Card.Title className="text-xl">站点全局配置</Card.Title>
-              </div>
-            </Card.Header>
-            <Card.Content className="grid gap-4">
-              {homeNotice.isPending ? (
-                <Alert>
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Description>正在读取全局设置。</Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              ) : null}
+            {homeNotice.isError ? (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>
+                    全局设置加载失败，请刷新页面重试。
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert>
+            ) : null}
 
-              {homeNotice.isError ? (
-                <Alert status="danger">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Description>
-                      全局设置加载失败，请刷新页面重试。
-                    </Alert.Description>
-                  </Alert.Content>
-                </Alert>
-              ) : null}
-
-              {homeNotice.data ? (
-                <HomeNoticeSettingsEditor
-                  initialMarkdown={homeNotice.data.markdown}
-                />
-              ) : null}
-            </Card.Content>
-          </Card>
-        ) : null}
+            {homeNotice.data ? (
+              <HomeNoticeSettingsEditor
+                initialMarkdown={homeNotice.data.markdown}
+              />
+            ) : null}
+          </Card.Content>
+        </Card>
       </div>
     </AppShell>
   );
