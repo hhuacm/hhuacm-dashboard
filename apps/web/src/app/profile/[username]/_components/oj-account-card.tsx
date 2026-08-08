@@ -54,6 +54,33 @@ const statsStatusToneClassNames = {
   muted: "text-muted",
 } as const satisfies Record<StatsStatusTone, string>;
 
+function StatsStatusField({
+  className,
+  status,
+}: {
+  className?: string;
+  status: StatsStatusPresentation;
+}) {
+  return (
+    <div
+      className={clsx(
+        "rounded-md border border-border bg-surface-secondary px-3 py-2",
+        className
+      )}
+    >
+      <dt className="text-muted text-xs">刷新状态</dt>
+      <dd
+        className={clsx(
+          "wrap-break-word mt-1 font-medium",
+          statsStatusToneClassNames[status.tone]
+        )}
+      >
+        {status.text}
+      </dd>
+    </div>
+  );
+}
+
 function CodeforcesStatsContent({
   codeforces,
 }: {
@@ -94,17 +121,10 @@ function CodeforcesStatsContent({
           {formatDateTime(codeforces?.fetchedAt ?? null)}
         </dd>
       </div>
-      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2 sm:col-span-2 lg:col-span-4">
-        <dt className="text-muted text-xs">刷新状态</dt>
-        <dd
-          className={clsx(
-            "wrap-break-word mt-1 font-medium",
-            statsStatusToneClassNames[status.tone]
-          )}
-        >
-          {status.text}
-        </dd>
-      </div>
+      <StatsStatusField
+        className="sm:col-span-2 lg:col-span-4"
+        status={status}
+      />
     </dl>
   );
 }
@@ -132,17 +152,7 @@ function AtcoderStatsContent({
           {formatDateTime(atcoder?.fetchedAt ?? null)}
         </dd>
       </div>
-      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
-        <dt className="text-muted text-xs">刷新状态</dt>
-        <dd
-          className={clsx(
-            "wrap-break-word mt-1 font-medium",
-            statsStatusToneClassNames[status.tone]
-          )}
-        >
-          {status.text}
-        </dd>
-      </div>
+      <StatsStatusField status={status} />
     </dl>
   );
 }
@@ -254,17 +264,7 @@ function NowcoderStatsContent({
           {formatDateTime(nowcoder?.fetchedAt ?? null)}
         </dd>
       </div>
-      <div className="rounded-md border border-border bg-surface-secondary px-3 py-2">
-        <dt className="text-muted text-xs">刷新状态</dt>
-        <dd
-          className={clsx(
-            "wrap-break-word mt-1 font-medium",
-            statsStatusToneClassNames[status.tone]
-          )}
-        >
-          {status.text}
-        </dd>
-      </div>
+      <StatsStatusField status={status} />
     </dl>
   );
 }
