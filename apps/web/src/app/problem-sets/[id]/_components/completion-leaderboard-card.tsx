@@ -4,8 +4,6 @@ import {
   Alert,
   Button,
   Card,
-  Checkbox,
-  CheckboxGroup,
   Input,
   Label,
   Popover,
@@ -22,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
-
+import { MultiSelectFilterMenu } from "@/components/multi-select-filter-menu";
 import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 import {
@@ -110,100 +108,6 @@ function CompletionCountFilter({
   );
 }
 
-function GradeFilterMenu({
-  onChange,
-  options,
-  selectedValues,
-}: {
-  onChange: (values: string[]) => void;
-  options: { label: string; value: string }[];
-  selectedValues: string[];
-}) {
-  const selectedCount = selectedValues.length;
-  const buttonLabel = selectedCount > 0 ? `年级 ${selectedCount}` : "年级";
-
-  return (
-    <Popover>
-      <Button isDisabled={options.length === 0} size="sm" variant="outline">
-        <SlidersHorizontal className="size-4" />
-        {buttonLabel}
-        <ChevronDown className="size-4" />
-      </Button>
-      <Popover.Content className="w-48">
-        <Popover.Dialog className="grid gap-3">
-          <Popover.Heading className="font-semibold text-sm">
-            年级筛选
-          </Popover.Heading>
-          {options.length > 0 ? (
-            <CheckboxGroup
-              className="grid max-h-64 gap-2 overflow-y-auto pr-1"
-              onChange={onChange}
-              value={selectedValues}
-            >
-              {options.map((option) => (
-                <Checkbox key={option.value} value={option.value}>
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
-                  <Checkbox.Content>
-                    <Label>{option.label}</Label>
-                  </Checkbox.Content>
-                </Checkbox>
-              ))}
-            </CheckboxGroup>
-          ) : (
-            <p className="text-muted text-sm">暂无可选项</p>
-          )}
-        </Popover.Dialog>
-      </Popover.Content>
-    </Popover>
-  );
-}
-
-function MemberStatusFilterMenu({
-  onChange,
-  selectedValues,
-}: {
-  onChange: (values: CurrentMemberStatus[]) => void;
-  selectedValues: CurrentMemberStatus[];
-}) {
-  const selectedCount = selectedValues.length;
-  const buttonLabel = selectedCount > 0 ? `状态 ${selectedCount}` : "状态";
-
-  return (
-    <Popover>
-      <Button size="sm" variant="outline">
-        <SlidersHorizontal className="size-4" />
-        {buttonLabel}
-        <ChevronDown className="size-4" />
-      </Button>
-      <Popover.Content className="w-48">
-        <Popover.Dialog className="grid gap-3">
-          <Popover.Heading className="font-semibold text-sm">
-            状态筛选
-          </Popover.Heading>
-          <CheckboxGroup
-            className="grid gap-2"
-            onChange={(values) => onChange(values as CurrentMemberStatus[])}
-            value={selectedValues}
-          >
-            {memberStatusOptions.map((option) => (
-              <Checkbox key={option.value} value={option.value}>
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-                <Checkbox.Content>
-                  <Label>{option.label}</Label>
-                </Checkbox.Content>
-              </Checkbox>
-            ))}
-          </CheckboxGroup>
-        </Popover.Dialog>
-      </Popover.Content>
-    </Popover>
-  );
-}
-
 export function CompletionLeaderboardCard({
   problemSetId,
 }: {
@@ -273,13 +177,16 @@ export function CompletionLeaderboardCard({
                 onChange={setMinCompletedCount}
                 value={minCompletedCount}
               />
-              <GradeFilterMenu
+              <MultiSelectFilterMenu
+                label="年级"
                 onChange={setSelectedGrades}
                 options={gradeOptions}
                 selectedValues={selectedGrades}
               />
-              <MemberStatusFilterMenu
+              <MultiSelectFilterMenu
+                label="状态"
                 onChange={setSelectedMemberStatuses}
+                options={memberStatusOptions}
                 selectedValues={selectedMemberStatuses}
               />
               <Button

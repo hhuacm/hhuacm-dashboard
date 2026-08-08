@@ -53,7 +53,6 @@ export interface RankBoardBaseConfig<
     rows: readonly Row[],
     filters: RankFilterState<FilterKey>
   ) => Row[];
-  filterSearchThreshold: number;
   numberFilterButtonText: string;
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[];
   numberFilterInputMode: "decimal" | "numeric";

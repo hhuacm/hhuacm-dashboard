@@ -35,7 +35,6 @@ const numberFilterConfigs = [
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
-const filterSearchThreshold = 8;
 const rankColumnVisibilityStorageKey = "rank-atcoder-column-visibility-v1";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
@@ -133,7 +132,6 @@ export const atcoderRankConfig = defineRankConfig({
   defaultSort,
   emptyFilters: emptyRankFilters,
   filterRows: filterRankRows,
-  filterSearchThreshold,
   numberFilterButtonText: "Rating 与表现",
   numberFilterConfigs,
   numberFilterInputMode: "numeric",

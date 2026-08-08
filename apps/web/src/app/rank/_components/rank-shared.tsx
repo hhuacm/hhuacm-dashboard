@@ -4,8 +4,6 @@ import {
   Alert,
   Button,
   Card,
-  Checkbox,
-  CheckboxGroup,
   Chip,
   Input,
   Label,
@@ -29,6 +27,10 @@ import {
   type TableColumnVisibilityConfig,
   useColumnVisibility,
 } from "@/components/column-visibility";
+import {
+  MultiSelectFilterMenu,
+  type MultiSelectFilterOption,
+} from "@/components/multi-select-filter-menu";
 import type {
   RankBoardBaseConfig,
   RankColumnConfig,
@@ -43,11 +45,6 @@ import {
   rankTableColumnClassName,
   type SortDirection,
 } from "../_shared/rank-utils";
-
-export interface RankFilterOption {
-  label: string;
-  value: string;
-}
 
 interface RankQueryResult<Row> {
   data?: Row[];
@@ -150,14 +147,6 @@ interface StatusChipProps<Status extends string> {
   >;
 }
 
-interface FilterMenuProps {
-  label: string;
-  onChange: (values: string[]) => void;
-  options: RankFilterOption[];
-  searchThreshold: number;
-  selectedValues: string[];
-}
-
 interface NumberFilterMenuProps<FilterKey extends string> {
   activeCount: number;
   buttonText: string;
@@ -178,9 +167,9 @@ interface RankToolbarProps<
     majors: string[];
     minimums: Record<FilterKey, string>;
   };
-  gradeOptions: RankFilterOption[];
+  gradeOptions: MultiSelectFilterOption[];
   hasActiveFilters: boolean;
-  majorOptions: RankFilterOption[];
+  majorOptions: MultiSelectFilterOption[];
   numberFilterActiveCount: number;
   numberFilterButtonText: string;
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[];
@@ -190,7 +179,6 @@ interface RankToolbarProps<
   onMinimumFilterChange: (key: FilterKey, value: string) => void;
   onResetColumns: () => void;
   onVisibleColumnChange: (columnId: ColumnId, isVisible: boolean) => void;
-  searchThreshold: number;
   visibleColumnIds: readonly ColumnId[];
 }
 
@@ -384,7 +372,6 @@ export function RankBoard<
     defaultSort,
     emptyFilters,
     filterRows,
-    filterSearchThreshold,
     numberFilterButtonText,
     numberFilterConfigs,
     numberFilterInputMode,
@@ -507,7 +494,6 @@ export function RankBoard<
               onMinimumFilterChange={handleMinimumFilterChange}
               onResetColumns={visibleColumnControls.resetColumns}
               onVisibleColumnChange={visibleColumnControls.setColumnVisible}
-              searchThreshold={filterSearchThreshold}
               visibleColumnIds={visibleColumnControls.visibleColumnIds}
             />
             {rows.length > 0 ? (
@@ -531,78 +517,6 @@ export function RankBoard<
         ) : null}
       </Card.Content>
     </Card>
-  );
-}
-
-function FilterMenu({
-  label,
-  onChange,
-  options,
-  searchThreshold,
-  selectedValues,
-}: FilterMenuProps) {
-  const [query, setQuery] = useState("");
-  const selectedCount = selectedValues.length;
-  const buttonLabel = selectedCount > 0 ? `${label} ${selectedCount}` : label;
-  const searchQuery = query.trim().toLowerCase();
-  const visibleOptions = searchQuery
-    ? options.filter((option) =>
-        option.label.toLowerCase().includes(searchQuery)
-      )
-    : options;
-  const shouldShowSearch = options.length >= searchThreshold;
-
-  return (
-    <Popover>
-      <Button size="sm" variant="outline">
-        <SlidersHorizontal className="size-4" />
-        {buttonLabel}
-        <ChevronDown className="size-4" />
-      </Button>
-      <Popover.Content className="w-56">
-        <Popover.Dialog className="grid gap-3">
-          <Popover.Heading className="font-semibold text-sm">
-            {label}
-          </Popover.Heading>
-          {options.length > 0 ? (
-            <>
-              {shouldShowSearch ? (
-                <TextField fullWidth onChange={setQuery} value={query}>
-                  <Label className="sr-only">搜索{label}</Label>
-                  <Input
-                    autoComplete="off"
-                    placeholder={`搜索${label}`}
-                    variant="secondary"
-                  />
-                </TextField>
-              ) : null}
-              {visibleOptions.length > 0 ? (
-                <CheckboxGroup
-                  className="grid max-h-72 gap-2 overflow-y-auto pr-1"
-                  onChange={onChange}
-                  value={selectedValues}
-                >
-                  {visibleOptions.map((option) => (
-                    <Checkbox key={option.value} value={option.value}>
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                      <Checkbox.Content>
-                        <Label>{option.label}</Label>
-                      </Checkbox.Content>
-                    </Checkbox>
-                  ))}
-                </CheckboxGroup>
-              ) : (
-                <p className="text-muted text-sm">没有匹配项</p>
-              )}
-            </>
-          ) : (
-            <p className="text-muted text-sm">暂无可选项</p>
-          )}
-        </Popover.Dialog>
-      </Popover.Content>
-    </Popover>
   );
 }
 
@@ -672,23 +586,20 @@ function RankToolbar<
   onMinimumFilterChange,
   onResetColumns,
   onVisibleColumnChange,
-  searchThreshold,
   visibleColumnIds,
 }: RankToolbarProps<ColumnId, FilterKey, ColumnConfig>) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <FilterMenu
+      <MultiSelectFilterMenu
         label="年级"
         onChange={(values) => onFilterChange("grades", values)}
         options={gradeOptions}
-        searchThreshold={searchThreshold}
         selectedValues={filters.grades}
       />
-      <FilterMenu
+      <MultiSelectFilterMenu
         label="专业"
         onChange={(values) => onFilterChange("majors", values)}
         options={majorOptions}
-        searchThreshold={searchThreshold}
         selectedValues={filters.majors}
       />
       <NumberFilterMenu

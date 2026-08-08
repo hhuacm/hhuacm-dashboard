@@ -47,7 +47,6 @@ const numberFilterConfigs = [
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
-const filterSearchThreshold = 8;
 const rankColumnVisibilityStorageKey = "rank-codeforces-column-visibility-v1";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
@@ -152,7 +151,6 @@ export const codeforcesRankConfig = defineRankConfig({
   defaultSort,
   emptyFilters: emptyRankFilters,
   filterRows: filterRankRows,
-  filterSearchThreshold,
   numberFilterButtonText: "Rating 与 AC 数",
   numberFilterConfigs,
   numberFilterInputMode: "numeric",
