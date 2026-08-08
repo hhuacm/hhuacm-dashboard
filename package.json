@@ -34,7 +34,6 @@
     "check": "bun run --cwd packages/db check-migrations && bun run check-types && bun x ultracite check",
     "fix": "ultracite fix",
     "system:grant-admin": "bun run --cwd packages/application system:grant-admin",
-    "system:import-users": "bun run --cwd packages/application system:import-users",
     "system:revoke-admin": "bun run --cwd packages/application system:revoke-admin",
     "doctor": "bunx react-doctor@latest"
   },

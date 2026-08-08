@@ -1,13 +1,7 @@
 "use client";
 
 import { Button, Card } from "@heroui/react";
-import {
-  Download,
-  LayoutDashboard,
-  Plus,
-  Settings,
-  UsersRound,
-} from "lucide-react";
+import { LayoutDashboard, Plus, Settings, UsersRound } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 
@@ -48,15 +42,6 @@ export default function AdminPage() {
             >
               <Plus className="size-4" />
               导入题单
-            </Button>
-            <Button
-              className="justify-start"
-              onPress={() => router.push("/admin/export" as Route)}
-              size="lg"
-              variant="outline"
-            >
-              <Download className="size-4" />
-              系统导出
             </Button>
             <Button
               className="justify-start"

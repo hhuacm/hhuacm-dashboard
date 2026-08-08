@@ -14,7 +14,6 @@ import {
   updateUserProfile,
 } from "@hhuacm-dashboard/application/services/profile";
 import { updateHomeNoticeMarkdown } from "@hhuacm-dashboard/application/services/site-setting";
-import { exportSystemSeed } from "@hhuacm-dashboard/application/system/export-seed";
 import { adminProcedure, router } from "../index";
 import {
   adminHomeNoticeInputSchema,
@@ -28,9 +27,6 @@ import {
 } from "./schemas";
 
 export const adminRouter = router({
-  export: adminProcedure.query(
-    async ({ ctx }) => await exportSystemSeed(ctx.db)
-  ),
   problemSets: router({
     create: adminProcedure
       .input(adminProblemSetInputSchema)
