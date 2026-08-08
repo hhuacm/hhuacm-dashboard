@@ -1,16 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  isCommonRetryableHttpStatus,
-  requestExternalResource,
-} from "./request";
+import { requestExternalResource } from "./request";
 
 const requestResource = (
   responses: Array<Error | Response>,
   input: {
     label?: string;
-    maxAttempts?: number;
-    retryableStatus?: (status: number) => boolean;
   } = {}
 ) => {
   const requests: AbortSignal[] = [];
@@ -19,7 +14,6 @@ const requestResource = (
     requests,
     response: requestExternalResource({
       label: input.label ?? "Contest source",
-      maxAttempts: input.maxAttempts,
       request: (signal) => {
         requests.push(signal);
         const response = responses.shift();
@@ -35,7 +29,6 @@ const requestResource = (
         return Promise.resolve(response);
       },
       retryDelayMs: 0,
-      retryableStatus: input.retryableStatus,
     }),
   };
 };
@@ -82,24 +75,17 @@ describe("requestExternalResource", () => {
 
   it("reports the label, attempt count, and final error after all attempts fail", async () => {
     const request = requestResource(
-      [new Error("network failed"), Response.json({}, { status: 502 })],
-      {
-        label: "OJ profile",
-        maxAttempts: 2,
-      }
+      [
+        new Error("network failed"),
+        Response.json({}, { status: 502 }),
+        Response.json({}, { status: 502 }),
+      ],
+      { label: "OJ profile" }
     );
 
     await expect(request.response).rejects.toThrow(
-      "OJ profile request failed after 2 attempts: HTTP 502"
+      "OJ profile request failed after 3 attempts: HTTP 502"
     );
-    expect(request.requests).toHaveLength(2);
-  });
-});
-
-describe("isCommonRetryableHttpStatus", () => {
-  it("treats rate limits and 5xx responses as retryable", () => {
-    expect(isCommonRetryableHttpStatus(429)).toBe(true);
-    expect(isCommonRetryableHttpStatus(499)).toBe(false);
-    expect(isCommonRetryableHttpStatus(500)).toBe(true);
+    expect(request.requests).toHaveLength(3);
   });
 });

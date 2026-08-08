@@ -2,25 +2,23 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 interface ExternalRequestOptions {
   label: string;
-  maxAttempts?: number;
   request: (signal: AbortSignal) => Promise<Response>;
-  retryableStatus?: (status: number) => boolean;
   retryDelayMs?: number;
   timeoutMs?: number;
 }
 
+const maxAttempts = 3;
+
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown external request error";
 
-export const isCommonRetryableHttpStatus = (status: number) =>
+const isCommonRetryableHttpStatus = (status: number) =>
   status === 429 || status >= 500;
 
 export const requestExternalResource = async ({
   label,
-  maxAttempts = 3,
   request,
   retryDelayMs = 500,
-  retryableStatus = isCommonRetryableHttpStatus,
   timeoutMs = 10_000,
 }: ExternalRequestOptions) => {
   let lastError: unknown = null;
@@ -29,7 +27,7 @@ export const requestExternalResource = async ({
     try {
       const response = await request(AbortSignal.timeout(timeoutMs));
 
-      if (response.ok || !retryableStatus(response.status)) {
+      if (response.ok || !isCommonRetryableHttpStatus(response.status)) {
         return response;
       }
 
