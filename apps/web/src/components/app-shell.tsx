@@ -12,13 +12,10 @@ import {
 } from "lucide-react";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
-import { type Key, useState } from "react";
+import type { Key, ReactNode } from "react";
 
 import { authClient, getUsernameLabel } from "@/utils/auth-client";
 import { AppShellLayout, type AppShellMaxWidth } from "./app-shell-layout";
-
-const usernameVisibleLength = 20;
 
 interface AppShellProps {
   action?: ReactNode;
@@ -36,14 +33,6 @@ interface AccountMenuProps {
   username: null | string | undefined;
 }
 
-const formatNameLabel = (username: string) => {
-  if (username.length <= usernameVisibleLength) {
-    return username;
-  }
-
-  return `${username.slice(0, usernameVisibleLength)}…`;
-};
-
 function AccountMenu({
   isAdmin,
   nameLabel,
@@ -51,49 +40,38 @@ function AccountMenu({
   username,
 }: AccountMenuProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-
-  const handleLogout = () => {
-    setOpen(false);
-    onLogout().catch(() => undefined);
-  };
 
   const handleAction = (key: Key) => {
     if (key === "profile") {
-      setOpen(false);
       router.push(username ? (`/profile/${username}` as Route) : "/profile");
       return;
     }
 
     if (key === "settings") {
-      setOpen(false);
       router.push("/settings/profile" as Route);
       return;
     }
 
     if (key === "admin") {
-      setOpen(false);
       router.push("/admin" as Route);
       return;
     }
 
     if (key === "logout") {
-      handleLogout();
+      onLogout().catch(() => undefined);
     }
   };
 
   return (
-    <Dropdown isOpen={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
+    <Dropdown>
       <Button
-        aria-label="打开账号菜单"
-        className="max-w-48 justify-start"
+        aria-label={`打开 ${nameLabel} 的账号菜单`}
+        className="min-w-0 max-w-48 justify-start"
         size="sm"
         variant="outline"
       >
         <UserRound className="size-4" />
-        <span className="max-w-36 overflow-hidden text-ellipsis">
-          {nameLabel}
-        </span>
+        <span className="min-w-0 max-w-36 truncate">{nameLabel}</span>
       </Button>
       <Dropdown.Popover className="min-w-44" placement="bottom end">
         <Dropdown.Menu onAction={handleAction}>
@@ -177,7 +155,7 @@ export function AppShellHeaderActions({ action }: { action?: ReactNode }) {
       {user ? (
         <AccountMenu
           isAdmin={isAdmin}
-          nameLabel={formatNameLabel(username)}
+          nameLabel={username}
           onLogout={handleLogout}
           username={user.username}
         />
