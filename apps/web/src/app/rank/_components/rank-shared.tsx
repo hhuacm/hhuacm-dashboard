@@ -178,7 +178,7 @@ interface RankToolbarProps<
   onFilterChange: (key: "grades" | "majors", values: string[]) => void;
   onMinimumFilterChange: (key: FilterKey, value: string) => void;
   onResetColumns: () => void;
-  onVisibleColumnChange: (columnId: ColumnId, isVisible: boolean) => void;
+  onVisibleColumnChange: (columnIds: readonly ColumnId[]) => void;
   visibleColumnIds: readonly ColumnId[];
 }
 
@@ -493,7 +493,7 @@ export function RankBoard<
               onFilterChange={handleFilterChange}
               onMinimumFilterChange={handleMinimumFilterChange}
               onResetColumns={visibleColumnControls.resetColumns}
-              onVisibleColumnChange={visibleColumnControls.setColumnVisible}
+              onVisibleColumnChange={visibleColumnControls.setVisibleColumnIds}
               visibleColumnIds={visibleColumnControls.visibleColumnIds}
             />
             {rows.length > 0 ? (

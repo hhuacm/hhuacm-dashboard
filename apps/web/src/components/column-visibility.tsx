@@ -14,7 +14,7 @@ export interface TableColumnVisibilityConfig<ColumnId extends string> {
 interface ColumnVisibilityMenuProps<ColumnId extends string> {
   columns: readonly TableColumnVisibilityConfig<ColumnId>[];
   onReset: () => void;
-  onVisibleChange: (columnId: ColumnId, isVisible: boolean) => void;
+  onVisibleChange: (columnIds: readonly ColumnId[]) => void;
   visibleColumnIds: readonly ColumnId[];
 }
 
@@ -22,7 +22,7 @@ interface UseColumnVisibilityOptions<
   ColumnConfig extends TableColumnVisibilityConfig<string>,
 > {
   columns: readonly ColumnConfig[];
-  storageKey?: string;
+  storageKey: string;
 }
 
 type ColumnIdOf<ColumnConfig extends TableColumnVisibilityConfig<string>> =
@@ -61,17 +61,13 @@ export function useColumnVisibility<
   const defaultVisibleColumnIds = getDefaultVisibleColumnIds(columns);
   const [storedColumnIds, setStoredColumnIds] = useState<
     ColumnIdOf<ColumnConfig>[] | null
-  >(() => (storageKey ? null : defaultVisibleColumnIds));
+  >(null);
   const visibleColumnIds = sanitizeVisibleColumnIds(
     storedColumnIds ?? defaultVisibleColumnIds,
     columns
   );
 
   useEffect(() => {
-    if (!storageKey) {
-      return;
-    }
-
     const storedValue = window.localStorage.getItem(storageKey);
 
     if (!storedValue) {
@@ -98,27 +94,12 @@ export function useColumnVisibility<
   );
   const saveVisibleColumnIds = (nextColumnIds: ColumnIdOf<ColumnConfig>[]) => {
     setStoredColumnIds(nextColumnIds);
-
-    if (storageKey) {
-      window.localStorage.setItem(storageKey, JSON.stringify(nextColumnIds));
-    }
+    window.localStorage.setItem(storageKey, JSON.stringify(nextColumnIds));
   };
-  const setColumnVisible = (
-    columnId: ColumnIdOf<ColumnConfig>,
-    isVisible: boolean
+  const setVisibleColumnIds = (
+    columnIds: readonly ColumnIdOf<ColumnConfig>[]
   ) => {
-    const nextColumnIdSet = new Set(visibleColumnIds);
-    const column = columns.find((item) => item.id === columnId);
-
-    if (column?.required || (column && isVisible)) {
-      nextColumnIdSet.add(columnId);
-    } else {
-      nextColumnIdSet.delete(columnId);
-    }
-
-    saveVisibleColumnIds(
-      sanitizeVisibleColumnIds([...nextColumnIdSet], columns)
-    );
+    saveVisibleColumnIds(sanitizeVisibleColumnIds(columnIds, columns));
   };
   const resetColumns = () => {
     saveVisibleColumnIds(defaultVisibleColumnIds);
@@ -126,7 +107,7 @@ export function useColumnVisibility<
 
   return {
     resetColumns,
-    setColumnVisible,
+    setVisibleColumnIds,
     visibleColumnIds,
     visibleColumns,
   };
@@ -143,14 +124,6 @@ export function ColumnVisibilityMenu<ColumnId extends string>({
     const shouldBeVisible = column.defaultVisible || column.required;
     return visibleColumnIdSet.has(column.id) === shouldBeVisible;
   });
-
-  const handleChange = (values: string[]) => {
-    const selectedColumnIds = new Set(values);
-
-    for (const column of columns) {
-      onVisibleChange(column.id, selectedColumnIds.has(column.id));
-    }
-  };
 
   return (
     <Popover>
@@ -178,7 +151,7 @@ export function ColumnVisibilityMenu<ColumnId extends string>({
           <CheckboxGroup
             aria-label="可见列"
             className="grid max-h-72 gap-2 overflow-y-auto pr-1 pb-4"
-            onChange={handleChange}
+            onChange={(values) => onVisibleChange(values as ColumnId[])}
             value={[...visibleColumnIds]}
           >
             {columns.map((column) => (

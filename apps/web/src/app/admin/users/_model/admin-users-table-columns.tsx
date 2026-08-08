@@ -43,7 +43,7 @@ export interface AdminUsersColumnConfig
 
 export interface AdminUsersVisibleColumnControls {
   resetColumns: () => void;
-  setColumnVisible: (columnId: AdminUsersColumnId, isVisible: boolean) => void;
+  setVisibleColumnIds: (columnIds: readonly AdminUsersColumnId[]) => void;
   visibleColumnIds: readonly AdminUsersColumnId[];
   visibleColumns: readonly AdminUsersColumnConfig[];
 }

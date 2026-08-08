@@ -61,7 +61,7 @@ export function AdminUsersToolbar({
       <ColumnVisibilityMenu<AdminUsersColumnId>
         columns={adminUsersColumns}
         onReset={visibleColumnControls.resetColumns}
-        onVisibleChange={visibleColumnControls.setColumnVisible}
+        onVisibleChange={visibleColumnControls.setVisibleColumnIds}
         visibleColumnIds={visibleColumnControls.visibleColumnIds}
       />
     </div>
