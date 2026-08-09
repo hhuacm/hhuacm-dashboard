@@ -1,12 +1,13 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { problemSetProblem } from "@hhuacm-dashboard/db/schema/problem-set";
 import { isNull, or } from "drizzle-orm";
+import { enrichProblemSetProblemsByPid } from "../../services/luogu/problem-details";
 import {
-  enrichProblemSetProblemsByPid,
-  type LuoguProblemLoader,
-} from "../../services/luogu/problem-details";
-import type { RefreshQueueDatabase } from "../request-store";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
+  enqueueRefreshRequest,
+  type RefreshQueueDatabase,
+} from "../request-store";
+
+export const luoguProblemDetailsRefreshKind = "luogu.problemDetails" as const;
 
 const missingProblemDetailsFields = {
   pid: problemSetProblem.pid,
@@ -14,30 +15,25 @@ const missingProblemDetailsFields = {
 
 export const handleLuoguProblemDetailsRequest = async (
   db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1],
-  loadProblem?: LuoguProblemLoader
+  targetId: string
 ) => {
-  await enrichProblemSetProblemsByPid(db, request.targetId, loadProblem);
+  await enrichProblemSetProblemsByPid(db, targetId);
 };
 
 export const enqueueLuoguProblemDetailsJobs = async (
   db: RefreshQueueDatabase,
   pids: string[]
 ) => {
-  let count = 0;
-
   for (const pid of new Set(pids)) {
-    if (await luoguProblemDetailsJob.enqueue(db, pid)) {
-      count += 1;
-    }
+    await enqueueRefreshRequest(db, {
+      kind: luoguProblemDetailsRefreshKind,
+      targetId: pid,
+    });
   }
-
-  return count;
 };
 
-const enqueueMissingLuoguProblemDetailsTargets = async (
-  db: Database,
-  _now: Date
+export const enqueueMissingLuoguProblemDetailsRequests = async (
+  db: Database
 ) => {
   const problems = await db
     .selectDistinct(missingProblemDetailsFields)
@@ -50,12 +46,4 @@ const enqueueMissingLuoguProblemDetailsTargets = async (
     db,
     problems.map((problem) => problem.pid)
   );
-
-  return problems.length;
 };
-
-export const luoguProblemDetailsJob = defineRefreshJob({
-  enqueueDueTargets: enqueueMissingLuoguProblemDetailsTargets,
-  handle: handleLuoguProblemDetailsRequest,
-  kind: "luogu.problemDetails",
-});

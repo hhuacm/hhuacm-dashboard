@@ -39,7 +39,6 @@ describe("listCodeforcesRankRows", () => {
         acceptedProblemCountInMonth: 1,
         accountId: `account-${input.id}`,
         fetchedAt: input.fetchedAt,
-        lastAttemptedAt: input.fetchedAt,
         lastError: null,
         lastOnlineAt: input.fetchedAt,
         maxRating: 1500,

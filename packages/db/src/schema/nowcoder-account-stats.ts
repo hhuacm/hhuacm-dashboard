@@ -18,9 +18,6 @@ export const nowcoderAccountStats = sqliteTable(
     rating: real("rating"),
     acceptedProblemCount: integer("accepted_problem_count"),
     fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }),
-    lastAttemptedAt: integer("last_attempted_at", {
-      mode: "timestamp_ms",
-    }).notNull(),
     lastError: text("last_error"),
   },
   (table) => [

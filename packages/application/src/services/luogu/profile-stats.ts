@@ -4,11 +4,8 @@ import {
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { eq } from "drizzle-orm";
-import { ensureLuoguAccountStatsRefresh } from "../../refresh/ensure";
-import {
-  getRefreshSyncStatus,
-  type RefreshSyncStatus,
-} from "../../refresh/sync-status";
+import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
+import type { RefreshSyncStatus } from "../../refresh/sync-status";
 import type { OjAccountIdentity } from "../oj-account/queries";
 import { parseLuoguUid } from "./uid";
 
@@ -72,7 +69,6 @@ const getLuoguStats = async (db: Database, accountId: string) =>
         acceptedWeightedScore: luoguAccountStats.acceptedWeightedScore,
         averageAcceptedDifficulty: luoguAccountStats.averageAcceptedDifficulty,
         fetchedAt: luoguAccountStats.fetchedAt,
-        lastAttemptedAt: luoguAccountStats.lastAttemptedAt,
         lastError: luoguAccountStats.lastError,
       })
       .from(luoguAccountStats)
@@ -106,17 +102,12 @@ export const getLuoguStatsForProfile = async (
     };
   }
 
-  const now = new Date();
   const currentStats = await getLuoguStats(db, account.id);
-  const refreshQueueState = await ensureLuoguAccountStatsRefresh(db, {
+  const syncStatus = await ensureAccountStatsRefresh(db, {
     accountId: account.id,
     fetchedAt: currentStats?.fetchedAt ?? null,
-    now,
-  });
-  const syncStatus = getRefreshSyncStatus({
-    fetchedAt: currentStats?.fetchedAt ?? null,
-    isQueued: refreshQueueState.isQueued,
     lastError: currentStats?.lastError ?? null,
+    platform: "luogu",
   });
 
   if (!currentStats?.fetchedAt) {

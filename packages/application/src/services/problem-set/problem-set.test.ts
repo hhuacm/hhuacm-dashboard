@@ -57,7 +57,6 @@ const createLuoguUser = async (
     await db.insert(luoguAccountStats).values({
       accountId: `account-${input.id}`,
       fetchedAt: input.fetchedAt,
-      lastAttemptedAt: input.fetchedAt,
       lastError: null,
     });
   }

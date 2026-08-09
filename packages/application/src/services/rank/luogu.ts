@@ -3,15 +3,8 @@ import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { desc, eq } from "drizzle-orm";
-import { getLuoguRankRefreshActivity } from "../../refresh/activity";
-import { luoguAccountStatsJob } from "../../refresh/jobs/luogu-account-stats";
-import { isLuoguStatsCacheFresh } from "../../refresh/policy";
-import { getRefreshSyncStatus } from "../../refresh/sync-status";
-import {
-  ensureRankStatsRefreshRequests,
-  rankUserNameOrder,
-  toIsoString,
-} from "./shared";
+import { ensureAccountStatsRefreshes } from "../../refresh/account-stats";
+import { rankUserNameOrder, toIsoString } from "./shared";
 
 export const listLuoguRankRows = async (db: Database) => {
   const cachedRows = await db
@@ -44,19 +37,10 @@ export const listLuoguRankRows = async (db: Database) => {
       ...rankUserNameOrder
     );
 
-  const accountIds = cachedRows.map((row) => row.accountId);
-  const now = new Date();
-
-  await ensureRankStatsRefreshRequests({
-    isFresh: isLuoguStatsCacheFresh,
-    now,
-    requestRefresh: async (accountId) => {
-      await luoguAccountStatsJob.enqueue(db, accountId);
-    },
-    rows: cachedRows,
+  const refresh = await ensureAccountStatsRefreshes(db, {
+    accounts: cachedRows,
+    platform: "luogu",
   });
-
-  const refreshActivity = await getLuoguRankRefreshActivity(db, accountIds);
 
   return cachedRows.map((row) => ({
     grade: row.grade,
@@ -67,13 +51,7 @@ export const listLuoguRankRows = async (db: Database) => {
       externalId: row.externalId,
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
-      syncStatus: getRefreshSyncStatus(
-        refreshActivity.toStatusInput({
-          accountId: row.accountId,
-          fetchedAt: row.fetchedAt,
-          lastError: row.lastError,
-        })
-      ),
+      syncStatus: refresh.syncStatusOf(row),
     },
     major: row.major,
     realName: row.realName,

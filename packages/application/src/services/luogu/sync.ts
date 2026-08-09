@@ -22,16 +22,6 @@ interface LuoguPracticeStatsFields {
   userName: LuoguPracticePageData["user"]["name"];
 }
 
-const luoguStatsFields = {
-  acceptedProblemCount: luoguAccountStats.acceptedProblemCount,
-  acceptedWeightedScore: luoguAccountStats.acceptedWeightedScore,
-  accountId: luoguAccountStats.accountId,
-  averageAcceptedDifficulty: luoguAccountStats.averageAcceptedDifficulty,
-  fetchedAt: luoguAccountStats.fetchedAt,
-  lastAttemptedAt: luoguAccountStats.lastAttemptedAt,
-  lastError: luoguAccountStats.lastError,
-} as const;
-
 const chunks = <T>(items: T[], size: number) => {
   const result: T[][] = [];
 
@@ -98,7 +88,7 @@ export const syncLuoguAccountStats = async (
   const summary = summarizeLuoguPracticeStats(practice);
   const fetchedAt = now;
 
-  return await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     await writeAcceptedProblems(tx, account, practice);
 
     if (account.handle !== practice.userName) {
@@ -108,7 +98,7 @@ export const syncLuoguAccountStats = async (
         .where(eq(userOjAccount.id, account.id));
     }
 
-    return await tx
+    await tx
       .insert(luoguAccountStats)
       .values({
         acceptedProblemCount: summary.acceptedProblemCount,
@@ -116,7 +106,6 @@ export const syncLuoguAccountStats = async (
         accountId: account.id,
         averageAcceptedDifficulty: summary.averageAcceptedDifficulty,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
       })
       .onConflictDoUpdate({
@@ -125,40 +114,32 @@ export const syncLuoguAccountStats = async (
           acceptedWeightedScore: summary.acceptedWeightedScore,
           averageAcceptedDifficulty: summary.averageAcceptedDifficulty,
           fetchedAt,
-          lastAttemptedAt: fetchedAt,
           lastError: null,
         },
         target: luoguAccountStats.accountId,
-      })
-      .returning(luoguStatsFields)
-      .get();
+      });
   });
 };
 
 export const markLuoguAccountStatsRefreshFailed = async (
   db: Database,
   account: OjAccountIdentity,
-  error: unknown,
-  now = new Date()
+  error: unknown
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  return await db
+  await db
     .insert(luoguAccountStats)
     .values({
       accountId: account.id,
-      lastAttemptedAt: now,
       lastError,
     })
     .onConflictDoUpdate({
       set: {
-        lastAttemptedAt: now,
         lastError,
       },
       target: luoguAccountStats.accountId,
-    })
-    .returning(luoguStatsFields)
-    .get();
+    });
 };
 
 export const deleteLuoguStats = async (

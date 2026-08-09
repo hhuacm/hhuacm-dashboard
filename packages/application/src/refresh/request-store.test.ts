@@ -3,8 +3,7 @@ import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createTestDb } from "@hhuacm-dashboard/db/testing";
 import { asc, eq } from "drizzle-orm";
-import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
-import { luoguAccountStatsJob } from "./jobs/luogu-account-stats";
+import { accountStatsRefreshKindByPlatform } from "./account-stats";
 import {
   deleteRefreshRequest,
   enqueueRefreshRequest,
@@ -26,7 +25,7 @@ afterEach(async () => {
 
 const createTestRequest = (db: Database, targetId = "account-1") =>
   enqueueRefreshRequest(db, {
-    kind: codeforcesAccountStatsJob.kind,
+    kind: accountStatsRefreshKindByPlatform.codeforces,
     targetId,
   });
 
@@ -41,15 +40,13 @@ describe("refresh request store", () => {
   it("keeps one request for a target and kind", async () => {
     const db = await createDb();
 
-    const firstRequestCreated = await createTestRequest(db);
-    const secondRequestCreated = await enqueueRefreshRequest(db, {
-      kind: codeforcesAccountStatsJob.kind,
+    await createTestRequest(db);
+    await enqueueRefreshRequest(db, {
+      kind: accountStatsRefreshKindByPlatform.codeforces,
       targetId: "account-1",
     });
     const requests = await listRequests(db, "account-1");
 
-    expect(firstRequestCreated).toBe(true);
-    expect(secondRequestCreated).toBe(false);
     expect(requests).toHaveLength(1);
   });
 
@@ -58,7 +55,7 @@ describe("refresh request store", () => {
 
     await createTestRequest(db);
     await enqueueRefreshRequest(db, {
-      kind: luoguAccountStatsJob.kind,
+      kind: accountStatsRefreshKindByPlatform.luogu,
       targetId: "account-1",
     });
     const requests = await listRequests(db, "account-1");
@@ -73,11 +70,11 @@ describe("refresh request store", () => {
     const db = await createDb();
 
     await enqueueRefreshRequest(db, {
-      kind: codeforcesAccountStatsJob.kind,
+      kind: accountStatsRefreshKindByPlatform.codeforces,
       targetId: "first",
     });
     await enqueueRefreshRequest(db, {
-      kind: codeforcesAccountStatsJob.kind,
+      kind: accountStatsRefreshKindByPlatform.codeforces,
       targetId: "second",
     });
 
@@ -94,7 +91,7 @@ describe("refresh request store", () => {
     await createTestRequest(db, "account-2");
 
     await deleteRefreshRequest(db, {
-      kind: codeforcesAccountStatsJob.kind,
+      kind: accountStatsRefreshKindByPlatform.codeforces,
       targetId: "account-1",
     });
 

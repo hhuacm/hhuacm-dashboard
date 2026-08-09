@@ -41,7 +41,6 @@ describe("listAtcoderRankRows", () => {
       await db.insert(atcoderAccountStats).values({
         accountId: `account-${input.id}`,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         rating: input.rating,
         recentPerformanceAverage: input.recentPerformanceAverage ?? null,

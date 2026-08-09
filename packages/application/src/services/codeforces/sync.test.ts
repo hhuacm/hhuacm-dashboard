@@ -79,7 +79,7 @@ describe("Codeforces sync", () => {
     const now = new Date("2026-01-31T00:00:00.000Z");
     const oldestRecentAcceptedAt = toSeconds("2026-01-02T00:00:00.000Z");
 
-    const stats = await syncCodeforcesAccountStats(db, account, now, {
+    await syncCodeforcesAccountStats(db, account, now, {
       loadUserInfo: async () => [
         createUserInfo({
           handle: "tourist",
@@ -117,21 +117,19 @@ describe("Codeforces sync", () => {
         }),
       ],
     });
+    const [stats] = await db.select().from(codeforcesAccountStats);
     const [ojAccount] = await db.select().from(userOjAccount);
 
-    expect(stats.rating).toBe(3822);
-    expect(stats.maxRating).toBe(3979);
-    expect(stats.lastOnlineAt?.toISOString()).toBe("2026-01-30T12:00:00.000Z");
-    expect(stats.acceptedProblemCount).toBe(3);
-    expect(stats.acceptedProblemCountInMonth).toBe(2);
-    expect(stats.lastError).toBeNull();
-    if (!stats.fetchedAt) {
+    expect(stats?.rating).toBe(3822);
+    expect(stats?.maxRating).toBe(3979);
+    expect(stats?.lastOnlineAt?.toISOString()).toBe("2026-01-30T12:00:00.000Z");
+    expect(stats?.acceptedProblemCount).toBe(3);
+    expect(stats?.acceptedProblemCountInMonth).toBe(2);
+    expect(stats?.lastError).toBeNull();
+    if (!stats?.fetchedAt) {
       throw new Error("Expected Codeforces sync to write fetchedAt");
     }
 
-    expect(stats.lastAttemptedAt.toISOString()).toBe(
-      stats.fetchedAt.toISOString()
-    );
     expect(ojAccount?.handle).toBe("tourist");
   });
 
@@ -169,9 +167,8 @@ describe("Codeforces sync", () => {
   it("records failures without overwriting fetched stats", async () => {
     const db = await createServiceTestDb();
     const account = await createCodeforcesAccount(db);
-    const failedAt = new Date("2026-02-01T00:00:00.000Z");
 
-    const syncedStats = await syncCodeforcesAccountStats(
+    await syncCodeforcesAccountStats(
       db,
       account,
       new Date("2026-01-31T00:00:00.000Z"),
@@ -185,21 +182,20 @@ describe("Codeforces sync", () => {
         ],
       }
     );
+    const [syncedStats] = await db.select().from(codeforcesAccountStats);
     await markCodeforcesAccountStatsRefreshFailed(
       db,
       { ...account, handle: "tourist" },
-      new Error("network failed"),
-      failedAt
+      new Error("network failed")
     );
 
     const [stats] = await db.select().from(codeforcesAccountStats);
 
-    expect(stats?.rating).toBe(syncedStats.rating);
+    expect(stats?.rating).toBe(syncedStats?.rating);
     expect(stats?.acceptedProblemCount).toBe(1);
     expect(stats?.fetchedAt?.toISOString()).toBe(
-      syncedStats.fetchedAt?.toISOString()
+      syncedStats?.fetchedAt?.toISOString()
     );
-    expect(stats?.lastAttemptedAt.toISOString()).toBe(failedAt.toISOString());
     expect(stats?.lastError).toBe("network failed");
   });
 

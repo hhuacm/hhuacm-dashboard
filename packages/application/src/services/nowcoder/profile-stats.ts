@@ -1,11 +1,8 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { eq } from "drizzle-orm";
-import { ensureNowcoderAccountStatsRefresh } from "../../refresh/ensure";
-import {
-  getRefreshSyncStatus,
-  type RefreshSyncStatus,
-} from "../../refresh/sync-status";
+import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
+import type { RefreshSyncStatus } from "../../refresh/sync-status";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 export interface PublicNowcoderStats {
@@ -19,7 +16,6 @@ const nowcoderStatsFields = {
   acceptedProblemCount: nowcoderAccountStats.acceptedProblemCount,
   accountId: nowcoderAccountStats.accountId,
   fetchedAt: nowcoderAccountStats.fetchedAt,
-  lastAttemptedAt: nowcoderAccountStats.lastAttemptedAt,
   lastError: nowcoderAccountStats.lastError,
   rating: nowcoderAccountStats.rating,
 } as const;
@@ -51,17 +47,12 @@ export const getNowcoderStatsForProfile = async (
   db: Database,
   account: OjAccountIdentity
 ): Promise<PublicNowcoderStats | null> => {
-  const now = new Date();
   const currentStats = await getNowcoderStats(db, account.id);
-  const refreshQueueState = await ensureNowcoderAccountStatsRefresh(db, {
+  const syncStatus = await ensureAccountStatsRefresh(db, {
     accountId: account.id,
     fetchedAt: currentStats?.fetchedAt ?? null,
-    now,
-  });
-  const syncStatus = getRefreshSyncStatus({
-    fetchedAt: currentStats?.fetchedAt ?? null,
-    isQueued: refreshQueueState.isQueued,
     lastError: currentStats?.lastError ?? null,
+    platform: "nowcoder",
   });
 
   if (!currentStats?.fetchedAt) {

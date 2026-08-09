@@ -40,9 +40,6 @@ export const userAwardSync = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     source: text("source", { enum: userAwardSources }).notNull(),
     fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }),
-    lastAttemptedAt: integer("last_attempted_at", {
-      mode: "timestamp_ms",
-    }).notNull(),
     lastError: text("last_error"),
   },
   (table) => [

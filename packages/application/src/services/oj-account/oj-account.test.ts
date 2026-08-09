@@ -41,7 +41,6 @@ const createCodeforcesAccountWithStats = async (db: TestDatabase) => {
   await db.insert(codeforcesAccountStats).values({
     accountId: "codeforces-account",
     fetchedAt,
-    lastAttemptedAt: fetchedAt,
     rating: 1200,
   });
   await db.insert(refreshRequest).values({

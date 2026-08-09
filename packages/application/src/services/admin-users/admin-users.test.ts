@@ -194,7 +194,6 @@ describe("admin users", () => {
     });
     await db.insert(codeforcesAccountStats).values({
       accountId: codeforcesAccountId,
-      lastAttemptedAt: new Date("2026-01-01T00:00:00.000Z"),
     });
     await db.insert(refreshRequest).values([
       {

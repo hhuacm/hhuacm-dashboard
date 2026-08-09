@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createTestDb } from "@hhuacm-dashboard/db/testing";
-import { codeforcesAccountStatsJob } from "./jobs/codeforces-account-stats";
-import type { RefreshJobDefinition } from "./jobs/definition";
+import { accountStatsRefreshKindByPlatform } from "./account-stats";
+import { luoguProblemDetailsRefreshKind } from "./jobs/luogu-problem-details";
 import { enqueueRefreshRequest } from "./request-store";
 import { runRefreshWorkerOnce } from "./worker";
+
+let cleanupTestDb: null | (() => Promise<void>) = null;
 
 const createDb = async () => {
   const testDb = await createTestDb();
@@ -13,87 +14,44 @@ const createDb = async () => {
   return testDb.db;
 };
 
-let cleanupTestDb: null | (() => Promise<void>) = null;
-
 afterEach(async () => {
   await cleanupTestDb?.();
   cleanupTestDb = null;
 });
 
-const createTestRequest = (db: Database) =>
-  enqueueRefreshRequest(db, {
-    kind: codeforcesAccountStatsJob.kind,
-    targetId: "account-1",
-  });
-
 describe("refresh worker", () => {
-  it("deletes requests after successful handlers", async () => {
+  it("handles and consumes the next request", async () => {
     const db = await createDb();
-    await createTestRequest(db);
-    const handledTargetIds: string[] = [];
-    const definitions = [
-      {
-        handle: (_db, request) => {
-          handledTargetIds.push(request.targetId);
-          return Promise.resolve(undefined);
-        },
-        clear: codeforcesAccountStatsJob.clear,
-        enqueue: codeforcesAccountStatsJob.enqueue,
-        kind: codeforcesAccountStatsJob.kind,
-      },
-    ] satisfies RefreshJobDefinition[];
-
-    const result = await runRefreshWorkerOnce(db, definitions);
-    const remainingRequests = await db.select().from(refreshRequest);
-
-    expect(handledTargetIds).toEqual(result ? [result.request.targetId] : []);
-    expect(remainingRequests).toHaveLength(0);
-  });
-
-  it("deletes requests after failed handlers", async () => {
-    const db = await createDb();
-    await createTestRequest(db);
-    const definitions = [
-      {
-        handle: () => Promise.reject(new Error("network failed")),
-        clear: codeforcesAccountStatsJob.clear,
-        enqueue: codeforcesAccountStatsJob.enqueue,
-        kind: codeforcesAccountStatsJob.kind,
-      },
-    ] satisfies RefreshJobDefinition[];
-
-    await expect(runRefreshWorkerOnce(db, definitions)).rejects.toThrow(
-      "network failed"
-    );
-    const remainingRequests = await db.select().from(refreshRequest);
-
-    expect(remainingRequests).toHaveLength(0);
-  });
-
-  it("returns null when there is no request", async () => {
-    const db = await createDb();
-
-    const result = await runRefreshWorkerOnce(db, []);
-
-    expect(result).toBeNull();
-  });
-
-  it("rejects unsupported request kinds", async () => {
-    const db = await createDb();
-    const created = await enqueueRefreshRequest(db, {
-      kind: codeforcesAccountStatsJob.kind,
-      targetId: "account-1",
+    await enqueueRefreshRequest(db, {
+      kind: luoguProblemDetailsRefreshKind,
+      targetId: "P1563",
     });
 
-    if (!created) {
-      throw new Error("Expected created request");
-    }
+    const handled = await runRefreshWorkerOnce(db);
+    const remainingRequests = await db.select().from(refreshRequest);
 
-    await expect(runRefreshWorkerOnce(db, [])).rejects.toThrow(
-      "Unsupported refresh request kind: codeforces.accountStats"
+    expect(handled).toBe(true);
+    expect(remainingRequests).toHaveLength(0);
+  });
+
+  it("consumes failed requests and propagates the error", async () => {
+    const db = await createDb();
+    await enqueueRefreshRequest(db, {
+      kind: accountStatsRefreshKindByPlatform.codeforces,
+      targetId: "missing-account",
+    });
+
+    await expect(runRefreshWorkerOnce(db)).rejects.toThrow(
+      "Codeforces account does not exist: missing-account"
     );
     const remainingRequests = await db.select().from(refreshRequest);
 
     expect(remainingRequests).toHaveLength(0);
+  });
+
+  it("reports an idle queue", async () => {
+    const db = await createDb();
+
+    await expect(runRefreshWorkerOnce(db)).resolves.toBe(false);
   });
 });

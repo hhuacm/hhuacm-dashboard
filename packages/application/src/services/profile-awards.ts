@@ -6,12 +6,9 @@ import {
 import { and, asc, eq } from "drizzle-orm";
 import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
-import { ensureUserAwardsFromLuoguRefresh } from "../refresh/ensure";
 import { truncateRefreshError } from "../refresh/policy";
-import {
-  getRefreshSyncStatus,
-  type RefreshSyncStatus,
-} from "../refresh/sync-status";
+import type { RefreshSyncStatus } from "../refresh/sync-status";
+import { ensureUserAwardsFromLuoguRefresh } from "../refresh/user-awards";
 import { parseLuoguUid } from "./luogu/uid";
 import type { OjAccountIdentity } from "./oj-account/queries";
 
@@ -60,7 +57,6 @@ const awardFields = {
 
 const awardSyncFields = {
   fetchedAt: userAwardSync.fetchedAt,
-  lastAttemptedAt: userAwardSync.lastAttemptedAt,
   lastError: userAwardSync.lastError,
   source: userAwardSync.source,
   userId: userAwardSync.userId,
@@ -144,14 +140,13 @@ export const syncUserAwardsFromLuogu = async (
   const awards = selectLuoguUserAwards(await loadUser({ uid }));
   const fetchedAt = now;
 
-  return await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     await replaceLuoguUserAwards(tx, account, awards);
 
-    return await tx
+    await tx
       .insert(userAwardSync)
       .values({
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         source: userAwardSource,
         userId: account.userId,
@@ -159,41 +154,33 @@ export const syncUserAwardsFromLuogu = async (
       .onConflictDoUpdate({
         set: {
           fetchedAt,
-          lastAttemptedAt: fetchedAt,
           lastError: null,
         },
         target: [userAwardSync.userId, userAwardSync.source],
-      })
-      .returning(awardSyncFields)
-      .get();
+      });
   });
 };
 
 export const markUserAwardsFromLuoguRefreshFailed = async (
   db: Database,
   account: LuoguAwardAccount,
-  error: unknown,
-  now = new Date()
+  error: unknown
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  return await db
+  await db
     .insert(userAwardSync)
     .values({
-      lastAttemptedAt: now,
       lastError,
       source: userAwardSource,
       userId: account.userId,
     })
     .onConflictDoUpdate({
       set: {
-        lastAttemptedAt: now,
         lastError,
       },
       target: [userAwardSync.userId, userAwardSync.source],
-    })
-    .returning(awardSyncFields)
-    .get();
+    });
 };
 
 export const getAwardsForPublicProfile = async (
@@ -220,16 +207,12 @@ export const getAwardsForPublicProfile = async (
         .limit(1)
     )[0] ?? null;
 
-  const refreshQueueState = await ensureUserAwardsFromLuoguRefresh(db, {
+  const syncStatus = await ensureUserAwardsFromLuoguRefresh(db, {
     accountId: input.luoguAccountId,
     canRefresh: input.canRefresh,
     fetchedAt: sync?.fetchedAt ?? null,
-    now,
-  });
-  const syncStatus = getRefreshSyncStatus({
-    fetchedAt: sync?.fetchedAt ?? null,
-    isQueued: refreshQueueState.isQueued,
     lastError: sync?.lastError ?? null,
+    now,
   });
 
   const awards = await db

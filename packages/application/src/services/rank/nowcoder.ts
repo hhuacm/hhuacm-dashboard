@@ -3,15 +3,8 @@ import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { desc, eq } from "drizzle-orm";
-import { getNowcoderRankRefreshActivity } from "../../refresh/activity";
-import { nowcoderAccountStatsJob } from "../../refresh/jobs/nowcoder-account-stats";
-import { isNowcoderStatsCacheFresh } from "../../refresh/policy";
-import { getRefreshSyncStatus } from "../../refresh/sync-status";
-import {
-  ensureRankStatsRefreshRequests,
-  rankUserNameOrder,
-  toIsoString,
-} from "./shared";
+import { ensureAccountStatsRefreshes } from "../../refresh/account-stats";
+import { rankUserNameOrder, toIsoString } from "./shared";
 
 export const listNowcoderRankRows = async (db: Database) => {
   const cachedRows = await db
@@ -42,19 +35,10 @@ export const listNowcoderRankRows = async (db: Database) => {
       ...rankUserNameOrder
     );
 
-  const accountIds = cachedRows.map((row) => row.accountId);
-  const now = new Date();
-
-  await ensureRankStatsRefreshRequests({
-    isFresh: isNowcoderStatsCacheFresh,
-    now,
-    requestRefresh: async (accountId) => {
-      await nowcoderAccountStatsJob.enqueue(db, accountId);
-    },
-    rows: cachedRows,
+  const refresh = await ensureAccountStatsRefreshes(db, {
+    accounts: cachedRows,
+    platform: "nowcoder",
   });
-
-  const refreshActivity = await getNowcoderRankRefreshActivity(db, accountIds);
 
   return cachedRows.map((row) => ({
     grade: row.grade,
@@ -65,13 +49,7 @@ export const listNowcoderRankRows = async (db: Database) => {
       fetchedAt: toIsoString(row.fetchedAt),
       handle: row.handle,
       rating: row.rating,
-      syncStatus: getRefreshSyncStatus(
-        refreshActivity.toStatusInput({
-          accountId: row.accountId,
-          fetchedAt: row.fetchedAt,
-          lastError: row.lastError,
-        })
-      ),
+      syncStatus: refresh.syncStatusOf(row),
     },
     realName: row.realName,
     userId: row.userId,

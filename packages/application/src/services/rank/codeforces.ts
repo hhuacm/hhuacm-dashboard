@@ -3,15 +3,8 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
-import { getCodeforcesRankRefreshActivity } from "../../refresh/activity";
-import { codeforcesAccountStatsJob } from "../../refresh/jobs/codeforces-account-stats";
-import { isCodeforcesStatsCacheFresh } from "../../refresh/policy";
-import { getRefreshSyncStatus } from "../../refresh/sync-status";
-import {
-  ensureRankStatsRefreshRequests,
-  rankUserNameOrder,
-  toIsoString,
-} from "./shared";
+import { ensureAccountStatsRefreshes } from "../../refresh/account-stats";
+import { rankUserNameOrder, toIsoString } from "./shared";
 
 export const listCodeforcesRankRows = async (db: Database) => {
   const cachedRows = await db
@@ -42,22 +35,10 @@ export const listCodeforcesRankRows = async (db: Database) => {
     .where(eq(userOjAccount.platform, "codeforces"))
     .orderBy(...rankUserNameOrder);
 
-  const accountIds = cachedRows.map((row) => row.accountId);
-  const now = new Date();
-
-  await ensureRankStatsRefreshRequests({
-    isFresh: isCodeforcesStatsCacheFresh,
-    now,
-    requestRefresh: async (accountId) => {
-      await codeforcesAccountStatsJob.enqueue(db, accountId);
-    },
-    rows: cachedRows,
+  const refresh = await ensureAccountStatsRefreshes(db, {
+    accounts: cachedRows,
+    platform: "codeforces",
   });
-
-  const refreshActivity = await getCodeforcesRankRefreshActivity(
-    db,
-    accountIds
-  );
 
   return cachedRows.map((row) => ({
     codeforces: {
@@ -69,13 +50,7 @@ export const listCodeforcesRankRows = async (db: Database) => {
       lastOnlineAt: toIsoString(row.lastOnlineAt),
       maxRating: row.maxRating,
       rating: row.rating,
-      syncStatus: getRefreshSyncStatus(
-        refreshActivity.toStatusInput({
-          accountId: row.accountId,
-          fetchedAt: row.fetchedAt,
-          lastError: row.lastError,
-        })
-      ),
+      syncStatus: refresh.syncStatusOf(row),
     },
     grade: row.grade,
     major: row.major,

@@ -9,7 +9,10 @@ import {
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../services/test-db";
-import { userAwardsFromLuoguJob } from "./user-awards-from-luogu";
+import {
+  enqueueDueUserAwardsFromLuoguRequests,
+  handleUserAwardsFromLuoguRequest,
+} from "./user-awards-from-luogu";
 
 describe("user awards from Luogu refresh request", () => {
   const createAccount = async (
@@ -54,26 +57,20 @@ describe("user awards from Luogu refresh request", () => {
     await db.insert(userAwardSync).values([
       {
         fetchedAt: freshFetchedAt,
-        lastAttemptedAt: freshFetchedAt,
         source: "luogu",
         userId: "fresh-user",
       },
       {
         fetchedAt: dueFetchedAt,
-        lastAttemptedAt: dueFetchedAt,
         source: "luogu",
         userId: "selection-user",
       },
     ]);
 
-    const enqueuedCount = await userAwardsFromLuoguJob.enqueueDueTargets?.(
-      db,
-      new Date()
-    );
+    await enqueueDueUserAwardsFromLuoguRequests(db, new Date());
     const requests = await db.select().from(refreshRequest);
     const targetIds = requests.map((request) => request.targetId);
 
-    expect(enqueuedCount).toBe(3);
     expect(targetIds).toContain("account-selection-user");
     expect(targetIds).toContain("account-active-user");
     expect(targetIds).toContain("account-missing-profile-user");
@@ -99,11 +96,7 @@ describe("user awards from Luogu refresh request", () => {
       year: 2020,
     });
 
-    await userAwardsFromLuoguJob.handle(db, {
-      createdAt: new Date(),
-      kind: userAwardsFromLuoguJob.kind,
-      targetId: "account-retired-user",
-    });
+    await handleUserAwardsFromLuoguRequest(db, "account-retired-user");
 
     const awards = await db.select().from(userAward);
     const [sync] = await db.select().from(userAwardSync);

@@ -1,11 +1,8 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account-stats";
 import { eq } from "drizzle-orm";
-import { ensureAtcoderAccountStatsRefresh } from "../../refresh/ensure";
-import {
-  getRefreshSyncStatus,
-  type RefreshSyncStatus,
-} from "../../refresh/sync-status";
+import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
+import type { RefreshSyncStatus } from "../../refresh/sync-status";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 export interface PublicAtcoderStats {
@@ -18,7 +15,6 @@ export interface PublicAtcoderStats {
 const atcoderStatsFields = {
   accountId: atcoderAccountStats.accountId,
   fetchedAt: atcoderAccountStats.fetchedAt,
-  lastAttemptedAt: atcoderAccountStats.lastAttemptedAt,
   lastError: atcoderAccountStats.lastError,
   rating: atcoderAccountStats.rating,
   recentPerformanceAverage: atcoderAccountStats.recentPerformanceAverage,
@@ -51,17 +47,12 @@ export const getAtcoderStatsForProfile = async (
   db: Database,
   account: OjAccountIdentity
 ): Promise<PublicAtcoderStats | null> => {
-  const now = new Date();
   const currentStats = await getAtcoderStats(db, account.id);
-  const refreshQueueState = await ensureAtcoderAccountStatsRefresh(db, {
+  const syncStatus = await ensureAccountStatsRefresh(db, {
     accountId: account.id,
     fetchedAt: currentStats?.fetchedAt ?? null,
-    now,
-  });
-  const syncStatus = getRefreshSyncStatus({
-    fetchedAt: currentStats?.fetchedAt ?? null,
-    isQueued: refreshQueueState.isQueued,
     lastError: currentStats?.lastError ?? null,
+    platform: "atcoder",
   });
 
   if (!currentStats?.fetchedAt) {

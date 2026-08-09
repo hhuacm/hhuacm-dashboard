@@ -1,26 +1,18 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Database } from "@hhuacm-dashboard/db";
-import { refreshJobDefinitions } from "./jobs";
-import type { RefreshJobDefinition } from "./jobs/definition";
+import { enqueueDueAccountStatsRequests } from "./account-stats";
+import { enqueueMissingLuoguProblemDetailsRequests } from "./jobs/luogu-problem-details";
+import { enqueueDueUserAwardsFromLuoguRequests } from "./jobs/user-awards-from-luogu";
 import { refreshDefaults } from "./policy";
 import { runRefreshWorkerOnce } from "./worker";
 
 export const enqueueDueRefreshTargets = async (
   db: Database,
-  definitions: readonly RefreshJobDefinition[] = refreshJobDefinitions,
   now = new Date()
 ) => {
-  let enqueuedCount = 0;
-
-  for (const definition of definitions) {
-    if (!definition.enqueueDueTargets) {
-      continue;
-    }
-
-    enqueuedCount += await definition.enqueueDueTargets(db, now);
-  }
-
-  return enqueuedCount;
+  await enqueueDueAccountStatsRequests(db, now);
+  await enqueueMissingLuoguProblemDetailsRequests(db);
+  await enqueueDueUserAwardsFromLuoguRequests(db, now);
 };
 
 export const startRefreshRuntime = (db: Database) => {
@@ -33,9 +25,9 @@ export const startRefreshRuntime = (db: Database) => {
   const startWorkerLoop = async () => {
     while (!isStopped) {
       try {
-        const result = await runRefreshWorkerOnce(db);
+        const didWork = await runRefreshWorkerOnce(db);
 
-        if (!result) {
+        if (!didWork) {
           await sleep(refreshDefaults.workerPollIntervalMs);
         } else if (refreshDefaults.jobCooldownMs > 0) {
           await sleep(refreshDefaults.jobCooldownMs);

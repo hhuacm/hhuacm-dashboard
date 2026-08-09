@@ -3,15 +3,8 @@ import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { desc, eq } from "drizzle-orm";
-import { getAtcoderRankRefreshActivity } from "../../refresh/activity";
-import { atcoderAccountStatsJob } from "../../refresh/jobs/atcoder-account-stats";
-import { isAtcoderStatsCacheFresh } from "../../refresh/policy";
-import { getRefreshSyncStatus } from "../../refresh/sync-status";
-import {
-  ensureRankStatsRefreshRequests,
-  rankUserNameOrder,
-  toIsoString,
-} from "./shared";
+import { ensureAccountStatsRefreshes } from "../../refresh/account-stats";
+import { rankUserNameOrder, toIsoString } from "./shared";
 
 export const listAtcoderRankRows = async (db: Database) => {
   const cachedRows = await db
@@ -42,19 +35,10 @@ export const listAtcoderRankRows = async (db: Database) => {
       ...rankUserNameOrder
     );
 
-  const accountIds = cachedRows.map((row) => row.accountId);
-  const now = new Date();
-
-  await ensureRankStatsRefreshRequests({
-    isFresh: isAtcoderStatsCacheFresh,
-    now,
-    requestRefresh: async (accountId) => {
-      await atcoderAccountStatsJob.enqueue(db, accountId);
-    },
-    rows: cachedRows,
+  const refresh = await ensureAccountStatsRefreshes(db, {
+    accounts: cachedRows,
+    platform: "atcoder",
   });
-
-  const refreshActivity = await getAtcoderRankRefreshActivity(db, accountIds);
 
   return cachedRows.map((row) => ({
     atcoder: {
@@ -63,13 +47,7 @@ export const listAtcoderRankRows = async (db: Database) => {
       handle: row.handle,
       rating: row.rating,
       recentPerformanceAverage: row.recentPerformanceAverage,
-      syncStatus: getRefreshSyncStatus(
-        refreshActivity.toStatusInput({
-          accountId: row.accountId,
-          fetchedAt: row.fetchedAt,
-          lastError: row.lastError,
-        })
-      ),
+      syncStatus: refresh.syncStatusOf(row),
     },
     grade: row.grade,
     major: row.major,

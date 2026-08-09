@@ -149,7 +149,6 @@ describe("Luogu sync", () => {
     const db = await createServiceTestDb();
     const account = await createLuoguAccount(db);
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    const failedAt = new Date("2026-01-02T00:00:00.000Z");
 
     await syncLuoguAccountStats(db, account, fetchedAt, async () =>
       createPractice([
@@ -159,15 +158,13 @@ describe("Luogu sync", () => {
     await markLuoguAccountStatsRefreshFailed(
       db,
       account,
-      new Error("network failed"),
-      failedAt
+      new Error("network failed")
     );
 
     const [stats] = await db.select().from(luoguAccountStats);
     const problems = await db.select().from(luoguAcceptedProblem);
 
     expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(stats?.lastAttemptedAt.toISOString()).toBe(failedAt.toISOString());
     expect(stats?.lastError).toBe("network failed");
     expect(problems).toHaveLength(1);
   });

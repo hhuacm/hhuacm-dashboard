@@ -5,7 +5,7 @@ import {
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { and, eq, inArray } from "drizzle-orm";
-import { ensureLuoguAccountStatsRefresh } from "../../refresh/ensure";
+import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
 
 interface ProblemSetProblemForCompletion {
   difficulty: null | number;
@@ -24,6 +24,7 @@ const getCurrentLuoguAccount = async (db: Database, userId: null | string) => {
         .select({
           accountId: userOjAccount.id,
           fetchedAt: luoguAccountStats.fetchedAt,
+          lastError: luoguAccountStats.lastError,
         })
         .from(userOjAccount)
         .leftJoin(
@@ -49,10 +50,11 @@ const ensureLuoguStatsRefresh = async (
     return;
   }
 
-  await ensureLuoguAccountStatsRefresh(db, {
+  await ensureAccountStatsRefresh(db, {
     accountId: account.accountId,
     fetchedAt: account.fetchedAt,
-    now: new Date(),
+    lastError: account.lastError,
+    platform: "luogu",
   });
 };
 

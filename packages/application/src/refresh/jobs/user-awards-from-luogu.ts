@@ -8,7 +8,8 @@ import {
   syncUserAwardsFromLuogu,
 } from "../../services/profile-awards";
 import { refreshDefaults } from "../policy";
-import { defineRefreshJob, type RefreshJobDefinition } from "./definition";
+import { enqueueRefreshRequest } from "../request-store";
+import { userAwardsFromLuoguRefreshKind } from "../user-awards";
 
 const userAwardSource = "luogu";
 
@@ -19,23 +20,20 @@ const luoguAccountFields = {
   userId: userOjAccount.userId,
 } as const;
 
-const handleUserAwardsFromLuoguRequest = async (
+export const handleUserAwardsFromLuoguRequest = async (
   db: Database,
-  request: Parameters<RefreshJobDefinition["handle"]>[1]
+  targetId: string
 ) => {
   const [account] = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
     .where(
-      and(
-        eq(userOjAccount.id, request.targetId),
-        eq(userOjAccount.platform, "luogu")
-      )
+      and(eq(userOjAccount.id, targetId), eq(userOjAccount.platform, "luogu"))
     )
     .limit(1);
 
   if (!account) {
-    throw new Error(`Luogu account does not exist: ${request.targetId}`);
+    throw new Error(`Luogu account does not exist: ${targetId}`);
   }
 
   try {
@@ -45,7 +43,7 @@ const handleUserAwardsFromLuoguRequest = async (
   }
 };
 
-const enqueueDueUserAwardsFromLuoguTargets = async (
+export const enqueueDueUserAwardsFromLuoguRequests = async (
   db: Database,
   now: Date
 ) => {
@@ -73,14 +71,9 @@ const enqueueDueUserAwardsFromLuoguTargets = async (
     );
 
   for (const account of dueAccounts) {
-    await userAwardsFromLuoguJob.enqueue(db, account.id);
+    await enqueueRefreshRequest(db, {
+      kind: userAwardsFromLuoguRefreshKind,
+      targetId: account.id,
+    });
   }
-
-  return dueAccounts.length;
 };
-
-export const userAwardsFromLuoguJob = defineRefreshJob({
-  enqueueDueTargets: enqueueDueUserAwardsFromLuoguTargets,
-  handle: handleUserAwardsFromLuoguRequest,
-  kind: "user.awardsFromLuogu",
-});

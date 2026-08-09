@@ -1,26 +1,19 @@
 import type { Database } from "@hhuacm-dashboard/db";
-import { findRefreshJobDefinition, refreshJobDefinitions } from "./jobs";
-import type { RefreshJobDefinition } from "./jobs/definition";
+import { refreshRequestHandlers } from "./jobs";
 import { deleteRefreshRequest, getNextRefreshRequest } from "./request-store";
 
-export const runRefreshWorkerOnce = async (
-  db: Database,
-  definitions: readonly RefreshJobDefinition[] = refreshJobDefinitions
-) => {
+export const runRefreshWorkerOnce = async (db: Database) => {
   const request = await getNextRefreshRequest(db);
 
   if (!request) {
-    return null;
+    return false;
   }
 
   try {
-    const definition = findRefreshJobDefinition(definitions, request.kind);
-    await definition.handle(db, request);
+    await refreshRequestHandlers[request.kind](db, request.targetId);
   } finally {
     await deleteRefreshRequest(db, request);
   }
 
-  return {
-    request,
-  };
+  return true;
 };

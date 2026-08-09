@@ -7,8 +7,8 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 
 import { createServiceTestDb } from "../../services/test-db";
 import {
+  enqueueMissingLuoguProblemDetailsRequests,
   handleLuoguProblemDetailsRequest,
-  luoguProblemDetailsJob,
 } from "./luogu-problem-details";
 
 describe("Luogu problem details refresh request", () => {
@@ -16,38 +16,8 @@ describe("Luogu problem details refresh request", () => {
     const db = await createServiceTestDb();
 
     await expect(
-      luoguProblemDetailsJob.handle(db, {
-        createdAt: new Date(),
-        kind: luoguProblemDetailsJob.kind,
-        targetId: "P1563",
-      })
+      handleLuoguProblemDetailsRequest(db, "P1563")
     ).resolves.toBeUndefined();
-  });
-
-  it("throws when Luogu lookup fails", async () => {
-    const db = await createServiceTestDb();
-    await db.insert(problemSet).values({
-      id: "set-a",
-      title: "题单",
-    });
-    await db.insert(problemSetProblem).values({
-      pid: "P1563",
-      problemSetId: "set-a",
-      sortOrder: 0,
-      title: null,
-    });
-
-    await expect(
-      handleLuoguProblemDetailsRequest(
-        db,
-        {
-          createdAt: new Date(),
-          kind: luoguProblemDetailsJob.kind,
-          targetId: "P1563",
-        },
-        () => Promise.reject(new Error("network failed"))
-      )
-    ).rejects.toThrow("network failed");
   });
 
   it("enqueues distinct PIDs with missing problem details", async () => {
@@ -80,9 +50,7 @@ describe("Luogu problem details refresh request", () => {
       },
     ]);
 
-    await expect(
-      luoguProblemDetailsJob.enqueueDueTargets?.(db, new Date())
-    ).resolves.toBe(2);
+    await enqueueMissingLuoguProblemDetailsRequests(db);
 
     const requests = await db
       .select()

@@ -12,9 +12,6 @@ export const atcoderAccountStats = sqliteTable(
     rating: integer("rating"),
     recentPerformanceAverage: integer("recent_performance_average"),
     fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }),
-    lastAttemptedAt: integer("last_attempted_at", {
-      mode: "timestamp_ms",
-    }).notNull(),
     lastError: text("last_error"),
   },
   (table) => [index("atcoder_account_stats_fetched_at_idx").on(table.fetchedAt)]

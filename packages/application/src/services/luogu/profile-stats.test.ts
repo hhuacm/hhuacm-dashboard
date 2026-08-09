@@ -73,7 +73,6 @@ describe("Luogu profile stats", () => {
       accountId: "account-luogu",
       averageAcceptedDifficulty: 4,
       fetchedAt,
-      lastAttemptedAt: fetchedAt,
       lastError: null,
     });
     await db.insert(luoguAcceptedProblem).values([

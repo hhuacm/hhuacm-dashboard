@@ -42,7 +42,6 @@ describe("listNowcoderRankRows", () => {
         acceptedProblemCount: input.acceptedProblemCount,
         accountId: `account-${input.id}`,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         rating: input.rating ?? null,
       });

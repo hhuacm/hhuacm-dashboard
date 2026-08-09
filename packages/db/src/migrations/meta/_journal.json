@@ -15,6 +15,13 @@
       "when": 1786186668723,
       "tag": "0001_collapse-member-profile",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786274322774,
+      "tag": "0002_drop-refresh-last-attempted-at",
+      "breakpoints": true
     }
   ]
 }

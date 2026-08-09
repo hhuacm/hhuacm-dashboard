@@ -45,7 +45,6 @@ describe("listLuoguRankRows", () => {
         accountId: `account-${input.id}`,
         averageAcceptedDifficulty: input.averageAcceptedDifficulty ?? null,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
       });
     }

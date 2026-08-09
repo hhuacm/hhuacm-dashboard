@@ -2,13 +2,14 @@ import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import type { OjPlatform } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
-import { atcoderAccountStatsJob } from "../../refresh/jobs/atcoder-account-stats";
-import { codeforcesAccountStatsJob } from "../../refresh/jobs/codeforces-account-stats";
-import type { RefreshJobDefinition } from "../../refresh/jobs/definition";
-import { luoguAccountStatsJob } from "../../refresh/jobs/luogu-account-stats";
-import { nowcoderAccountStatsJob } from "../../refresh/jobs/nowcoder-account-stats";
-import { userAwardsFromLuoguJob } from "../../refresh/jobs/user-awards-from-luogu";
-import type { RefreshQueueDatabase } from "../../refresh/request-store";
+import { accountStatsRefreshKindByPlatform } from "../../refresh/account-stats";
+import {
+  deleteRefreshRequest,
+  enqueueRefreshRequest,
+  type RefreshQueueDatabase,
+  type RefreshRequestKind,
+} from "../../refresh/request-store";
+import { userAwardsFromLuoguRefreshKind } from "../../refresh/user-awards";
 import { deleteAtcoderStats } from "../atcoder/sync";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
@@ -23,29 +24,32 @@ export interface AccountStatsEffectTarget {
 type AccountStatsEffect = (
   db: Database | DatabaseTransaction,
   accountId: string
-) => Promise<unknown>;
+) => Promise<void>;
 
 interface AccountStatsEffects {
-  clearStats: AccountStatsEffect[];
-  refreshJobs: RefreshJobDefinition[];
+  clearStats: AccountStatsEffect;
+  refreshKinds: readonly RefreshRequestKind[];
 }
 
 const accountStatsEffects = {
   atcoder: {
-    clearStats: [deleteAtcoderStats],
-    refreshJobs: [atcoderAccountStatsJob],
+    clearStats: deleteAtcoderStats,
+    refreshKinds: [accountStatsRefreshKindByPlatform.atcoder],
   },
   codeforces: {
-    clearStats: [deleteCodeforcesStats],
-    refreshJobs: [codeforcesAccountStatsJob],
+    clearStats: deleteCodeforcesStats,
+    refreshKinds: [accountStatsRefreshKindByPlatform.codeforces],
   },
   luogu: {
-    clearStats: [deleteLuoguStats],
-    refreshJobs: [luoguAccountStatsJob, userAwardsFromLuoguJob],
+    clearStats: deleteLuoguStats,
+    refreshKinds: [
+      accountStatsRefreshKindByPlatform.luogu,
+      userAwardsFromLuoguRefreshKind,
+    ],
   },
   nowcoder: {
-    clearStats: [deleteNowcoderStats],
-    refreshJobs: [nowcoderAccountStatsJob],
+    clearStats: deleteNowcoderStats,
+    refreshKinds: [accountStatsRefreshKindByPlatform.nowcoder],
   },
 } satisfies Record<OjPlatform, AccountStatsEffects>;
 
@@ -53,8 +57,11 @@ const clearOjAccountRefreshRequests = async (
   db: RefreshQueueDatabase,
   account: AccountStatsEffectTarget
 ) => {
-  for (const job of accountStatsEffects[account.platform].refreshJobs) {
-    await job.clear(db, account.id);
+  for (const kind of accountStatsEffects[account.platform].refreshKinds) {
+    await deleteRefreshRequest(db, {
+      kind,
+      targetId: account.id,
+    });
   }
 };
 
@@ -62,9 +69,7 @@ export const resetOjAccountStatsEffects = async (
   db: Database | DatabaseTransaction,
   account: AccountStatsEffectTarget
 ) => {
-  for (const clearStats of accountStatsEffects[account.platform].clearStats) {
-    await clearStats(db, account.id);
-  }
+  await accountStatsEffects[account.platform].clearStats(db, account.id);
 
   await clearOjAccountRefreshRequests(db, account);
 };
@@ -96,18 +101,15 @@ export const requestOjAccountRefreshEffectsIfNeeded = async (
   userId: string
 ) => {
   if (!(await isCurrentMember(db, userId))) {
-    return 0;
+    return;
   }
 
-  let refreshRequestCount = 0;
-
-  for (const job of accountStatsEffects[account.platform].refreshJobs) {
-    if (await job.enqueue(db, account.id)) {
-      refreshRequestCount += 1;
-    }
+  for (const kind of accountStatsEffects[account.platform].refreshKinds) {
+    await enqueueRefreshRequest(db, {
+      kind,
+      targetId: account.id,
+    });
   }
-
-  return refreshRequestCount;
 };
 
 export const replaceOjAccountStatsEffectsIfNeeded = async (

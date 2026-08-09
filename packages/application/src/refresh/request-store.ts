@@ -1,23 +1,15 @@
 import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import type { refreshRequestKinds } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
-import { and, asc, eq, type InferSelectModel } from "drizzle-orm";
-
-type Transaction = DatabaseTransaction;
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 export type RefreshRequestKind = (typeof refreshRequestKinds)[number];
-export type RefreshQueueDatabase = Database | Transaction;
+export type RefreshQueueDatabase = Database | DatabaseTransaction;
 
 const refreshRequestFields = {
-  createdAt: refreshRequest.createdAt,
   kind: refreshRequest.kind,
   targetId: refreshRequest.targetId,
 } as const;
-
-export type RefreshRequest = Pick<
-  InferSelectModel<typeof refreshRequest>,
-  keyof typeof refreshRequestFields
->;
 
 export const enqueueRefreshRequest = async (
   db: RefreshQueueDatabase,
@@ -26,7 +18,7 @@ export const enqueueRefreshRequest = async (
     targetId: string;
   }
 ) => {
-  const [createdRequest] = await db
+  await db
     .insert(refreshRequest)
     .values({
       kind: input.kind,
@@ -34,10 +26,31 @@ export const enqueueRefreshRequest = async (
     })
     .onConflictDoNothing({
       target: [refreshRequest.kind, refreshRequest.targetId],
-    })
-    .returning(refreshRequestFields);
+    });
+};
 
-  return Boolean(createdRequest);
+export const getQueuedRefreshTargetIds = async (
+  db: Database,
+  input: {
+    kind: RefreshRequestKind;
+    targetIds: readonly string[];
+  }
+) => {
+  if (input.targetIds.length === 0) {
+    return new Set<string>();
+  }
+
+  const requests = await db
+    .select({ targetId: refreshRequest.targetId })
+    .from(refreshRequest)
+    .where(
+      and(
+        eq(refreshRequest.kind, input.kind),
+        inArray(refreshRequest.targetId, input.targetIds)
+      )
+    );
+
+  return new Set(requests.map((request) => request.targetId));
 };
 
 export const getNextRefreshRequest = async (db: Database) => {

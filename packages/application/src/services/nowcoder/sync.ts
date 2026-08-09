@@ -10,15 +10,6 @@ type NowcoderRatingBasicLoader = typeof nowcoderSource.ratingBasic;
 type NowcoderAcceptedCountLoader =
   typeof nowcoderSource.acceptedPracticeProblemCount;
 
-const nowcoderStatsFields = {
-  acceptedProblemCount: nowcoderAccountStats.acceptedProblemCount,
-  accountId: nowcoderAccountStats.accountId,
-  fetchedAt: nowcoderAccountStats.fetchedAt,
-  lastAttemptedAt: nowcoderAccountStats.lastAttemptedAt,
-  lastError: nowcoderAccountStats.lastError,
-  rating: nowcoderAccountStats.rating,
-} as const;
-
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown Nowcoder sync error";
 
@@ -53,14 +44,13 @@ export const syncNowcoderAccountStats = async (
   ]);
   const fetchedAt = now;
 
-  return await db.transaction(async (tx) => {
-    const stats = await tx
+  await db.transaction(async (tx) => {
+    await tx
       .insert(nowcoderAccountStats)
       .values({
         acceptedProblemCount,
         accountId: account.id,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         rating: ratingBasic.rating,
       })
@@ -68,14 +58,11 @@ export const syncNowcoderAccountStats = async (
         set: {
           acceptedProblemCount,
           fetchedAt,
-          lastAttemptedAt: fetchedAt,
           lastError: null,
           rating: ratingBasic.rating,
         },
         target: nowcoderAccountStats.accountId,
-      })
-      .returning(nowcoderStatsFields)
-      .get();
+      });
 
     if (account.handle !== ratingBasic.nickname) {
       await tx
@@ -83,35 +70,28 @@ export const syncNowcoderAccountStats = async (
         .set({ handle: ratingBasic.nickname })
         .where(eq(userOjAccount.id, account.id));
     }
-
-    return stats;
   });
 };
 
 export const markNowcoderAccountStatsRefreshFailed = async (
   db: Database,
   account: OjAccountIdentity,
-  error: unknown,
-  now = new Date()
+  error: unknown
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  return await db
+  await db
     .insert(nowcoderAccountStats)
     .values({
       accountId: account.id,
-      lastAttemptedAt: now,
       lastError,
     })
     .onConflictDoUpdate({
       set: {
-        lastAttemptedAt: now,
         lastError,
       },
       target: nowcoderAccountStats.accountId,
-    })
-    .returning(nowcoderStatsFields)
-    .get();
+    });
 };
 
 export const deleteNowcoderStats = async (

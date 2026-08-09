@@ -111,7 +111,6 @@ describe("getPublicProfile", () => {
     });
     await db.insert(userAwardSync).values({
       fetchedAt,
-      lastAttemptedAt: fetchedAt,
       source: "luogu",
       userId: "user-retired-award",
     });
@@ -273,7 +272,6 @@ describe("getPublicProfile", () => {
     await db.insert(atcoderAccountStats).values({
       accountId: "account-cached-atcoder",
       fetchedAt,
-      lastAttemptedAt: fetchedAt,
       rating: 3857,
       recentPerformanceAverage: 3612,
     });
@@ -281,7 +279,6 @@ describe("getPublicProfile", () => {
       acceptedProblemCount: 246,
       accountId: "account-cached-nowcoder",
       fetchedAt,
-      lastAttemptedAt: fetchedAt,
       rating: 1725.5,
     });
 
@@ -321,7 +318,6 @@ describe("getPublicProfile", () => {
   it("returns failed AtCoder and Nowcoder stats without losing cached values", async () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date();
-    const lastAttemptedAt = new Date(fetchedAt.getTime() + 1000);
 
     await db.insert(user).values({
       email: "failed-oj@example.com",
@@ -349,7 +345,6 @@ describe("getPublicProfile", () => {
     await db.insert(atcoderAccountStats).values({
       accountId: "account-failed-atcoder",
       fetchedAt,
-      lastAttemptedAt,
       lastError: "AtCoder unavailable",
       rating: 3857,
       recentPerformanceAverage: 3612,
@@ -358,7 +353,6 @@ describe("getPublicProfile", () => {
       acceptedProblemCount: 246,
       accountId: "account-failed-nowcoder",
       fetchedAt,
-      lastAttemptedAt,
       lastError: "Nowcoder unavailable",
       rating: 1725.5,
     });

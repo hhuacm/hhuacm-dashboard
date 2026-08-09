@@ -135,7 +135,6 @@ describe("Nowcoder sync", () => {
     expect(stats?.rating).toBe(1609);
     expect(stats?.acceptedProblemCount).toBe(312);
     expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(stats?.lastAttemptedAt.toISOString()).toBe(fetchedAt.toISOString());
     expect(stats?.lastError).toBeNull();
   });
 
@@ -143,7 +142,6 @@ describe("Nowcoder sync", () => {
     const db = await createServiceTestDb();
     const account = await createNowcoderAccount(db);
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    const failedAt = new Date("2026-01-02T00:00:00.000Z");
 
     await syncNowcoderAccountStats(db, account, fetchedAt, {
       loadAcceptedPracticeProblemCount: async () => 312,
@@ -152,8 +150,7 @@ describe("Nowcoder sync", () => {
     await markNowcoderAccountStatsRefreshFailed(
       db,
       { ...account, handle: "F0rL1ght" },
-      new Error("network failed"),
-      failedAt
+      new Error("network failed")
     );
 
     const [stats] = await db.select().from(nowcoderAccountStats);
@@ -161,7 +158,6 @@ describe("Nowcoder sync", () => {
     expect(stats?.rating).toBe(1609);
     expect(stats?.acceptedProblemCount).toBe(312);
     expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(stats?.lastAttemptedAt.toISOString()).toBe(failedAt.toISOString());
     expect(stats?.lastError).toBe("network failed");
   });
 

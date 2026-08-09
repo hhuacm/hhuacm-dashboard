@@ -9,15 +9,6 @@ import type { OjAccountIdentity } from "../oj-account/queries";
 type AtcoderHistoryLoader = typeof atcoderSource.userHistory;
 type AtcoderHistoryItem = AtCoderUserHistory[number];
 
-const atcoderStatsFields = {
-  accountId: atcoderAccountStats.accountId,
-  fetchedAt: atcoderAccountStats.fetchedAt,
-  lastAttemptedAt: atcoderAccountStats.lastAttemptedAt,
-  lastError: atcoderAccountStats.lastError,
-  rating: atcoderAccountStats.rating,
-  recentPerformanceAverage: atcoderAccountStats.recentPerformanceAverage,
-} as const;
-
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown AtCoder sync error";
 
@@ -60,12 +51,11 @@ export const syncAtcoderAccountStats = async (
   );
   const fetchedAt = now;
 
-  const stats = await db
+  await db
     .insert(atcoderAccountStats)
     .values({
       accountId: account.id,
       fetchedAt,
-      lastAttemptedAt: fetchedAt,
       lastError: null,
       rating: summary.rating,
       recentPerformanceAverage: summary.recentPerformanceAverage,
@@ -73,43 +63,33 @@ export const syncAtcoderAccountStats = async (
     .onConflictDoUpdate({
       set: {
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         rating: summary.rating,
         recentPerformanceAverage: summary.recentPerformanceAverage,
       },
       target: atcoderAccountStats.accountId,
-    })
-    .returning(atcoderStatsFields)
-    .get();
-
-  return stats;
+    });
 };
 
 export const markAtcoderAccountStatsRefreshFailed = async (
   db: Database,
   account: OjAccountIdentity,
-  error: unknown,
-  now = new Date()
+  error: unknown
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  return await db
+  await db
     .insert(atcoderAccountStats)
     .values({
       accountId: account.id,
-      lastAttemptedAt: now,
       lastError,
     })
     .onConflictDoUpdate({
       set: {
-        lastAttemptedAt: now,
         lastError,
       },
       target: atcoderAccountStats.accountId,
-    })
-    .returning(atcoderStatsFields)
-    .get();
+    });
 };
 
 export const deleteAtcoderStats = async (

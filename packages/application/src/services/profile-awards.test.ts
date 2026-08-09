@@ -196,7 +196,6 @@ describe("profile awards", () => {
   it("records failures without deleting cached awards", async () => {
     const db = await createServiceTestDb();
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    const failedAt = new Date("2026-01-02T00:00:00.000Z");
     await createUser(db);
 
     await syncUserAwardsFromLuogu(db, account, fetchedAt, async () =>
@@ -214,8 +213,7 @@ describe("profile awards", () => {
     await markUserAwardsFromLuoguRefreshFailed(
       db,
       account,
-      new Error("network failed"),
-      failedAt
+      new Error("network failed")
     );
 
     const awards = await db.select().from(userAward);
@@ -224,7 +222,6 @@ describe("profile awards", () => {
     expect(awards).toHaveLength(1);
     expect(awards[0]?.contest).toBe("Cached Contest");
     expect(sync?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(sync?.lastAttemptedAt.toISOString()).toBe(failedAt.toISOString());
     expect(sync?.lastError).toBe("network failed");
   });
 

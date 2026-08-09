@@ -15,9 +15,6 @@ export const codeforcesAccountStats = sqliteTable(
     acceptedProblemCountInMonth: integer("accepted_problem_count_in_month"),
     lastOnlineAt: integer("last_online_at", { mode: "timestamp_ms" }),
     fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }),
-    lastAttemptedAt: integer("last_attempted_at", {
-      mode: "timestamp_ms",
-    }).notNull(),
     lastError: text("last_error"),
   },
   (table) => [

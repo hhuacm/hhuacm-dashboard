@@ -1,8 +1,7 @@
 import type { Database, DatabaseTransaction } from "@hhuacm-dashboard/db";
 import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { eq } from "drizzle-orm";
-import { ensureCodeforcesAccountStatsRefresh } from "../../refresh/ensure";
-import { getRefreshSyncStatus } from "../../refresh/sync-status";
+import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
 import type { CodeforcesAccount, PublicCodeforcesStats } from "./types";
 
 const codeforcesStatsFields = {
@@ -11,7 +10,6 @@ const codeforcesStatsFields = {
     codeforcesAccountStats.acceptedProblemCountInMonth,
   accountId: codeforcesAccountStats.accountId,
   fetchedAt: codeforcesAccountStats.fetchedAt,
-  lastAttemptedAt: codeforcesAccountStats.lastAttemptedAt,
   lastError: codeforcesAccountStats.lastError,
   lastOnlineAt: codeforcesAccountStats.lastOnlineAt,
   maxRating: codeforcesAccountStats.maxRating,
@@ -48,18 +46,12 @@ export const getCodeforcesStatsForProfile = async (
   db: Database,
   account: CodeforcesAccount
 ): Promise<PublicCodeforcesStats | null> => {
-  const now = new Date();
   const currentStats = await getCodeforcesStats(db, account.id);
-  const refreshQueueState = await ensureCodeforcesAccountStatsRefresh(db, {
+  const syncStatus = await ensureAccountStatsRefresh(db, {
     accountId: account.id,
     fetchedAt: currentStats?.fetchedAt ?? null,
-    now,
-  });
-  const lastError = currentStats?.lastError ?? null;
-  const syncStatus = getRefreshSyncStatus({
-    fetchedAt: currentStats?.fetchedAt ?? null,
-    isQueued: refreshQueueState.isQueued,
-    lastError,
+    lastError: currentStats?.lastError ?? null,
+    platform: "codeforces",
   });
 
   if (!currentStats?.fetchedAt) {

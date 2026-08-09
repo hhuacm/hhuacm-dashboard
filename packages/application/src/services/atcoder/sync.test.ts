@@ -126,7 +126,6 @@ describe("AtCoder sync", () => {
     const db = await createServiceTestDb();
     const account = await createAtcoderAccount(db);
     const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-    const failedAt = new Date("2026-01-02T00:00:00.000Z");
 
     await syncAtcoderAccountStats(db, account, fetchedAt, async () => [
       createHistoryItem({ NewRating: 584, Performance: 711 }),
@@ -134,15 +133,13 @@ describe("AtCoder sync", () => {
     await markAtcoderAccountStatsRefreshFailed(
       db,
       account,
-      new Error("network failed"),
-      failedAt
+      new Error("network failed")
     );
 
     const [stats] = await db.select().from(atcoderAccountStats);
 
     expect(stats?.rating).toBe(584);
     expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(stats?.lastAttemptedAt.toISOString()).toBe(failedAt.toISOString());
     expect(stats?.lastError).toBe("network failed");
   });
 });

@@ -18,19 +18,6 @@ interface CodeforcesStatsLoaders {
   loadUserStatus?: typeof codeforcesSource.userStatus;
 }
 
-const codeforcesStatsFields = {
-  acceptedProblemCount: codeforcesAccountStats.acceptedProblemCount,
-  acceptedProblemCountInMonth:
-    codeforcesAccountStats.acceptedProblemCountInMonth,
-  accountId: codeforcesAccountStats.accountId,
-  fetchedAt: codeforcesAccountStats.fetchedAt,
-  lastAttemptedAt: codeforcesAccountStats.lastAttemptedAt,
-  lastError: codeforcesAccountStats.lastError,
-  lastOnlineAt: codeforcesAccountStats.lastOnlineAt,
-  maxRating: codeforcesAccountStats.maxRating,
-  rating: codeforcesAccountStats.rating,
-} as const;
-
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown Codeforces sync error";
 
@@ -75,15 +62,14 @@ export const syncCodeforcesAccountStats = async (
       ? null
       : new Date(userInfo.lastOnlineTimeSeconds * 1000);
 
-  return await db.transaction(async (tx) => {
-    const stats = await tx
+  await db.transaction(async (tx) => {
+    await tx
       .insert(codeforcesAccountStats)
       .values({
         acceptedProblemCount: summary.acceptedProblemCount,
         acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
         accountId: account.id,
         fetchedAt,
-        lastAttemptedAt: fetchedAt,
         lastError: null,
         lastOnlineAt,
         maxRating: userInfo.maxRating ?? null,
@@ -94,16 +80,13 @@ export const syncCodeforcesAccountStats = async (
           acceptedProblemCount: summary.acceptedProblemCount,
           acceptedProblemCountInMonth: summary.acceptedProblemCountSince,
           fetchedAt,
-          lastAttemptedAt: fetchedAt,
           lastError: null,
           lastOnlineAt,
           maxRating: userInfo.maxRating ?? null,
           rating: userInfo.rating ?? null,
         },
         target: codeforcesAccountStats.accountId,
-      })
-      .returning(codeforcesStatsFields)
-      .get();
+      });
 
     if (account.handle !== userInfo.handle) {
       await tx
@@ -111,33 +94,26 @@ export const syncCodeforcesAccountStats = async (
         .set({ handle: userInfo.handle })
         .where(eq(userOjAccount.id, account.id));
     }
-
-    return stats;
   });
 };
 
 export const markCodeforcesAccountStatsRefreshFailed = async (
   db: Database,
   account: CodeforcesAccount,
-  error: unknown,
-  now = new Date()
+  error: unknown
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  return await db
+  await db
     .insert(codeforcesAccountStats)
     .values({
       accountId: account.id,
-      lastAttemptedAt: now,
       lastError,
     })
     .onConflictDoUpdate({
       set: {
-        lastAttemptedAt: now,
         lastError,
       },
       target: codeforcesAccountStats.accountId,
-    })
-    .returning(codeforcesStatsFields)
-    .get();
+    });
 };
