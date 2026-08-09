@@ -290,7 +290,7 @@ export default async function Home() {
               value: `${systemInfo.system.platform} ${systemInfo.system.arch} ${systemInfo.system.release}`,
             },
             {
-              label: "运行时长",
+              label: "Web 进程运行时长",
               value: formatUptime(systemInfo.uptimeMs),
             },
           ]}
