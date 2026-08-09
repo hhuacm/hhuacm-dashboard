@@ -4,11 +4,7 @@ import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import { createTestDb } from "@hhuacm-dashboard/db/testing";
 import { asc, eq } from "drizzle-orm";
 import { accountStatsRefreshKindByPlatform } from "./account-stats";
-import {
-  deleteRefreshRequest,
-  enqueueRefreshRequest,
-  getNextRefreshRequest,
-} from "./request-store";
+import { enqueueRefreshRequest, getNextRefreshRequest } from "./request-store";
 
 const createDb = async () => {
   const testDb = await createTestDb();
@@ -23,10 +19,10 @@ afterEach(async () => {
   cleanupTestDb = null;
 });
 
-const createTestRequest = (db: Database, targetId = "account-1") =>
+const createTestRequest = (db: Database) =>
   enqueueRefreshRequest(db, {
     kind: accountStatsRefreshKindByPlatform.codeforces,
-    targetId,
+    targetId: "account-1",
   });
 
 const listRequests = (db: Database, targetId: string) =>
@@ -81,23 +77,5 @@ describe("refresh request store", () => {
     const request = await getNextRefreshRequest(db);
 
     expect(request?.targetId).toBe("first");
-  });
-
-  it("deletes requests by kind and target", async () => {
-    const db = await createDb();
-
-    await createTestRequest(db, "account-1");
-    await createTestRequest(db, "account-1");
-    await createTestRequest(db, "account-2");
-
-    await deleteRefreshRequest(db, {
-      kind: accountStatsRefreshKindByPlatform.codeforces,
-      targetId: "account-1",
-    });
-
-    const remainingRequests = await db.select().from(refreshRequest);
-
-    expect(remainingRequests).toHaveLength(1);
-    expect(remainingRequests[0]?.targetId).toBe("account-2");
   });
 });

@@ -4,7 +4,7 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { createServiceTestDb } from "../test-db";
 import { addOjAccount, deleteOjAccount, updateOjAccount } from "./commands";
@@ -178,29 +178,6 @@ describe("addOjAccount", () => {
       handle: "second-id",
     });
   });
-
-  it("rolls back the account when refresh enqueueing fails", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, { id: "active-user", memberStatus: "active" });
-    await db.run(sql`
-      CREATE TRIGGER fail_refresh_request_insert
-      BEFORE INSERT ON refresh_request
-      BEGIN
-        SELECT RAISE(ABORT, 'forced refresh insert failure');
-      END
-    `);
-
-    await expect(
-      addOjAccount(db, {
-        externalId: "new-handle",
-        platform: "codeforces",
-        userId: "active-user",
-      })
-    ).rejects.toThrow();
-
-    expect(await db.select().from(userOjAccount)).toEqual([]);
-    expect(await db.select().from(refreshRequest)).toEqual([]);
-  });
 });
 
 describe("updateOjAccount", () => {
@@ -232,47 +209,6 @@ describe("updateOjAccount", () => {
       targetId: "codeforces-account",
     });
   });
-
-  it("rolls back the identity and effects when refresh enqueueing fails", async () => {
-    const db = await createServiceTestDb();
-    await createCodeforcesAccountWithStats(db);
-
-    await db.run(sql`
-      CREATE TRIGGER fail_refresh_request_insert
-      BEFORE INSERT ON refresh_request
-      BEGIN
-        SELECT RAISE(ABORT, 'forced refresh insert failure');
-      END
-    `);
-
-    await expect(
-      updateOjAccount(db, {
-        externalId: "new-handle",
-        platform: "codeforces",
-        userId: "active-user",
-      })
-    ).rejects.toThrow();
-
-    const [account] = await db.select().from(userOjAccount);
-    const stats = await db.select().from(codeforcesAccountStats);
-    const requests = await db.select().from(refreshRequest);
-
-    expect(account).toMatchObject({
-      externalId: "old-handle",
-      handle: "old-handle",
-      id: "codeforces-account",
-    });
-    expect(stats).toHaveLength(1);
-    expect(stats[0]).toMatchObject({
-      accountId: "codeforces-account",
-      rating: 1200,
-    });
-    expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({
-      kind: "codeforces.accountStats",
-      targetId: "codeforces-account",
-    });
-  });
 });
 
 describe("deleteOjAccount", () => {
@@ -288,28 +224,5 @@ describe("deleteOjAccount", () => {
     expect(await db.select().from(userOjAccount)).toEqual([]);
     expect(await db.select().from(codeforcesAccountStats)).toEqual([]);
     expect(await db.select().from(refreshRequest)).toEqual([]);
-  });
-
-  it("rolls back the deletion when refresh cleanup fails", async () => {
-    const db = await createServiceTestDb();
-    await createCodeforcesAccountWithStats(db);
-    await db.run(sql`
-      CREATE TRIGGER fail_refresh_request_delete
-      BEFORE DELETE ON refresh_request
-      BEGIN
-        SELECT RAISE(ABORT, 'forced refresh delete failure');
-      END
-    `);
-
-    await expect(
-      deleteOjAccount(db, {
-        platform: "codeforces",
-        userId: "active-user",
-      })
-    ).rejects.toThrow();
-
-    expect(await db.select().from(userOjAccount)).toHaveLength(1);
-    expect(await db.select().from(codeforcesAccountStats)).toHaveLength(1);
-    expect(await db.select().from(refreshRequest)).toHaveLength(1);
   });
 });

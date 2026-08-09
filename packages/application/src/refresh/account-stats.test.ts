@@ -18,6 +18,7 @@ import {
   accountStatsRefreshHandlers,
   accountStatsRefreshKindByPlatform,
   enqueueDueAccountStatsRequests,
+  ensureAccountStatsRefreshes,
 } from "./account-stats";
 
 type TestDb = Awaited<ReturnType<typeof createServiceTestDb>>;
@@ -71,6 +72,56 @@ const createAccount = async (
 };
 
 describe("account stats refresh scheduling", () => {
+  it("reports fresh stats as ready and queues only missing or expired stats", async () => {
+    const db = await createServiceTestDb();
+    const now = new Date("2026-01-01T02:00:00.000Z");
+    const freshFetchedAt = new Date("2026-01-01T01:30:00.000Z");
+    const expiredFetchedAt = new Date("2026-01-01T00:59:00.000Z");
+    const accounts = [
+      {
+        accountId: "account-codeforces-fresh",
+        fetchedAt: freshFetchedAt,
+        lastError: null,
+      },
+      {
+        accountId: "account-codeforces-missing",
+        fetchedAt: null,
+        lastError: null,
+      },
+      {
+        accountId: "account-codeforces-expired",
+        fetchedAt: expiredFetchedAt,
+        lastError: null,
+      },
+    ];
+
+    const refresh = await ensureAccountStatsRefreshes(db, {
+      accounts,
+      now,
+      platform: "codeforces",
+    });
+    const requests = await db.select().from(refreshRequest);
+
+    expect(
+      accounts.map((account) => [
+        account.accountId,
+        refresh.syncStatusOf(account),
+      ])
+    ).toEqual([
+      ["account-codeforces-fresh", "ready"],
+      ["account-codeforces-missing", "refreshing"],
+      ["account-codeforces-expired", "refreshing"],
+    ]);
+    expect(
+      requests
+        .map((request) => `${request.kind}:${request.targetId}`)
+        .toSorted()
+    ).toEqual([
+      "codeforces.accountStats:account-codeforces-expired",
+      "codeforces.accountStats:account-codeforces-missing",
+    ]);
+  });
+
   it("enqueues missing and expired stats for current members on every platform", async () => {
     const db = await createServiceTestDb();
     const now = new Date("2026-01-01T02:00:00.000Z");
@@ -130,7 +181,7 @@ describe("account stats refresh scheduling", () => {
 });
 
 describe("account stats refresh handling", () => {
-  it("records sync failures without rejecting the handled request", async () => {
+  it("records invalid Luogu IDs without rejecting the handled request", async () => {
     const db = await createServiceTestDb();
     await db.insert(user).values({
       email: "luogu-failure@example.com",
@@ -140,8 +191,8 @@ describe("account stats refresh handling", () => {
       username: "luogu-failure",
     });
     await db.insert(userOjAccount).values({
-      externalId: "",
-      handle: "",
+      externalId: "invalid-luogu-id",
+      handle: "invalid-luogu-id",
       id: "account-luogu-failure",
       platform: "luogu",
       userId: "luogu-failure",
@@ -161,23 +212,5 @@ describe("account stats refresh handling", () => {
 
     expect(stats?.fetchedAt).toBeNull();
     expect(stats?.lastError).toBe("Luogu UID is missing");
-  });
-
-  it("rejects an account owned by another platform", async () => {
-    const db = await createServiceTestDb();
-    await createAccount(db, {
-      id: "atcoder-mismatch",
-      memberStatus: "active",
-      platform: "atcoder",
-    });
-
-    await expect(
-      accountStatsRefreshHandlers[accountStatsRefreshKindByPlatform.codeforces](
-        db,
-        "account-atcoder-mismatch"
-      )
-    ).rejects.toThrow(
-      "Codeforces account does not exist: account-atcoder-mismatch"
-    );
   });
 });

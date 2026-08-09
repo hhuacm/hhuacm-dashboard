@@ -13,16 +13,10 @@ import {
 const createHistoryItem = (
   input: Partial<AtCoderUserHistory[number]>
 ): AtCoderUserHistory[number] => ({
-  ContestName: input.ContestName ?? "AtCoder Beginner Contest",
-  ContestNameEn: input.ContestNameEn ?? "AtCoder Beginner Contest",
-  ContestScreenName: input.ContestScreenName ?? "abc001",
   EndTime: input.EndTime ?? "2026-01-01T22:40:00+09:00",
-  InnerPerformance: input.InnerPerformance ?? input.Performance ?? 0,
   IsRated: input.IsRated ?? true,
   NewRating: input.NewRating ?? 0,
-  OldRating: input.OldRating ?? 0,
   Performance: input.Performance ?? 0,
-  Place: input.Place ?? 1,
 });
 
 const createAtcoderAccount = async (
@@ -57,32 +51,27 @@ describe("AtCoder sync", () => {
 
     await syncAtcoderAccountStats(db, account, now, async () => [
       createHistoryItem({
-        ContestScreenName: "abc-old",
         EndTime: "2026-01-01T22:40:00+09:00",
         NewRating: 300,
         Performance: 300,
       }),
       createHistoryItem({
-        ContestScreenName: "abc-newest-unrated",
         EndTime: "2026-01-04T22:40:00+09:00",
         IsRated: false,
         NewRating: 999,
         Performance: 999,
       }),
       createHistoryItem({
-        ContestScreenName: "abc-mid",
         EndTime: "2026-01-02T22:40:00+09:00",
         NewRating: 450,
         Performance: 451,
       }),
       createHistoryItem({
-        ContestScreenName: "abc-newest-rated",
         EndTime: "2026-01-03T22:40:00+09:00",
         NewRating: 584,
         Performance: 711,
       }),
       createHistoryItem({
-        ContestScreenName: "abc-oldest",
         EndTime: "2025-12-31T22:40:00+09:00",
         NewRating: 200,
         Performance: 200,

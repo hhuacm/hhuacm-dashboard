@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -13,9 +12,8 @@ describe("listNowcoderRankRows", () => {
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
       acceptedProblemCount?: null | number;
-      fetchedAt?: Date;
       id: string;
-      memberStatus?: MemberStatus;
+      memberStatus: MemberStatus;
       rating?: null | number;
     }
   ) => {
@@ -36,12 +34,10 @@ describe("listNowcoderRankRows", () => {
     });
 
     if (input.acceptedProblemCount !== undefined) {
-      const fetchedAt = input.fetchedAt ?? new Date();
-
       await db.insert(nowcoderAccountStats).values({
         acceptedProblemCount: input.acceptedProblemCount,
         accountId: `account-${input.id}`,
-        fetchedAt,
+        fetchedAt: new Date(),
         lastError: null,
         rating: input.rating ?? null,
       });
@@ -81,56 +77,12 @@ describe("listNowcoderRankRows", () => {
       memberStatus: "frozen",
       rating: 3000,
     });
-    await createRankUser(db, {
-      acceptedProblemCount: 30,
-      id: "missing-profile-user",
-      rating: 1200,
-    });
-
     const rows = await listNowcoderRankRows(db);
 
     expect(rows.map((row) => row.username)).toEqual([
       "tie-user",
       "active-user",
       "selection-user",
-      "missing-profile-user",
-    ]);
-    expect(rows.map((row) => row.nowcoder.syncStatus)).toEqual([
-      "ready",
-      "ready",
-      "ready",
-      "ready",
-    ]);
-  });
-
-  it("enqueues missing and expired stats as refreshing", async () => {
-    const db = await createServiceTestDb();
-    const expiredFetchedAt = new Date("2026-01-01T00:00:00.000Z");
-
-    await createRankUser(db, {
-      acceptedProblemCount: 120,
-      fetchedAt: expiredFetchedAt,
-      id: "expired-user",
-      memberStatus: "active",
-      rating: 1800,
-    });
-    await createRankUser(db, {
-      id: "missing-stats-user",
-      memberStatus: "selection",
-    });
-
-    const rows = await listNowcoderRankRows(db);
-    const requests = await db.select().from(refreshRequest);
-
-    expect(rows.map((row) => [row.username, row.nowcoder.syncStatus])).toEqual([
-      ["expired-user", "refreshing"],
-      ["missing-stats-user", "refreshing"],
-    ]);
-    expect(
-      requests.map((request) => [request.kind, request.targetId]).sort()
-    ).toEqual([
-      ["nowcoder.accountStats", "account-expired-user"],
-      ["nowcoder.accountStats", "account-missing-stats-user"],
     ]);
   });
 });

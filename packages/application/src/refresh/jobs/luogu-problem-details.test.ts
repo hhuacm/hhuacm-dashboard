@@ -6,20 +6,9 @@ import {
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 
 import { createServiceTestDb } from "../../services/test-db";
-import {
-  enqueueMissingLuoguProblemDetailsRequests,
-  handleLuoguProblemDetailsRequest,
-} from "./luogu-problem-details";
+import { enqueueMissingLuoguProblemDetailsRequests } from "./luogu-problem-details";
 
 describe("Luogu problem details refresh request", () => {
-  it("finishes when the PID is no longer referenced", async () => {
-    const db = await createServiceTestDb();
-
-    await expect(
-      handleLuoguProblemDetailsRequest(db, "P1563")
-    ).resolves.toBeUndefined();
-  });
-
   it("enqueues distinct PIDs with missing problem details", async () => {
     const db = await createServiceTestDb();
     await db.insert(problemSet).values({

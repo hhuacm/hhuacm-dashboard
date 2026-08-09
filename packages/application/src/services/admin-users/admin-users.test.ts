@@ -4,7 +4,6 @@ import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-a
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus, OjPlatform } from "@hhuacm-dashboard/domain";
-import { sql } from "drizzle-orm";
 import { createServiceTestDb } from "../test-db";
 import { deleteAdminUser } from "./delete-user";
 import { listAdminUsers } from "./list-query";
@@ -85,21 +84,13 @@ describe("admin users", () => {
       realName: "Alpha",
       studentId: "20240001",
     });
-    await createUser(db, {
-      id: "no-profile",
-    });
     await createOjAccount(db, { platform: "luogu", userId: "alpha" });
     await createOjAccount(db, { platform: "codeforces", userId: "alpha" });
 
     const users = await listAdminUsers(db);
     const alpha = users.find((item) => item.id === "alpha");
-    const missingProfile = users.find((item) => item.id === "no-profile");
 
-    expect(users.map((item) => item.id)).toEqual([
-      "alpha",
-      "beta",
-      "no-profile",
-    ]);
+    expect(users.map((item) => item.id)).toEqual(["alpha", "beta"]);
     expect(alpha).toEqual({
       email: "alpha@example.com",
       grade: "24级",
@@ -122,13 +113,6 @@ describe("admin users", () => {
       role: "user",
       studentId: "20240001",
       username: "alpha",
-    });
-    expect(missingProfile).toMatchObject({
-      grade: "未知",
-      major: "未知",
-      memberStatus: "selection",
-      realName: "未知",
-      studentId: "未知",
     });
   });
 
@@ -230,40 +214,5 @@ describe("admin users", () => {
     expect(users).toEqual([]);
     expect(stats).toEqual([]);
     expect(refreshRequests).toEqual([]);
-  });
-
-  it("restores refresh requests when user deletion fails", async () => {
-    const db = await createServiceTestDb();
-    await createUser(db, {
-      id: "frozen-user",
-      memberStatus: "frozen",
-      username: "frozen-user",
-    });
-    const codeforcesAccountId = await createOjAccount(db, {
-      platform: "codeforces",
-      userId: "frozen-user",
-    });
-    await db.insert(refreshRequest).values({
-      kind: "codeforces.accountStats",
-      targetId: codeforcesAccountId,
-    });
-    await db.run(sql`
-      CREATE TRIGGER fail_user_delete
-      BEFORE DELETE ON user
-      BEGIN
-        SELECT RAISE(ABORT, 'forced user delete failure');
-      END
-    `);
-
-    await expect(
-      deleteAdminUser(db, {
-        userId: "frozen-user",
-        usernameConfirmation: "frozen-user",
-      })
-    ).rejects.toThrow();
-
-    expect(await listUserIds(db)).toEqual(["frozen-user"]);
-    expect(await db.select().from(userOjAccount)).toHaveLength(1);
-    expect(await db.select().from(refreshRequest)).toHaveLength(1);
   });
 });

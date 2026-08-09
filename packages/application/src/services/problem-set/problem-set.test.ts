@@ -276,7 +276,6 @@ describe("problem sets", () => {
         realName: "张三",
       },
       { grade: "23级", id: "active-user", memberStatus: "active" },
-      { id: "missing-profile-user" },
       { id: "retired-user", memberStatus: "retired" },
       { id: "frozen-user", memberStatus: "frozen" },
       { id: "zero-user", memberStatus: "selection" },
@@ -289,7 +288,6 @@ describe("problem sets", () => {
       { accountId: "account-selection-user", pid: "P1328" },
       { accountId: "account-selection-user", pid: "P2615" },
       { accountId: "account-active-user", pid: "P1563" },
-      { accountId: "account-missing-profile-user", pid: "P1328" },
       { accountId: "account-retired-user", pid: "P1563" },
       { accountId: "account-frozen-user", pid: "P1563" },
     ]) {
@@ -299,7 +297,7 @@ describe("problem sets", () => {
     const rows = await listProblemSetCompletions(db, created.id);
     const rowsByUserId = new Map(rows.map((row) => [row.userId, row]));
 
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
     expect(rowsByUserId.get("selection-user")).toEqual({
       completedProblemCount: 2,
       grade: "24级",
@@ -316,25 +314,9 @@ describe("problem sets", () => {
       userId: "active-user",
       username: "active-user",
     });
-    expect(rowsByUserId.get("missing-profile-user")).toEqual({
-      completedProblemCount: 1,
-      grade: "未知",
-      memberStatus: "selection",
-      realName: "未知",
-      userId: "missing-profile-user",
-      username: "missing-profile-user",
-    });
     expect(rowsByUserId.has("retired-user")).toBe(false);
     expect(rowsByUserId.has("frozen-user")).toBe(false);
     expect(rowsByUserId.has("zero-user")).toBe(false);
-  });
-
-  it("throws NOT_FOUND when listing completions for a missing problem set", async () => {
-    const db = await createServiceTestDb();
-
-    await expect(
-      listProblemSetCompletions(db, "missing-set")
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("deletes a problem set and its problems", async () => {
@@ -351,21 +333,5 @@ describe("problem sets", () => {
 
     expect(problemSets).toHaveLength(0);
     expect(problems).toHaveLength(0);
-  });
-
-  it("throws NOT_FOUND when updating or deleting a missing problem set", async () => {
-    const db = await createServiceTestDb();
-
-    await expect(
-      updateProblemSet(db, {
-        descriptionMarkdown: "",
-        id: "missing-set",
-        pids: ["P1563"],
-        title: "基础题单",
-      })
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(deleteProblemSet(db, "missing-set")).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
   });
 });

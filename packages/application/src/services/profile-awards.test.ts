@@ -7,10 +7,8 @@ import {
 
 import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/api";
 import {
-  classifyAwardLevel,
   getAwardsForPublicProfile,
   markUserAwardsFromLuoguRefreshFailed,
-  selectLuoguUserAwards,
   syncUserAwardsFromLuogu,
 } from "./profile-awards";
 import { createServiceTestDb } from "./test-db";
@@ -75,53 +73,6 @@ const account = {
 };
 
 describe("profile awards", () => {
-  it("classifies award tiers from source labels", () => {
-    expect(classifyAwardLevel("金牌")).toBe("gold");
-    expect(classifyAwardLevel("二等奖")).toBe("silver");
-    expect(classifyAwardLevel("铜牌")).toBe("bronze");
-    expect(classifyAwardLevel("优胜奖")).toBe("default");
-  });
-
-  it("selects public awards from Luogu user page data", () => {
-    const awards = selectLuoguUserAwards(
-      createLuoguUserPage([
-        {
-          prize: {
-            contest: "NOIP 提高组",
-            event: null,
-            prize: "二等奖",
-            year: 2018,
-          },
-        },
-        {
-          prize: {
-            contest: "ICPC Regional",
-            event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
-            prize: "铜牌",
-            year: 2023,
-          },
-        },
-      ])
-    );
-
-    expect(awards).toEqual([
-      {
-        contest: "NOIP 提高组",
-        event: null,
-        level: "二等奖",
-        sortOrder: 0,
-        year: 2018,
-      },
-      {
-        contest: "ICPC Regional",
-        event: "第 48 届 ICPC 国际大学生程序设计竞赛区域赛济南站",
-        level: "铜牌",
-        sortOrder: 1,
-        year: 2023,
-      },
-    ]);
-  });
-
   it("replaces Luogu awards and writes sync status", async () => {
     const db = await createServiceTestDb();
     const firstFetchedAt = new Date("2026-01-01T00:00:00.000Z");

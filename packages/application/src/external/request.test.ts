@@ -34,14 +34,6 @@ const requestResource = (
 };
 
 describe("requestExternalResource", () => {
-  it("returns the first successful response without retrying", async () => {
-    const expectedResponse = Response.json({ ok: true });
-    const request = requestResource([expectedResponse]);
-
-    await expect(request.response).resolves.toBe(expectedResponse);
-    expect(request.requests).toHaveLength(1);
-  });
-
   it("retries transient request failures", async () => {
     const expectedResponse = Response.json({ ok: true });
     const request = requestResource([

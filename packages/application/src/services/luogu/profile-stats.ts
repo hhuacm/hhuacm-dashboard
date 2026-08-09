@@ -28,7 +28,7 @@ interface LuoguAcceptedProblemDifficultyInput {
   difficulty: null | number;
 }
 
-export const luoguDifficultyLabels = [
+const luoguDifficultyLabels = [
   "暂无评定",
   "入门",
   "普及-",
@@ -39,7 +39,7 @@ export const luoguDifficultyLabels = [
   "NOI/NOI+/CTSC",
 ] as const;
 
-export const summarizeLuoguDifficultyCounts = (
+const summarizeLuoguDifficultyCounts = (
   problems: LuoguAcceptedProblemDifficultyInput[]
 ): PublicLuoguStats["difficultyCounts"] => {
   const counts = new Map<number, number>();

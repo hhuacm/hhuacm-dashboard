@@ -3,7 +3,7 @@ import { problemSetProblem } from "@hhuacm-dashboard/db/schema/problem-set";
 import { eq } from "drizzle-orm";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 
-export type LuoguProblemLoader = typeof luoguSource.problem;
+type LuoguProblemLoader = typeof luoguSource.problem;
 
 interface LuoguProblemDetails {
   difficulty: number;
@@ -11,7 +11,7 @@ interface LuoguProblemDetails {
   title: string;
 }
 
-export const findLuoguProblemDetails = async (
+const findLuoguProblemDetails = async (
   pid: string,
   loadProblem: LuoguProblemLoader = luoguSource.problem
 ): Promise<LuoguProblemDetails> => {

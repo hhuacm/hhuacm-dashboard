@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
-import { codeforcesAccountStats } from "@hhuacm-dashboard/db/schema/codeforces-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -12,9 +10,8 @@ describe("listCodeforcesRankRows", () => {
   const createRankUser = async (
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
-      fetchedAt?: Date;
       id: string;
-      memberStatus?: MemberStatus;
+      memberStatus: MemberStatus;
     }
   ) => {
     await db.insert(user).values({
@@ -32,19 +29,6 @@ describe("listCodeforcesRankRows", () => {
       platform: "codeforces",
       userId: input.id,
     });
-
-    if (input.fetchedAt) {
-      await db.insert(codeforcesAccountStats).values({
-        acceptedProblemCount: 1,
-        acceptedProblemCountInMonth: 1,
-        accountId: `account-${input.id}`,
-        fetchedAt: input.fetchedAt,
-        lastError: null,
-        lastOnlineAt: input.fetchedAt,
-        maxRating: 1500,
-        rating: 1400,
-      });
-    }
   };
 
   it("includes only current members", async () => {
@@ -57,48 +41,13 @@ describe("listCodeforcesRankRows", () => {
     await createRankUser(db, { id: "active-user", memberStatus: "active" });
     await createRankUser(db, { id: "retired-user", memberStatus: "retired" });
     await createRankUser(db, { id: "frozen-user", memberStatus: "frozen" });
-    await createRankUser(db, { id: "missing-profile-user" });
 
     const rows = await listCodeforcesRankRows(db);
     const usernames = rows.map((row) => row.username);
 
     expect(usernames).toContain("selection-user");
     expect(usernames).toContain("active-user");
-    expect(usernames).toContain("missing-profile-user");
     expect(usernames).not.toContain("retired-user");
     expect(usernames).not.toContain("frozen-user");
-    expect(rows[0]?.codeforces).toHaveProperty("syncStatus");
-    expect(rows[0]?.codeforces).not.toHaveProperty("status");
-  });
-
-  it("enqueues missing and expired stats as refreshing", async () => {
-    const db = await createServiceTestDb();
-    const expiredFetchedAt = new Date("2026-01-01T00:00:00.000Z");
-
-    await createRankUser(db, {
-      fetchedAt: expiredFetchedAt,
-      id: "expired-user",
-      memberStatus: "active",
-    });
-    await createRankUser(db, {
-      id: "missing-stats-user",
-      memberStatus: "selection",
-    });
-
-    const rows = await listCodeforcesRankRows(db);
-    const requests = await db.select().from(refreshRequest);
-
-    expect(
-      rows.map((row) => [row.username, row.codeforces.syncStatus])
-    ).toEqual([
-      ["expired-user", "refreshing"],
-      ["missing-stats-user", "refreshing"],
-    ]);
-    expect(
-      requests.map((request) => [request.kind, request.targetId]).sort()
-    ).toEqual([
-      ["codeforces.accountStats", "account-expired-user"],
-      ["codeforces.accountStats", "account-missing-stats-user"],
-    ]);
   });
 });

@@ -7,10 +7,7 @@ import { eq } from "drizzle-orm";
 
 import type { LuoguProblemPageData } from "../../external/online-judge-sources/luogu/api";
 import { createServiceTestDb } from "../test-db";
-import {
-  enrichProblemSetProblemsByPid,
-  findLuoguProblemDetails,
-} from "./problem-details";
+import { enrichProblemSetProblemsByPid } from "./problem-details";
 
 const createProblemPage = (
   problem: LuoguProblemPageData["problem"]
@@ -35,47 +32,6 @@ const createProblemSetWithPid = async (
 };
 
 describe("Luogu problem details", () => {
-  it("requests and maps multi-letter problem details by PID", async () => {
-    const requestedPids: string[] = [];
-
-    await expect(
-      findLuoguProblemDetails("CF1027G", ({ pid }) => {
-        requestedPids.push(pid);
-
-        return Promise.resolve(
-          createProblemPage({
-            difficulty: 7,
-            name: "X-mouse in the Campus",
-            pid: "CF1027G",
-            type: "CF",
-          })
-        );
-      })
-    ).resolves.toEqual({
-      difficulty: 7,
-      pid: "CF1027G",
-      title: "X-mouse in the Campus",
-    });
-    expect(requestedPids).toEqual(["CF1027G"]);
-  });
-
-  it("keeps unrated problem details as difficulty 0", async () => {
-    await expect(
-      findLuoguProblemDetails("P1001", async () =>
-        createProblemPage({
-          difficulty: 0,
-          name: "A+B Problem",
-          pid: "P1001",
-          type: "P",
-        })
-      )
-    ).resolves.toEqual({
-      difficulty: 0,
-      pid: "P1001",
-      title: "A+B Problem",
-    });
-  });
-
   it("updates all problem set problems with the same PID", async () => {
     const db = await createServiceTestDb();
     await createProblemSetWithPid(db, { id: "set-a", pid: "P1563" });
@@ -99,26 +55,5 @@ describe("Luogu problem details", () => {
       "玩具谜题",
     ]);
     expect(problems.map((problem) => problem.difficulty)).toEqual([2, 2]);
-  });
-
-  it("does not call Luogu when no problem set references the PID", async () => {
-    const db = await createServiceTestDb();
-    let didCallLuogu = false;
-
-    await expect(
-      enrichProblemSetProblemsByPid(db, "P1563", () => {
-        didCallLuogu = true;
-
-        return Promise.resolve(
-          createProblemPage({
-            difficulty: 2,
-            name: "玩具谜题",
-            pid: "P1563",
-            type: "P",
-          })
-        );
-      })
-    ).resolves.toBe("unused");
-    expect(didCallLuogu).toBe(false);
   });
 });

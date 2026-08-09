@@ -2,23 +2,16 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
-import {
-  userAward,
-  userAwardSync,
-} from "@hhuacm-dashboard/db/schema/user-award";
+import { userAwardSync } from "@hhuacm-dashboard/db/schema/user-award";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../../services/test-db";
-import {
-  enqueueDueUserAwardsFromLuoguRequests,
-  handleUserAwardsFromLuoguRequest,
-} from "./user-awards-from-luogu";
+import { enqueueDueUserAwardsFromLuoguRequests } from "./user-awards-from-luogu";
 
 describe("user awards from Luogu refresh request", () => {
   const createAccount = async (
     db: Awaited<ReturnType<typeof createServiceTestDb>>,
     input: {
-      externalId?: string;
       id: string;
       memberStatus?: MemberStatus;
     }
@@ -32,7 +25,7 @@ describe("user awards from Luogu refresh request", () => {
     });
 
     await db.insert(userOjAccount).values({
-      externalId: input.externalId ?? input.id,
+      externalId: input.id,
       handle: input.id,
       id: `account-${input.id}`,
       platform: "luogu",
@@ -53,7 +46,6 @@ describe("user awards from Luogu refresh request", () => {
     await createAccount(db, { id: "fresh-user", memberStatus: "active" });
     await createAccount(db, { id: "retired-user", memberStatus: "retired" });
     await createAccount(db, { id: "frozen-user", memberStatus: "frozen" });
-    await createAccount(db, { id: "missing-profile-user" });
     await db.insert(userAwardSync).values([
       {
         fetchedAt: freshFetchedAt,
@@ -73,36 +65,8 @@ describe("user awards from Luogu refresh request", () => {
 
     expect(targetIds).toContain("account-selection-user");
     expect(targetIds).toContain("account-active-user");
-    expect(targetIds).toContain("account-missing-profile-user");
     expect(targetIds).not.toContain("account-fresh-user");
     expect(targetIds).not.toContain("account-retired-user");
     expect(targetIds).not.toContain("account-frozen-user");
-  });
-
-  it("handles queued retired users and preserves cached awards on failure", async () => {
-    const db = await createServiceTestDb();
-    await createAccount(db, {
-      externalId: "",
-      id: "retired-user",
-      memberStatus: "retired",
-    });
-    await db.insert(userAward).values({
-      contest: "Cached Contest",
-      event: null,
-      level: "铜牌",
-      sortOrder: 0,
-      source: "luogu",
-      userId: "retired-user",
-      year: 2020,
-    });
-
-    await handleUserAwardsFromLuoguRequest(db, "account-retired-user");
-
-    const awards = await db.select().from(userAward);
-    const [sync] = await db.select().from(userAwardSync);
-
-    expect(awards).toHaveLength(1);
-    expect(awards[0]?.contest).toBe("Cached Contest");
-    expect(sync?.lastError).toBe("Luogu UID is missing");
   });
 });

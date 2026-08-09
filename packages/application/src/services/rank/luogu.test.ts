@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 import type { MemberStatus } from "@hhuacm-dashboard/domain";
 
 import { createServiceTestDb } from "../test-db";
@@ -15,9 +14,8 @@ describe("listLuoguRankRows", () => {
       acceptedProblemCount?: null | number;
       acceptedWeightedScore?: null | number;
       averageAcceptedDifficulty?: null | number;
-      fetchedAt?: Date;
       id: string;
-      memberStatus?: MemberStatus;
+      memberStatus: MemberStatus;
     }
   ) => {
     await db.insert(user).values({
@@ -37,14 +35,12 @@ describe("listLuoguRankRows", () => {
     });
 
     if (input.acceptedWeightedScore !== undefined) {
-      const fetchedAt = input.fetchedAt ?? new Date("2026-05-24T00:00:00.000Z");
-
       await db.insert(luoguAccountStats).values({
         acceptedProblemCount: input.acceptedProblemCount ?? null,
         acceptedWeightedScore: input.acceptedWeightedScore,
         accountId: `account-${input.id}`,
         averageAcceptedDifficulty: input.averageAcceptedDifficulty ?? null,
-        fetchedAt,
+        fetchedAt: new Date(),
         lastError: null,
       });
     }
@@ -54,17 +50,31 @@ describe("listLuoguRankRows", () => {
     const db = await createServiceTestDb();
 
     await createRankUser(db, {
-      acceptedProblemCount: 10,
-      acceptedWeightedScore: 20,
-      averageAcceptedDifficulty: 2,
+      acceptedProblemCount: 1,
+      acceptedWeightedScore: 50,
+      averageAcceptedDifficulty: 1,
       id: "selection-user",
       memberStatus: "selection",
     });
     await createRankUser(db, {
-      acceptedProblemCount: 8,
-      acceptedWeightedScore: 30,
-      averageAcceptedDifficulty: 3,
+      acceptedProblemCount: 10,
+      acceptedWeightedScore: 40,
+      averageAcceptedDifficulty: 1,
       id: "active-user",
+      memberStatus: "active",
+    });
+    await createRankUser(db, {
+      acceptedProblemCount: 9,
+      acceptedWeightedScore: 40,
+      averageAcceptedDifficulty: 4,
+      id: "alpha-user",
+      memberStatus: "active",
+    });
+    await createRankUser(db, {
+      acceptedProblemCount: 9,
+      acceptedWeightedScore: 40,
+      averageAcceptedDifficulty: 4,
+      id: "beta-user",
       memberStatus: "active",
     });
     await createRankUser(db, {
@@ -82,53 +92,28 @@ describe("listLuoguRankRows", () => {
       memberStatus: "frozen",
     });
     await createRankUser(db, {
-      acceptedProblemCount: 1,
-      acceptedWeightedScore: 1,
-      averageAcceptedDifficulty: 1,
-      id: "missing-profile-user",
-    });
-
-    const rows = await listLuoguRankRows(db);
-    const usernames = rows.map((row) => row.username);
-
-    expect(usernames).toEqual([
-      "active-user",
-      "selection-user",
-      "missing-profile-user",
-    ]);
-    expect(usernames).not.toContain("retired-user");
-    expect(usernames).not.toContain("frozen-user");
-  });
-
-  it("enqueues missing and expired stats as refreshing", async () => {
-    const db = await createServiceTestDb();
-    const expiredFetchedAt = new Date("2026-01-01T00:00:00.000Z");
-
-    await createRankUser(db, {
-      acceptedProblemCount: 1,
-      acceptedWeightedScore: 10,
-      averageAcceptedDifficulty: 2,
-      fetchedAt: expiredFetchedAt,
-      id: "expired-user",
+      acceptedProblemCount: 9,
+      acceptedWeightedScore: 40,
+      averageAcceptedDifficulty: 5,
+      id: "higher-difficulty-user",
       memberStatus: "active",
     });
-    await createRankUser(db, {
-      id: "missing-stats-user",
-      memberStatus: "selection",
-    });
 
     const rows = await listLuoguRankRows(db);
-    const requests = await db.select().from(refreshRequest);
 
-    expect(rows.map((row) => [row.username, row.luogu.syncStatus])).toEqual([
-      ["expired-user", "refreshing"],
-      ["missing-stats-user", "refreshing"],
-    ]);
     expect(
-      requests.map((request) => [request.kind, request.targetId]).sort()
+      rows.map((row) => [
+        row.username,
+        row.luogu.acceptedWeightedScore,
+        row.luogu.acceptedProblemCount,
+        row.luogu.averageAcceptedDifficulty,
+      ])
     ).toEqual([
-      ["luogu.accountStats", "account-expired-user"],
-      ["luogu.accountStats", "account-missing-stats-user"],
+      ["selection-user", 50, 1, 1],
+      ["active-user", 40, 10, 1],
+      ["higher-difficulty-user", 40, 9, 5],
+      ["alpha-user", 40, 9, 4],
+      ["beta-user", 40, 9, 4],
     ]);
   });
 });

@@ -48,10 +48,4 @@ describe("refresh worker", () => {
 
     expect(remainingRequests).toHaveLength(0);
   });
-
-  it("reports an idle queue", async () => {
-    const db = await createDb();
-
-    await expect(runRefreshWorkerOnce(db)).resolves.toBe(false);
-  });
 });

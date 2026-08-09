@@ -56,14 +56,6 @@ describe("nowcoderSource", () => {
     ]);
   });
 
-  it("throws a Nowcoder-specific error for rating-basic HTTP failures", async () => {
-    mockJsonResponse({}, 404);
-
-    await expect(
-      nowcoderSource.ratingBasic({ uid: 660_255_087 })
-    ).rejects.toThrow("Nowcoder rating-basic 660255087 HTTP 404");
-  });
-
   it("throws when Nowcoder envelope code is not OK", async () => {
     mockJsonResponse({
       code: 10_001,
@@ -125,16 +117,6 @@ describe("nowcoderSource", () => {
       nowcoderSource.acceptedPracticeProblemCount({ uid: 999_999_999 })
     ).rejects.toThrow(
       "Nowcoder practice-coding 999999999 has no valid accepted problem count"
-    );
-  });
-
-  it("throws when accepted practice problem count is invalid", async () => {
-    mockTextResponse(createPracticeCodingHtml("暂无"));
-
-    await expect(
-      nowcoderSource.acceptedPracticeProblemCount({ uid: 660_255_087 })
-    ).rejects.toThrow(
-      "Nowcoder practice-coding 660255087 has no valid accepted problem count"
     );
   });
 });

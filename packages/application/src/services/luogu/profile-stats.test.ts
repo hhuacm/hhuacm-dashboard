@@ -5,43 +5,18 @@ import {
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { refreshRequest } from "@hhuacm-dashboard/db/schema/refresh-request";
 
 import { createServiceTestDb } from "../test-db";
-import {
-  getLuoguStatsForProfile,
-  summarizeLuoguDifficultyCounts,
-} from "./profile-stats";
+import { getLuoguStatsForProfile } from "./profile-stats";
 
 describe("Luogu profile stats", () => {
-  it("summarizes all accepted Luogu practice problems by difficulty", () => {
-    expect(
-      summarizeLuoguDifficultyCounts([
-        { difficulty: 0 },
-        { difficulty: 1 },
-        { difficulty: 1 },
-        { difficulty: 6 },
-        { difficulty: null },
-      ])
-    ).toEqual([
-      { count: 1, difficulty: 0, label: "暂无评定" },
-      { count: 2, difficulty: 1, label: "入门" },
-      { count: 0, difficulty: 2, label: "普及-" },
-      { count: 0, difficulty: 3, label: "普及/提高-" },
-      { count: 0, difficulty: 4, label: "普及+/提高" },
-      { count: 0, difficulty: 5, label: "提高+/省选-" },
-      { count: 1, difficulty: 6, label: "省选/NOI-" },
-      { count: 0, difficulty: 7, label: "NOI/NOI+/CTSC" },
-    ]);
-  });
-
-  it("returns empty stats when UID is missing", async () => {
+  it("returns empty stats when the Luogu ID is invalid", async () => {
     const db = await createServiceTestDb();
 
     await expect(
       getLuoguStatsForProfile(db, {
-        externalId: "",
-        handle: "",
+        externalId: "invalid-luogu-id",
+        handle: "invalid-luogu-id",
         id: "account-luogu",
       })
     ).resolves.toMatchObject({
@@ -102,23 +77,18 @@ describe("Luogu profile stats", () => {
       acceptedProblemCount: 3,
       acceptedWeightedScore: 8,
       averageAcceptedDifficulty: 4,
+      difficultyCounts: [
+        { count: 0, difficulty: 0, label: "暂无评定" },
+        { count: 1, difficulty: 1, label: "入门" },
+        { count: 0, difficulty: 2, label: "普及-" },
+        { count: 0, difficulty: 3, label: "普及/提高-" },
+        { count: 0, difficulty: 4, label: "普及+/提高" },
+        { count: 0, difficulty: 5, label: "提高+/省选-" },
+        { count: 0, difficulty: 6, label: "省选/NOI-" },
+        { count: 1, difficulty: 7, label: "NOI/NOI+/CTSC" },
+      ],
       fetchedAt: fetchedAt.toISOString(),
       syncStatus: "ready",
     });
-  });
-
-  it("enqueues refresh requests for missing local stats", async () => {
-    const db = await createServiceTestDb();
-
-    const stats = await getLuoguStatsForProfile(db, {
-      externalId: "97238",
-      handle: "forlight",
-      id: "account-luogu",
-    });
-    const requests = await db.select().from(refreshRequest);
-
-    expect(stats?.syncStatus).toBe("refreshing");
-    expect(requests).toHaveLength(1);
-    expect(requests[0]?.targetId).toBe("account-luogu");
   });
 });

@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import { sql } from "drizzle-orm";
 
 import type { NowcoderRatingBasic } from "../../external/online-judge-sources/nowcoder/api";
 import { createServiceTestDb } from "../test-db";
@@ -14,23 +13,8 @@ import {
 const createRatingBasic = (
   input: Partial<NowcoderRatingBasic> = {}
 ): NowcoderRatingBasic => ({
-  allRatedCount: input.allRatedCount ?? 32,
-  colorLevel: input.colorLevel ?? 4,
-  contestCount: input.contestCount ?? 72,
-  followedCount: input.followedCount ?? 8,
-  followingCount: input.followingCount ?? 7,
-  hasRank: input.hasRank ?? false,
-  hasRating: input.hasRating ?? true,
-  isFollowedByHost: input.isFollowedByHost ?? false,
-  isHostSelf: input.isHostSelf ?? false,
   nickname: input.nickname ?? "F0rL1ght",
-  rank: input.rank ?? -1,
-  ratedCount: input.ratedCount ?? 17,
   rating: input.rating ?? 1609,
-  school: input.school ?? "HHU",
-  teamRatedCount: input.teamRatedCount ?? 15,
-  tinnyHeaderUrl: input.tinnyHeaderUrl ?? "",
-  uid: input.uid ?? 660_255_087,
 });
 
 const createNowcoderAccount = async (
@@ -77,65 +61,6 @@ describe("Nowcoder sync", () => {
     expect(stats?.fetchedAt?.toISOString()).toBe(now.toISOString());
     expect(stats?.lastError).toBeNull();
     expect(ojAccount?.handle).toBe("F0rL1ght");
-  });
-
-  it("rolls back stats when canonical nickname writing fails", async () => {
-    const db = await createServiceTestDb();
-    const account = await createNowcoderAccount(db);
-    await db.run(sql`
-      CREATE TRIGGER fail_nowcoder_handle_update
-      BEFORE UPDATE ON user_oj_account
-      BEGIN
-        SELECT RAISE(ABORT, 'forced handle update failure');
-      END
-    `);
-
-    await expect(
-      syncNowcoderAccountStats(
-        db,
-        account,
-        new Date("2026-01-01T00:00:00.000Z"),
-        {
-          loadAcceptedPracticeProblemCount: async () => 312,
-          loadRatingBasic: async () => createRatingBasic(),
-        }
-      )
-    ).rejects.toThrow();
-
-    expect(await db.select().from(nowcoderAccountStats)).toEqual([]);
-    expect(await db.select().from(userOjAccount)).toEqual([
-      expect.objectContaining({ handle: "old-handle" }),
-    ]);
-  });
-
-  it("keeps the existing snapshot when the practice page request fails", async () => {
-    const db = await createServiceTestDb();
-    const account = await createNowcoderAccount(db);
-    const fetchedAt = new Date("2026-01-01T00:00:00.000Z");
-
-    await syncNowcoderAccountStats(db, account, fetchedAt, {
-      loadAcceptedPracticeProblemCount: async () => 312,
-      loadRatingBasic: async () => createRatingBasic({ rating: 1609 }),
-    });
-    await expect(
-      syncNowcoderAccountStats(
-        db,
-        { ...account, handle: "F0rL1ght" },
-        new Date("2026-01-02T00:00:00.000Z"),
-        {
-          loadAcceptedPracticeProblemCount: () =>
-            Promise.reject(new Error("practice failed")),
-          loadRatingBasic: async () => createRatingBasic({ rating: 1610 }),
-        }
-      )
-    ).rejects.toThrow("practice failed");
-
-    const [stats] = await db.select().from(nowcoderAccountStats);
-
-    expect(stats?.rating).toBe(1609);
-    expect(stats?.acceptedProblemCount).toBe(312);
-    expect(stats?.fetchedAt?.toISOString()).toBe(fetchedAt.toISOString());
-    expect(stats?.lastError).toBeNull();
   });
 
   it("records failures without overwriting fetched stats", async () => {

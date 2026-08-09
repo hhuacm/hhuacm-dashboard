@@ -18,31 +18,10 @@ const createPractice = (
   passed: LuoguPracticePageData["passed"],
   passedProblemCount: null | number = passed.length
 ): LuoguPracticePageData => ({
-  elo: [],
   passed,
-  submitted: [],
   user: {
-    avatar: "",
-    background: "",
-    badge: null,
-    ccfLevel: 0,
-    color: "Blue",
-    elo: null,
-    eloValue: null,
-    followerCount: 0,
-    followingCount: 0,
-    introduction: "",
-    isAdmin: false,
-    isBanned: false,
     name: "forlight",
     passedProblemCount,
-    prize: [],
-    ranking: null,
-    registerTime: 0,
-    slogan: "",
-    submittedProblemCount: null,
-    uid: 97_238,
-    xcpcLevel: 0,
   },
 });
 
