@@ -73,10 +73,7 @@ const rankCellRenderers = {
   name: renderNameCell,
   rating: (row) => formatNumber(row.nowcoder.rating),
   status: (row) => (
-    <StatusChip
-      status={row.nowcoder.syncStatus ?? "missing-account"}
-      statusConfig={statusConfig}
-    />
+    <StatusChip status={row.nowcoder.syncStatus} statusConfig={statusConfig} />
   ),
 } as const satisfies Record<
   RankColumnId,

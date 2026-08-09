@@ -15,7 +15,6 @@ import { AdminUserEditDialog } from "./_components/admin-user-edit-dialog";
 import { AdminUsersTableSection } from "./_components/admin-users-table-section";
 import {
   adminUsersColumns,
-  adminUsersColumnVisibilityStorageKey,
   getVisibleAdminUsersSort,
 } from "./_model/admin-users-table-columns";
 import {
@@ -119,10 +118,7 @@ function AdminUsersPageContent() {
     setDeleteErrorMessage(null);
   };
 
-  const visibleColumnControls = useColumnVisibility({
-    columns: adminUsersColumns,
-    storageKey: adminUsersColumnVisibilityStorageKey,
-  });
+  const visibleColumnControls = useColumnVisibility(adminUsersColumns);
   const hasActiveFilters = hasFilters(filters);
   const visibleSort = getVisibleAdminUsersSort(
     sort,

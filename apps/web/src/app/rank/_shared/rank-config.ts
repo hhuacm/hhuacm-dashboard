@@ -30,7 +30,6 @@ export interface RankNumberFilterConfig<FilterKey extends string> {
 
 export interface RankFilterState<FilterKey extends string> {
   grades: string[];
-  majors: string[];
   minimums: Record<FilterKey, string>;
 }
 
@@ -57,7 +56,6 @@ export interface RankBoardBaseConfig<
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[];
   numberFilterInputMode: "decimal" | "numeric";
   sortRows: (rows: Row[], sort: RankSortState<SortColumn>) => Row[];
-  storageKey: string;
 }
 
 export const defineRankConfig = <
@@ -86,7 +84,7 @@ interface CreateRankRowsFilterOptions<
   FilterKey extends string,
   Stats extends Partial<Record<FilterKey, null | number | undefined>>,
 > {
-  getStats: (row: Row) => null | Stats | undefined;
+  getStats: (row: Row) => Stats;
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[];
 }
 
@@ -101,7 +99,7 @@ interface CreateRankRowsSorterOptions<
   Stats extends Partial<Record<SortColumn, null | number | string | undefined>>,
 > {
   dateColumns?: readonly SortColumn[];
-  getStats: (row: Row) => null | Stats | undefined;
+  getStats: (row: Row) => Stats;
   tieBreakers?: Partial<
     Record<SortColumn, readonly RankSortTieBreaker<SortColumn>[]>
   >;
@@ -175,7 +173,6 @@ export const createEmptyRankFilters = <FilterKey extends string>(
 
   return {
     grades: [],
-    majors: [],
     minimums,
   };
 };
@@ -209,7 +206,6 @@ export const createRankRowsFilter =
   }: CreateRankRowsFilterOptions<Row, FilterKey, Stats>) =>
   (rows: readonly Row[], filters: RankFilterState<FilterKey>): Row[] => {
     const selectedGrades = new Set(filters.grades);
-    const selectedMajors = new Set(filters.majors);
     const minimumValues = new Map<FilterKey, null | number>();
 
     for (const { key } of numberFilterConfigs) {
@@ -221,14 +217,10 @@ export const createRankRowsFilter =
         return false;
       }
 
-      if (selectedMajors.size > 0 && !selectedMajors.has(row.major)) {
-        return false;
-      }
-
       const stats = getStats(row);
 
       return numberFilterConfigs.every(({ key }) =>
-        hasMinimumValue(stats?.[key], minimumValues.get(key) ?? null)
+        hasMinimumValue(stats[key], minimumValues.get(key) ?? null)
       );
     });
   };
@@ -245,7 +237,7 @@ export const createRankRowsSorter = <
   const dateColumnSet = new Set<SortColumn>(dateColumns);
 
   const getSortValue = (row: Row, column: SortColumn) => {
-    const value = getStats(row)?.[column];
+    const value = getStats(row)[column];
 
     if (dateColumnSet.has(column)) {
       if (!value) {

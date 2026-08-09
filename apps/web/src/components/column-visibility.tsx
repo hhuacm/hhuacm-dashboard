@@ -2,7 +2,7 @@
 
 import { Button, Checkbox, CheckboxGroup, Label, Popover } from "@heroui/react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export interface TableColumnVisibilityConfig<ColumnId extends string> {
   defaultVisible: boolean;
@@ -16,13 +16,6 @@ interface ColumnVisibilityMenuProps<ColumnId extends string> {
   onReset: () => void;
   onVisibleChange: (columnIds: readonly ColumnId[]) => void;
   visibleColumnIds: readonly ColumnId[];
-}
-
-interface UseColumnVisibilityOptions<
-  ColumnConfig extends TableColumnVisibilityConfig<string>,
-> {
-  columns: readonly ColumnConfig[];
-  storageKey: string;
 }
 
 type ColumnIdOf<ColumnConfig extends TableColumnVisibilityConfig<string>> =
@@ -57,52 +50,23 @@ const sanitizeVisibleColumnIds = <
 
 export function useColumnVisibility<
   ColumnConfig extends TableColumnVisibilityConfig<string>,
->({ columns, storageKey }: UseColumnVisibilityOptions<ColumnConfig>) {
+>(columns: readonly ColumnConfig[]) {
   const defaultVisibleColumnIds = getDefaultVisibleColumnIds(columns);
-  const [storedColumnIds, setStoredColumnIds] = useState<
-    ColumnIdOf<ColumnConfig>[] | null
-  >(null);
-  const visibleColumnIds = sanitizeVisibleColumnIds(
-    storedColumnIds ?? defaultVisibleColumnIds,
-    columns
-  );
-
-  useEffect(() => {
-    const storedValue = window.localStorage.getItem(storageKey);
-
-    if (!storedValue) {
-      setStoredColumnIds(getDefaultVisibleColumnIds(columns));
-      return;
-    }
-
-    try {
-      const parsedValue: unknown = JSON.parse(storedValue);
-
-      if (Array.isArray(parsedValue)) {
-        setStoredColumnIds(sanitizeVisibleColumnIds(parsedValue, columns));
-      } else {
-        setStoredColumnIds(getDefaultVisibleColumnIds(columns));
-      }
-    } catch {
-      setStoredColumnIds(getDefaultVisibleColumnIds(columns));
-    }
-  }, [columns, storageKey]);
-
+  const [selectedColumnIds, setSelectedColumnIds] = useState<
+    ColumnIdOf<ColumnConfig>[]
+  >(() => getDefaultVisibleColumnIds(columns));
+  const visibleColumnIds = sanitizeVisibleColumnIds(selectedColumnIds, columns);
   const visibleColumnIdSet = new Set(visibleColumnIds);
   const visibleColumns = columns.filter((column) =>
     visibleColumnIdSet.has(column.id)
   );
-  const saveVisibleColumnIds = (nextColumnIds: ColumnIdOf<ColumnConfig>[]) => {
-    setStoredColumnIds(nextColumnIds);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextColumnIds));
-  };
   const setVisibleColumnIds = (
     columnIds: readonly ColumnIdOf<ColumnConfig>[]
   ) => {
-    saveVisibleColumnIds(sanitizeVisibleColumnIds(columnIds, columns));
+    setSelectedColumnIds(sanitizeVisibleColumnIds(columnIds, columns));
   };
   const resetColumns = () => {
-    saveVisibleColumnIds(defaultVisibleColumnIds);
+    setSelectedColumnIds(defaultVisibleColumnIds);
   };
 
   return {

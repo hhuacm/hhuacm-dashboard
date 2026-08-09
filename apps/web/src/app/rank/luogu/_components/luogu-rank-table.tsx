@@ -75,10 +75,7 @@ const rankCellRenderers = {
   major: renderMajorCell,
   name: renderNameCell,
   status: (row) => (
-    <StatusChip
-      status={row.luogu.syncStatus ?? "missing-account"}
-      statusConfig={statusConfig}
-    />
+    <StatusChip status={row.luogu.syncStatus} statusConfig={statusConfig} />
   ),
 } as const satisfies Record<
   RankColumnId,

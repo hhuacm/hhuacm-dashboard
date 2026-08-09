@@ -23,8 +23,6 @@ export const rankTableColumnClassName =
   "whitespace-nowrap text-center font-bold";
 export const rankTableCellClassName = "text-center";
 
-export type RankSyncStatus = RefreshSyncStatus | "missing-account";
-
 export const statusConfig = {
   empty: {
     color: "default",
@@ -33,10 +31,6 @@ export const statusConfig = {
   failed: {
     color: "danger",
     label: "刷新失败",
-  },
-  "missing-account": {
-    color: "default",
-    label: "未绑定",
   },
   ready: {
     color: "success",
@@ -47,7 +41,7 @@ export const statusConfig = {
     label: "刷新中",
   },
 } as const satisfies Record<
-  RankSyncStatus,
+  RefreshSyncStatus,
   {
     color: "accent" | "danger" | "default" | "success";
     label: string;

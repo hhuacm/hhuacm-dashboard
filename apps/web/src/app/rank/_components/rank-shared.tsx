@@ -164,18 +164,16 @@ interface RankToolbarProps<
   columns: readonly ColumnConfig[];
   filters: {
     grades: string[];
-    majors: string[];
     minimums: Record<FilterKey, string>;
   };
   gradeOptions: MultiSelectFilterOption[];
   hasActiveFilters: boolean;
-  majorOptions: MultiSelectFilterOption[];
   numberFilterActiveCount: number;
   numberFilterButtonText: string;
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[];
   numberFilterInputMode: "decimal" | "numeric";
   onClearFilters: () => void;
-  onFilterChange: (key: "grades" | "majors", values: string[]) => void;
+  onGradeFilterChange: (values: string[]) => void;
   onMinimumFilterChange: (key: FilterKey, value: string) => void;
   onResetColumns: () => void;
   onVisibleColumnChange: (columnIds: readonly ColumnId[]) => void;
@@ -248,7 +246,6 @@ const hasActiveRankFilters = <FilterKey extends string>(
   numberFilterConfigs: readonly RankNumberFilterConfig<FilterKey>[]
 ) =>
   filters.grades.length > 0 ||
-  filters.majors.length > 0 ||
   numberFilterConfigs.some(({ key }) => filters.minimums[key].trim());
 
 const getActiveNumberFilterCount = <FilterKey extends string>(
@@ -377,17 +374,12 @@ export function RankBoard<
     numberFilterInputMode,
     renderTable,
     sortRows,
-    storageKey,
   } = config;
   const [sort, setSort] = useState(defaultSort);
   const [filters, setFilters] = useState(emptyFilters);
-  const visibleColumnControls = useColumnVisibility({
-    columns,
-    storageKey,
-  });
+  const visibleColumnControls = useColumnVisibility(columns);
   const rankRows = query.data ?? [];
   const gradeOptions = getRankFilterOptions(rankRows, "grade");
-  const majorOptions = getRankFilterOptions(rankRows, "major");
   const filteredRows = filterRows(rankRows, filters);
   const rows = sortRows(filteredRows, sort);
   const total = rankRows.length;
@@ -397,18 +389,11 @@ export function RankBoard<
     numberFilterConfigs
   );
 
-  const handleFilterChange = (key: "grades" | "majors", values: string[]) => {
-    setFilters((currentFilters) =>
-      key === "grades"
-        ? {
-            ...currentFilters,
-            grades: values,
-          }
-        : {
-            ...currentFilters,
-            majors: values,
-          }
-    );
+  const handleGradeFilterChange = (values: string[]) => {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      grades: values,
+    }));
   };
 
   const handleMinimumFilterChange = (key: FilterKey, value: string) => {
@@ -484,13 +469,12 @@ export function RankBoard<
               filters={filters}
               gradeOptions={gradeOptions}
               hasActiveFilters={filtersActive}
-              majorOptions={majorOptions}
               numberFilterActiveCount={activeNumberFilterCount}
               numberFilterButtonText={numberFilterButtonText}
               numberFilterConfigs={numberFilterConfigs}
               numberFilterInputMode={numberFilterInputMode}
               onClearFilters={handleClearFilters}
-              onFilterChange={handleFilterChange}
+              onGradeFilterChange={handleGradeFilterChange}
               onMinimumFilterChange={handleMinimumFilterChange}
               onResetColumns={visibleColumnControls.resetColumns}
               onVisibleColumnChange={visibleColumnControls.setVisibleColumnIds}
@@ -576,13 +560,12 @@ function RankToolbar<
   filters,
   gradeOptions,
   hasActiveFilters,
-  majorOptions,
   numberFilterActiveCount,
   numberFilterButtonText,
   numberFilterConfigs,
   numberFilterInputMode,
   onClearFilters,
-  onFilterChange,
+  onGradeFilterChange,
   onMinimumFilterChange,
   onResetColumns,
   onVisibleColumnChange,
@@ -592,15 +575,9 @@ function RankToolbar<
     <div className="flex flex-wrap items-center gap-2">
       <MultiSelectFilterMenu
         label="年级"
-        onChange={(values) => onFilterChange("grades", values)}
+        onChange={onGradeFilterChange}
         options={gradeOptions}
         selectedValues={filters.grades}
-      />
-      <MultiSelectFilterMenu
-        label="专业"
-        onChange={(values) => onFilterChange("majors", values)}
-        options={majorOptions}
-        selectedValues={filters.majors}
       />
       <NumberFilterMenu
         activeCount={numberFilterActiveCount}

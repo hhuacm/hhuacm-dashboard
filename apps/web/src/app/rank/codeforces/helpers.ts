@@ -47,8 +47,6 @@ const numberFilterConfigs = [
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
-const rankColumnVisibilityStorageKey = "rank-codeforces-column-visibility-v1";
-
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type RankRows = RouterOutputs["rank"]["codeforces"]["list"];
 
@@ -131,7 +129,7 @@ export const isRankSortColumn = createIsRankSortColumn<
 const filterRankRows = createRankRowsFilter<
   RankRow,
   NumberFilterKey,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["codeforces"]
 >({
   getStats: (row) => row.codeforces,
   numberFilterConfigs,
@@ -140,7 +138,7 @@ const filterRankRows = createRankRowsFilter<
 const sortRankRows = createRankRowsSorter<
   RankRow,
   SortColumn,
-  NonNullable<RankRow["codeforces"]>
+  RankRow["codeforces"]
 >({
   dateColumns: ["lastOnlineAt"],
   getStats: (row) => row.codeforces,
@@ -155,5 +153,4 @@ export const codeforcesRankConfig = defineRankConfig({
   numberFilterConfigs,
   numberFilterInputMode: "numeric",
   sortRows: sortRankRows,
-  storageKey: rankColumnVisibilityStorageKey,
 });

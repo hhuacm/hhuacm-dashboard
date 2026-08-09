@@ -35,8 +35,6 @@ const numberFilterConfigs = [
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
-const rankColumnVisibilityStorageKey = "rank-atcoder-column-visibility-v1";
-
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type RankRows = RouterOutputs["rank"]["atcoder"]["list"];
 
@@ -136,5 +134,4 @@ export const atcoderRankConfig = defineRankConfig({
   numberFilterConfigs,
   numberFilterInputMode: "numeric",
   sortRows: sortRankRows,
-  storageKey: rankColumnVisibilityStorageKey,
 });

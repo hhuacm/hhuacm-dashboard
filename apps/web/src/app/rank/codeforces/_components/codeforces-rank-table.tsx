@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { getCodeforcesRatingClassName } from "@/utils/codeforces-rating";
 import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
-  EmptyCell,
   LinkedText,
   RankDataTable,
   RelativeTimeCell,
@@ -47,10 +46,6 @@ function RatingText({ value }: { value: null | number }) {
   );
 }
 
-function EmptyRankCell() {
-  return <EmptyCell emptyText={emptyText} />;
-}
-
 const renderNameCell = (row: RankRow) => {
   const nameLabel = getRankNameLabel(row);
 
@@ -68,10 +63,6 @@ const renderMajorCell = (row: RankRow) => (
 const renderHandleCell = (row: RankRow) => {
   const codeforces = row.codeforces;
 
-  if (!codeforces) {
-    return <EmptyRankCell />;
-  }
-
   return (
     <span className={getCodeforcesRatingClassName(codeforces.rating)}>
       <LinkedText
@@ -86,9 +77,9 @@ const renderHandleCell = (row: RankRow) => {
 
 const rankCellRenderers = {
   acceptedProblemCount: (row) =>
-    formatNumber(row.codeforces?.acceptedProblemCount ?? null),
+    formatNumber(row.codeforces.acceptedProblemCount),
   acceptedProblemCountInMonth: (row) =>
-    formatNumber(row.codeforces?.acceptedProblemCountInMonth ?? null),
+    formatNumber(row.codeforces.acceptedProblemCountInMonth),
   grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,
@@ -98,16 +89,16 @@ const rankCellRenderers = {
       formatDateTime={formatDateTime}
       formatRelativeTime={formatRelativeTime}
       isDormant={isDormant}
-      value={row.codeforces?.lastOnlineAt ?? null}
+      value={row.codeforces.lastOnlineAt}
     />
   ),
   major: renderMajorCell,
-  maxRating: (row) => <RatingText value={row.codeforces?.maxRating ?? null} />,
+  maxRating: (row) => <RatingText value={row.codeforces.maxRating} />,
   name: renderNameCell,
-  rating: (row) => <RatingText value={row.codeforces?.rating ?? null} />,
+  rating: (row) => <RatingText value={row.codeforces.rating} />,
   status: (row) => (
     <StatusChip
-      status={row.codeforces?.syncStatus ?? "missing-account"}
+      status={row.codeforces.syncStatus}
       statusConfig={statusConfig}
     />
   ),

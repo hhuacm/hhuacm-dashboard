@@ -73,10 +73,7 @@ const rankCellRenderers = {
   recentPerformanceAverage: (row) =>
     formatNumber(row.atcoder.recentPerformanceAverage),
   status: (row) => (
-    <StatusChip
-      status={row.atcoder.syncStatus ?? "missing-account"}
-      statusConfig={statusConfig}
-    />
+    <StatusChip status={row.atcoder.syncStatus} statusConfig={statusConfig} />
   ),
 } as const satisfies Record<
   RankColumnId,

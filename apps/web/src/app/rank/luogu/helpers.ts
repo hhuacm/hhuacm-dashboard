@@ -41,8 +41,6 @@ const numberFilterConfigs = [
   },
 ] as const satisfies readonly RankNumberFilterConfig<string>[];
 
-const rankColumnVisibilityStorageKey = "rank-luogu-column-visibility-v1";
-
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type RankRows = RouterOutputs["rank"]["luogu"]["list"];
 
@@ -141,5 +139,4 @@ export const luoguRankConfig = defineRankConfig({
   numberFilterConfigs,
   numberFilterInputMode: "decimal",
   sortRows: sortRankRows,
-  storageKey: rankColumnVisibilityStorageKey,
 });

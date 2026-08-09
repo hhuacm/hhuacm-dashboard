@@ -21,9 +21,6 @@ import type {
   UserRole,
 } from "../helpers";
 
-export const adminUsersColumnVisibilityStorageKey =
-  "admin-users-column-visibility-v1";
-
 export type AdminUsersColumnId =
   | "email"
   | "grade"
