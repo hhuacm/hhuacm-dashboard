@@ -8,10 +8,12 @@ import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
   LinkedText,
   RankDataTable,
+  RankMajorCell,
+  RankNameCell,
   RelativeTimeCell,
   StatusChip,
 } from "../../_components/rank-shared";
-import { getRankNameLabel, getRankProfileUrl } from "../../_shared/rank-config";
+import { getRankNameLabel } from "../../_shared/rank-config";
 import {
   emptyText,
   formatDateTime,
@@ -46,20 +48,6 @@ function RatingText({ value }: { value: null | number }) {
   );
 }
 
-const renderNameCell = (row: RankRow) => {
-  const nameLabel = getRankNameLabel(row);
-
-  return (
-    <LinkedText href={getRankProfileUrl(row)} tone="inherit">
-      {nameLabel}
-    </LinkedText>
-  );
-};
-
-const renderMajorCell = (row: RankRow) => (
-  <span className="truncate">{row.major}</span>
-);
-
 const renderHandleCell = (row: RankRow) => {
   const codeforces = row.codeforces;
 
@@ -92,9 +80,9 @@ const rankCellRenderers = {
       value={row.codeforces.lastOnlineAt}
     />
   ),
-  major: renderMajorCell,
+  major: (row) => <RankMajorCell major={row.major} />,
   maxRating: (row) => <RatingText value={row.codeforces.maxRating} />,
-  name: renderNameCell,
+  name: (row) => <RankNameCell row={row} />,
   rating: (row) => <RatingText value={row.codeforces.rating} />,
   status: (row) => (
     <StatusChip

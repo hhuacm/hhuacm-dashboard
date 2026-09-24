@@ -35,9 +35,11 @@ import type {
   RankBoardBaseConfig,
   RankColumnConfig,
   RankFilterState,
+  RankMemberRowBase,
   RankNumberFilterConfig,
   RankSortState,
 } from "../_shared/rank-config";
+import { getRankNameLabel, getRankProfileUrl } from "../_shared/rank-config";
 import {
   getRankFilterOptions,
   getVisibleTableMinWidth,
@@ -625,4 +627,18 @@ function SortableColumnHeader({
       />
     </span>
   );
+}
+
+// Shared cell renderers used across all rank tables.
+
+export function RankNameCell({ row }: { row: RankMemberRowBase }) {
+  return (
+    <LinkedText href={getRankProfileUrl(row)} tone="inherit">
+      {getRankNameLabel(row)}
+    </LinkedText>
+  );
+}
+
+export function RankMajorCell({ major }: { major: string }) {
+  return <span className="truncate">{major}</span>;
 }

@@ -6,10 +6,12 @@ import { buildOjProfileUrl } from "@/utils/oj-platforms";
 import {
   LinkedText,
   RankDataTable,
+  RankMajorCell,
+  RankNameCell,
   RelativeTimeCell,
   StatusChip,
 } from "../../_components/rank-shared";
-import { getRankNameLabel, getRankProfileUrl } from "../../_shared/rank-config";
+import { getRankNameLabel } from "../../_shared/rank-config";
 import {
   emptyText,
   formatDateTime,
@@ -34,20 +36,6 @@ interface NowcoderRankTableProps {
   visibleColumns: readonly RankColumnConfig[];
 }
 
-const renderNameCell = (row: RankRow) => {
-  const nameLabel = getRankNameLabel(row);
-
-  return (
-    <LinkedText href={getRankProfileUrl(row)} tone="inherit">
-      {nameLabel}
-    </LinkedText>
-  );
-};
-
-const renderMajorCell = (row: RankRow) => (
-  <span className="truncate">{row.major}</span>
-);
-
 const renderHandleCell = (row: RankRow) => (
   <LinkedText href={buildOjProfileUrl("nowcoder", row.nowcoder.externalId)}>
     {row.nowcoder.handle}
@@ -69,8 +57,8 @@ const rankCellRenderers = {
   grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,
-  major: renderMajorCell,
-  name: renderNameCell,
+  major: (row) => <RankMajorCell major={row.major} />,
+  name: (row) => <RankNameCell row={row} />,
   rating: (row) => formatNumber(row.nowcoder.rating),
   status: (row) => (
     <StatusChip status={row.nowcoder.syncStatus} statusConfig={statusConfig} />
