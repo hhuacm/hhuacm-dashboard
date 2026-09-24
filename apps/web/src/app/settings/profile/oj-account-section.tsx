@@ -29,7 +29,7 @@ import {
   getOjPlatformConfig,
   ojPlatformConfigs,
 } from "@/utils/oj-platforms";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type OjAccount =
@@ -160,6 +160,7 @@ export function OjAccountSection({
   isError,
   isLoading,
 }: OjAccountSectionProps) {
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const settingsProfileQueryKey = trpc.settings.profile.get.queryKey();
   const [dialog, setDialog] = useState<AccountDialog | null>(null);

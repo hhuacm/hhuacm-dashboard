@@ -170,43 +170,46 @@ function AdminUserActionsCell({
 
     return "删除用户";
   })();
+  const deleteButton = (
+    <Button
+      aria-label={deleteLabel}
+      className="size-8"
+      isDisabled={!canDelete}
+      isIconOnly
+      onPress={onDelete}
+      size="sm"
+      variant="ghost"
+    >
+      <Trash2 className="size-4 text-danger" />
+    </Button>
+  );
 
   return (
     <div className="flex min-h-7 items-center justify-center gap-1">
       <Tooltip delay={0}>
-        <Tooltip.Trigger>
-          <Button
-            aria-label="修改用户"
-            className="size-8"
-            isIconOnly
-            onPress={onEdit}
-            size="sm"
-            variant="ghost"
-          >
-            <Pencil className="size-4" />
-          </Button>
-        </Tooltip.Trigger>
+        <Button
+          aria-label="修改用户"
+          className="size-8"
+          isIconOnly
+          onPress={onEdit}
+          size="sm"
+          variant="ghost"
+        >
+          <Pencil className="size-4" />
+        </Button>
         <Tooltip.Content showArrow>
           <Tooltip.Arrow />
           修改用户
         </Tooltip.Content>
       </Tooltip>
       <Tooltip delay={0}>
-        <Tooltip.Trigger>
-          <span className="inline-flex">
-            <Button
-              aria-label={deleteLabel}
-              className="size-8"
-              isDisabled={!canDelete}
-              isIconOnly
-              onPress={onDelete}
-              size="sm"
-              variant="ghost"
-            >
-              <Trash2 className="size-4 text-danger" />
-            </Button>
-          </span>
-        </Tooltip.Trigger>
+        {canDelete ? (
+          deleteButton
+        ) : (
+          <Tooltip.Trigger aria-disabled="true" aria-label={deleteLabel}>
+            {deleteButton}
+          </Tooltip.Trigger>
+        )}
         <Tooltip.Content showArrow>
           <Tooltip.Arrow />
           {deleteLabel}

@@ -1,0 +1,2 @@
+[test]
+preload = ["./packages/application/src/services/test-db.ts"]

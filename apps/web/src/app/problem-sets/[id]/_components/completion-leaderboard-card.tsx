@@ -22,7 +22,7 @@ import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { MultiSelectFilterMenu } from "@/components/multi-select-filter-menu";
 import { authClient } from "@/utils/auth-client";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import {
   filterCompletionRows,
   getCompletionGradeOptions,
@@ -113,6 +113,7 @@ export function CompletionLeaderboardCard({
 }: {
   problemSetId: string;
 }) {
+  const trpc = useTRPC();
   const session = authClient.useSession();
   const currentUserId = session.data?.user.id ?? null;
   const [minCompletedCount, setMinCompletedCount] = useState<

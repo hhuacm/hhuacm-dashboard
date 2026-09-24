@@ -5,11 +5,7 @@ import { currentMember } from "@hhuacm-dashboard/db/schema/current-member";
 import { luoguAccountStats } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
 import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-account-stats";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
-import {
-  type OjPlatform,
-  ojPlatformNames,
-  type RefreshSyncStatus,
-} from "@hhuacm-dashboard/domain";
+import type { OjPlatform, RefreshSyncStatus } from "@hhuacm-dashboard/domain";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import type { AnySQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 import {
@@ -141,6 +137,7 @@ const createAccountStatsRefreshHandler = (options: {
     const [account] = await db
       .select(accountFields)
       .from(userOjAccount)
+      .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
       .where(
         and(
           eq(userOjAccount.id, targetId),
@@ -150,9 +147,7 @@ const createAccountStatsRefreshHandler = (options: {
       .limit(1);
 
     if (!account) {
-      throw new Error(
-        `${ojPlatformNames[options.platform]} account does not exist: ${targetId}`
-      );
+      return;
     }
 
     try {

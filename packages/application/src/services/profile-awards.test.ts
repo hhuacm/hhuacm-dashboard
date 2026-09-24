@@ -1,11 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { user } from "@hhuacm-dashboard/db/schema/auth";
+import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import {
   userAward,
   userAwardSync,
 } from "@hhuacm-dashboard/db/schema/user-award";
 
 import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/api";
+import { deleteOjAccount, updateOjAccount } from "./oj-account/commands";
 import {
   getAwardsForPublicProfile,
   markUserAwardsFromLuoguRefreshFailed,
@@ -63,6 +65,7 @@ const createUser = async (
     name: "award",
     username: "award",
   });
+  await db.insert(userOjAccount).values({ ...account, platform: "luogu" });
 };
 
 const account = {
@@ -73,6 +76,53 @@ const account = {
 };
 
 describe("profile awards", () => {
+  for (const change of [updateOjAccount, deleteOjAccount]) {
+    it(`discards outdated awards and failure after ${change.name}`, async () => {
+      const db = await createServiceTestDb();
+      await createUser(db);
+
+      await db.insert(userAward).values({
+        contest: "Cached old contest",
+        level: "金牌",
+        sortOrder: 0,
+        source: "luogu",
+        userId: account.userId,
+        year: 2020,
+      });
+      await db.insert(userAwardSync).values({
+        fetchedAt: new Date(),
+        source: "luogu",
+        userId: account.userId,
+      });
+
+      await syncUserAwardsFromLuogu(db, account, new Date(), async () => {
+        await change(db, {
+          externalId: "12345",
+          platform: "luogu",
+          userId: account.userId,
+        });
+        return createLuoguUserPage([
+          {
+            prize: {
+              contest: "Old contest",
+              event: null,
+              prize: "金牌",
+              year: 2020,
+            },
+          },
+        ]);
+      });
+      await markUserAwardsFromLuoguRefreshFailed(
+        db,
+        account,
+        new Error("old request failed")
+      );
+
+      expect(await db.select().from(userAward)).toEqual([]);
+      expect(await db.select().from(userAwardSync)).toEqual([]);
+    });
+  }
+
   it("replaces Luogu awards and writes sync status", async () => {
     const db = await createServiceTestDb();
     const firstFetchedAt = new Date("2026-01-01T00:00:00.000Z");

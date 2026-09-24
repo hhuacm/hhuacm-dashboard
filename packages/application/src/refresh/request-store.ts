@@ -7,6 +7,7 @@ export type RefreshRequestKind = (typeof refreshRequestKinds)[number];
 export type RefreshQueueDatabase = Database | DatabaseTransaction;
 
 const refreshRequestFields = {
+  id: refreshRequest.id,
   kind: refreshRequest.kind,
   targetId: refreshRequest.targetId,
 } as const;
@@ -57,7 +58,7 @@ export const getNextRefreshRequest = async (db: Database) => {
   const [request] = await db
     .select(refreshRequestFields)
     .from(refreshRequest)
-    .orderBy(asc(refreshRequest.createdAt))
+    .orderBy(asc(refreshRequest.createdAt), asc(refreshRequest.id))
     .limit(1);
 
   return request ?? null;
@@ -78,4 +79,8 @@ export const deleteRefreshRequest = async (
         eq(refreshRequest.targetId, input.targetId)
       )
     );
+};
+
+export const completeRefreshRequest = async (db: Database, id: number) => {
+  await db.delete(refreshRequest).where(eq(refreshRequest.id, id));
 };

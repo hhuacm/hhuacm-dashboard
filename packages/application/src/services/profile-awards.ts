@@ -10,6 +10,7 @@ import { truncateRefreshError } from "../refresh/policy";
 import type { RefreshSyncStatus } from "../refresh/sync-status";
 import { ensureUserAwardsFromLuoguRefresh } from "../refresh/user-awards";
 import { parseLuoguUid } from "./luogu/uid";
+import { commitOjAccountRefresh } from "./oj-account/commit-refresh";
 import type { OjAccountIdentity } from "./oj-account/queries";
 
 type LuoguUserLoader = typeof luoguSource.user;
@@ -140,7 +141,7 @@ export const syncUserAwardsFromLuogu = async (
   const awards = selectLuoguUserAwards(await loadUser({ uid }));
   const fetchedAt = now;
 
-  await db.transaction(async (tx) => {
+  await commitOjAccountRefresh(db, account, async (tx) => {
     await replaceLuoguUserAwards(tx, account, awards);
 
     await tx
@@ -168,19 +169,40 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  await db
-    .insert(userAwardSync)
-    .values({
-      lastError,
-      source: userAwardSource,
-      userId: account.userId,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(userAwardSync)
+      .values({
         lastError,
-      },
-      target: [userAwardSync.userId, userAwardSync.source],
-    });
+        source: userAwardSource,
+        userId: account.userId,
+      })
+      .onConflictDoUpdate({
+        set: {
+          lastError,
+        },
+        target: [userAwardSync.userId, userAwardSync.source],
+      });
+  });
+};
+
+export const deleteLuoguUserAwards = async (
+  db: Database | DatabaseTransaction,
+  userId: string
+) => {
+  await db
+    .delete(userAward)
+    .where(
+      and(eq(userAward.userId, userId), eq(userAward.source, userAwardSource))
+    );
+  await db
+    .delete(userAwardSync)
+    .where(
+      and(
+        eq(userAwardSync.userId, userId),
+        eq(userAwardSync.source, userAwardSource)
+      )
+    );
 };
 
 export const getAwardsForPublicProfile = async (

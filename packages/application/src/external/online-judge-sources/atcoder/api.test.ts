@@ -33,4 +33,13 @@ describe("atcoderSource", () => {
       atcoderSource.userHistory({ userId: "forlight" })
     ).rejects.toThrow("AtCoder user history forlight returned invalid JSON");
   });
+
+  it("does not retry a completed response containing invalid JSON", async () => {
+    const urls = mockFetchUrls([new Response("[")]);
+
+    await expect(
+      atcoderSource.userHistory({ userId: "forlight" })
+    ).rejects.toThrow(SyntaxError);
+    expect(urls).toHaveLength(1);
+  });
 });

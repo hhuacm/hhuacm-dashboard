@@ -9,7 +9,7 @@ import { use, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { authClient } from "@/utils/auth-client";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { ProblemSetDeleteDialog } from "./_components/problem-set-delete-dialog";
 import { ProblemTable } from "./_components/problem-table";
 import { SummaryPanel } from "./_components/summary-panel";
@@ -23,6 +23,7 @@ interface ProblemSetDetailPageProps {
 export default function ProblemSetDetailPage({
   params,
 }: ProblemSetDetailPageProps) {
+  const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = use(params);

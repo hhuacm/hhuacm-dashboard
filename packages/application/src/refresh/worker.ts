@@ -1,6 +1,6 @@
 import type { Database } from "@hhuacm-dashboard/db";
 import { refreshRequestHandlers } from "./jobs";
-import { deleteRefreshRequest, getNextRefreshRequest } from "./request-store";
+import { completeRefreshRequest, getNextRefreshRequest } from "./request-store";
 
 export const runRefreshWorkerOnce = async (db: Database) => {
   const request = await getNextRefreshRequest(db);
@@ -12,7 +12,7 @@ export const runRefreshWorkerOnce = async (db: Database) => {
   try {
     await refreshRequestHandlers[request.kind](db, request.targetId);
   } finally {
-    await deleteRefreshRequest(db, request);
+    await completeRefreshRequest(db, request.id);
   }
 
   return true;

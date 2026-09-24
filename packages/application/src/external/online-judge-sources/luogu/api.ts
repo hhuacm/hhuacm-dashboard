@@ -194,7 +194,7 @@ const fetchLuoguPageData = async (url: URL) => {
     throw new Error(`Luogu page data HTTP ${response.status}`);
   }
 
-  return (await response.json()) as unknown;
+  return JSON.parse(response.body) as unknown;
 };
 
 const user = async (params: { uid: number }): Promise<LuoguUserPageData> => {

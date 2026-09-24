@@ -4,6 +4,7 @@ import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-accou
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 
 import type { NowcoderRatingBasic } from "../../external/online-judge-sources/nowcoder/api";
+import { deleteOjAccount, updateOjAccount } from "../oj-account/commands";
 import { createServiceTestDb } from "../test-db";
 import {
   markNowcoderAccountStatsRefreshFailed,
@@ -43,6 +44,36 @@ const createNowcoderAccount = async (
 };
 
 describe("Nowcoder sync", () => {
+  for (const change of [updateOjAccount, deleteOjAccount]) {
+    it(`discards outdated stats, nickname, and failure after ${change.name}`, async () => {
+      const db = await createServiceTestDb();
+      const account = await createNowcoderAccount(db);
+
+      await syncNowcoderAccountStats(db, account, new Date(), {
+        loadAcceptedPracticeProblemCount: async () => 312,
+        loadRatingBasic: async () => {
+          await change(db, {
+            externalId: "12345",
+            platform: "nowcoder",
+            userId: "user-660255087",
+          });
+          return createRatingBasic();
+        },
+      });
+      await markNowcoderAccountStatsRefreshFailed(
+        db,
+        account,
+        new Error("old request failed")
+      );
+
+      expect(await db.select().from(nowcoderAccountStats)).toEqual([]);
+      const [currentAccount] = await db.select().from(userOjAccount);
+      expect(currentAccount?.handle).toBe(
+        change === updateOjAccount ? "12345" : undefined
+      );
+    });
+  }
+
   it("writes rating, accepted problem count, and canonical nickname", async () => {
     const db = await createServiceTestDb();
     const account = await createNowcoderAccount(db);

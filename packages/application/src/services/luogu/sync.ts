@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
 import { truncateRefreshError } from "../../refresh/policy";
+import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 import { summarizeLuoguPracticeStats } from "./summary";
 import { parseLuoguUid } from "./uid";
@@ -88,7 +89,7 @@ export const syncLuoguAccountStats = async (
   const summary = summarizeLuoguPracticeStats(practice);
   const fetchedAt = now;
 
-  await db.transaction(async (tx) => {
+  await commitOjAccountRefresh(db, account, async (tx) => {
     await writeAcceptedProblems(tx, account, practice);
 
     if (account.handle !== practice.userName) {
@@ -128,18 +129,20 @@ export const markLuoguAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  await db
-    .insert(luoguAccountStats)
-    .values({
-      accountId: account.id,
-      lastError,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(luoguAccountStats)
+      .values({
+        accountId: account.id,
         lastError,
-      },
-      target: luoguAccountStats.accountId,
-    });
+      })
+      .onConflictDoUpdate({
+        set: {
+          lastError,
+        },
+        target: luoguAccountStats.accountId,
+      });
+  });
 };
 
 export const deleteLuoguStats = async (

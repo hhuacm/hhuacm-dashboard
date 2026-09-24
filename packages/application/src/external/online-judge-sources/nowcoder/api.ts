@@ -73,7 +73,7 @@ const ratingBasic = async (params: {
     );
   }
 
-  const payload: unknown = await response.json();
+  const payload: unknown = JSON.parse(response.body);
   const envelope = nowcoderRatingBasicEnvelopeSchema.safeParse(payload);
 
   if (!envelope.success) {
@@ -112,7 +112,7 @@ const acceptedPracticeProblemCount = async (params: {
     );
   }
 
-  const count = parseAcceptedPracticeProblemCount(await response.text());
+  const count = parseAcceptedPracticeProblemCount(response.body);
 
   if (count === null) {
     throw new Error(

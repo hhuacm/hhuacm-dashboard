@@ -15,23 +15,16 @@ export const enqueueDueRefreshTargets = async (
   await enqueueDueUserAwardsFromLuoguRequests(db, now);
 };
 
-export const startRefreshRuntime = (db: Database) => {
-  let isStopped = false;
-
-  const stop = () => {
-    isStopped = true;
-  };
-
-  const startWorkerLoop = async () => {
-    while (!isStopped) {
+export const runRefreshRuntime = async (db: Database) => {
+  const workerLoop = async () => {
+    while (true) {
       try {
         const didWork = await runRefreshWorkerOnce(db);
-
-        if (!didWork) {
-          await sleep(refreshDefaults.workerPollIntervalMs);
-        } else if (refreshDefaults.jobCooldownMs > 0) {
-          await sleep(refreshDefaults.jobCooldownMs);
-        }
+        await sleep(
+          didWork
+            ? refreshDefaults.jobCooldownMs
+            : refreshDefaults.workerPollIntervalMs
+        );
       } catch (error) {
         console.error("Refresh worker iteration failed", error);
         await sleep(refreshDefaults.workerPollIntervalMs);
@@ -39,8 +32,8 @@ export const startRefreshRuntime = (db: Database) => {
     }
   };
 
-  const startSchedulerLoop = async () => {
-    while (!isStopped) {
+  const schedulerLoop = async () => {
+    while (true) {
       try {
         await enqueueDueRefreshTargets(db);
       } catch (error) {
@@ -51,12 +44,5 @@ export const startRefreshRuntime = (db: Database) => {
     }
   };
 
-  startWorkerLoop().catch((error) => {
-    console.error("Refresh worker stopped unexpectedly", error);
-  });
-  startSchedulerLoop().catch((error) => {
-    console.error("Refresh scheduler stopped unexpectedly", error);
-  });
-
-  return { stop };
+  await Promise.all([workerLoop(), schedulerLoop()]);
 };

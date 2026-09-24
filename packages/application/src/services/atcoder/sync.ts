@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { AtCoderUserHistory } from "../../external/online-judge-sources/atcoder/api";
 import { atcoderSource } from "../../external/online-judge-sources/atcoder/api";
 import { truncateRefreshError } from "../../refresh/policy";
+import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 type AtcoderHistoryLoader = typeof atcoderSource.userHistory;
@@ -51,24 +52,26 @@ export const syncAtcoderAccountStats = async (
   );
   const fetchedAt = now;
 
-  await db
-    .insert(atcoderAccountStats)
-    .values({
-      accountId: account.id,
-      fetchedAt,
-      lastError: null,
-      rating: summary.rating,
-      recentPerformanceAverage: summary.recentPerformanceAverage,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(atcoderAccountStats)
+      .values({
+        accountId: account.id,
         fetchedAt,
         lastError: null,
         rating: summary.rating,
         recentPerformanceAverage: summary.recentPerformanceAverage,
-      },
-      target: atcoderAccountStats.accountId,
-    });
+      })
+      .onConflictDoUpdate({
+        set: {
+          fetchedAt,
+          lastError: null,
+          rating: summary.rating,
+          recentPerformanceAverage: summary.recentPerformanceAverage,
+        },
+        target: atcoderAccountStats.accountId,
+      });
+  });
 };
 
 export const markAtcoderAccountStatsRefreshFailed = async (
@@ -78,18 +81,20 @@ export const markAtcoderAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  await db
-    .insert(atcoderAccountStats)
-    .values({
-      accountId: account.id,
-      lastError,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(atcoderAccountStats)
+      .values({
+        accountId: account.id,
         lastError,
-      },
-      target: atcoderAccountStats.accountId,
-    });
+      })
+      .onConflictDoUpdate({
+        set: {
+          lastError,
+        },
+        target: atcoderAccountStats.accountId,
+      });
+  });
 };
 
 export const deleteAtcoderStats = async (

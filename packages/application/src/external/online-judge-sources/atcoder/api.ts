@@ -33,7 +33,7 @@ const userHistory = async (params: {
     );
   }
 
-  const payload: unknown = await response.json();
+  const payload: unknown = JSON.parse(response.body);
   const history = atcoderUserHistorySchema.safeParse(payload);
 
   if (!history.success) {

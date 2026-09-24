@@ -13,11 +13,12 @@ import {
 } from "@/components/user-basic-info-section";
 import { authClient } from "@/utils/auth-client";
 import type { ProfileUpdateValues } from "@/utils/profile-fields";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { OjAccountSection } from "./oj-account-section";
 import { PasswordChangeDialog } from "./password-change-dialog";
 
 export default function ProfileSettingsPage() {
+  const trpc = useTRPC();
   const router = useRouter();
   const session = authClient.useSession();
   const user = session.data?.user ?? null;

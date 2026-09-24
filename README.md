@@ -91,6 +91,8 @@ bun run dev:web
 bun run dev:refresh-worker
 ```
 
+刷新 worker 使用进程重启式监听；修改代码时先退出旧进程，再由新进程处理队列，未完成的刷新会重新执行。
+
 `db:sync` 会执行尚未应用的 Drizzle 迁移，并检查数据库完整性、外键和视图。
 
 ## 验证

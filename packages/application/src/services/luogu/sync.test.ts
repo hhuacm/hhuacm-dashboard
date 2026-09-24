@@ -8,6 +8,7 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
+import { deleteOjAccount, updateOjAccount } from "../oj-account/commands";
 import { createServiceTestDb } from "../test-db";
 import {
   markLuoguAccountStatsRefreshFailed,
@@ -50,6 +51,36 @@ const createLuoguAccount = async (
 };
 
 describe("Luogu sync", () => {
+  for (const change of [updateOjAccount, deleteOjAccount]) {
+    it(`discards outdated problems, stats, handle, and failure after ${change.name}`, async () => {
+      const db = await createServiceTestDb();
+      const account = await createLuoguAccount(db);
+
+      await syncLuoguAccountStats(db, account, new Date(), async () => {
+        await change(db, {
+          externalId: "12345",
+          platform: "luogu",
+          userId: "user-luogu",
+        });
+        return createPractice([
+          { difficulty: 1, name: "Old problem", pid: "P1001", type: "P" },
+        ]);
+      });
+      await markLuoguAccountStatsRefreshFailed(
+        db,
+        account,
+        new Error("old request failed")
+      );
+
+      expect(await db.select().from(luoguAccountStats)).toEqual([]);
+      expect(await db.select().from(luoguAcceptedProblem)).toEqual([]);
+      const [currentAccount] = await db.select().from(userOjAccount);
+      expect(currentAccount?.handle).toBe(
+        change === updateOjAccount ? "12345" : undefined
+      );
+    });
+  }
+
   it("writes stats and accepted problems from practice data", async () => {
     const db = await createServiceTestDb();
     const account = await createLuoguAccount(db);

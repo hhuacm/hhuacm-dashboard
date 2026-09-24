@@ -7,6 +7,7 @@ import type {
   CodeforcesSubmissionResult,
   CodeforcesUserInfoResult,
 } from "../../external/online-judge-sources/codeforces/api";
+import { deleteOjAccount, updateOjAccount } from "../oj-account/commands";
 import { createServiceTestDb } from "../test-db";
 import {
   markCodeforcesAccountStatsRefreshFailed,
@@ -71,6 +72,36 @@ const createCodeforcesAccount = async (
 };
 
 describe("Codeforces sync", () => {
+  for (const change of [updateOjAccount, deleteOjAccount]) {
+    it(`discards outdated stats, handle, and failure after ${change.name}`, async () => {
+      const db = await createServiceTestDb();
+      const account = await createCodeforcesAccount(db);
+
+      await syncCodeforcesAccountStats(db, account, new Date(), {
+        loadUserInfo: async () => [createUserInfo()],
+        loadUserStatus: async () => {
+          await change(db, {
+            externalId: "replacement",
+            platform: "codeforces",
+            userId: "user-codeforces",
+          });
+          return [createSubmission({ contestId: 1 })];
+        },
+      });
+      await markCodeforcesAccountStatsRefreshFailed(
+        db,
+        account,
+        new Error("old request failed")
+      );
+
+      expect(await db.select().from(codeforcesAccountStats)).toEqual([]);
+      const [currentAccount] = await db.select().from(userOjAccount);
+      expect(currentAccount?.handle).toBe(
+        change === updateOjAccount ? "replacement" : undefined
+      );
+    });
+  }
+
   it("writes stats, accepted problem counts, and canonical handle", async () => {
     const db = await createServiceTestDb();
     const account = await createCodeforcesAccount(db);

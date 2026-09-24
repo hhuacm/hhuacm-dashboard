@@ -4,6 +4,7 @@ import { user } from "@hhuacm-dashboard/db/schema/auth";
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 
 import type { AtCoderUserHistory } from "../../external/online-judge-sources/atcoder/api";
+import { deleteOjAccount, updateOjAccount } from "../oj-account/commands";
 import { createServiceTestDb } from "../test-db";
 import {
   markAtcoderAccountStatsRefreshFailed,
@@ -44,6 +45,29 @@ const createAtcoderAccount = async (
 };
 
 describe("AtCoder sync", () => {
+  for (const change of [updateOjAccount, deleteOjAccount]) {
+    it(`discards outdated success and failure results after ${change.name}`, async () => {
+      const db = await createServiceTestDb();
+      const account = await createAtcoderAccount(db);
+
+      await syncAtcoderAccountStats(db, account, new Date(), async () => {
+        await change(db, {
+          externalId: "replacement",
+          platform: "atcoder",
+          userId: "user-atcoder",
+        });
+        return [createHistoryItem({ NewRating: 1000 })];
+      });
+      await markAtcoderAccountStatsRefreshFailed(
+        db,
+        account,
+        new Error("old request failed")
+      );
+
+      expect(await db.select().from(atcoderAccountStats)).toEqual([]);
+    });
+  }
+
   it("writes latest rated rating and recent rated performance average", async () => {
     const db = await createServiceTestDb();
     const account = await createAtcoderAccount(db);

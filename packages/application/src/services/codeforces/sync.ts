@@ -8,6 +8,7 @@ import type {
 } from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
 import { truncateRefreshError } from "../../refresh/policy";
+import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import { summarizeAcceptedProblems } from "./summary";
 import type { CodeforcesAccount } from "./types";
 
@@ -62,7 +63,7 @@ export const syncCodeforcesAccountStats = async (
       ? null
       : new Date(userInfo.lastOnlineTimeSeconds * 1000);
 
-  await db.transaction(async (tx) => {
+  await commitOjAccountRefresh(db, account, async (tx) => {
     await tx
       .insert(codeforcesAccountStats)
       .values({
@@ -104,16 +105,18 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  await db
-    .insert(codeforcesAccountStats)
-    .values({
-      accountId: account.id,
-      lastError,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(codeforcesAccountStats)
+      .values({
+        accountId: account.id,
         lastError,
-      },
-      target: codeforcesAccountStats.accountId,
-    });
+      })
+      .onConflictDoUpdate({
+        set: {
+          lastError,
+        },
+        target: codeforcesAccountStats.accountId,
+      });
+  });
 };

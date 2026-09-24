@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { ProblemPidPreview } from "../../../_components/problem-pid-preview";
 import { parseProblemPidText } from "../../../_model/problem-pid-text";
 
@@ -58,6 +58,7 @@ const hasProblemSetEditChanges = (changedFields: ProblemSetEditChangedFields) =>
   changedFields.pids;
 
 export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
+  const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
   const initialPids = problemSet.problems.map((problem) => problem.pid);
@@ -74,8 +75,26 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const parsedPids = parseProblemPidText(pidText);
   const updateProblemSet = useMutation(
-    trpc.admin.problemSets.update.mutationOptions()
+    trpc.admin.problemSets.update.mutationOptions({
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: trpc.problemSet.list.queryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: trpc.problemSet.get.queryKey({ id: problemSet.id }),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: trpc.problemSet.completions.queryKey({
+              id: problemSet.id,
+            }),
+          }),
+        ]);
+        router.push(`/problem-sets/${problemSet.id}` as Route);
+      },
+    })
   );
+  const isBusy = updateProblemSet.isPending || updateProblemSet.isSuccess;
   const trimmedTitle = title.trim();
   const hasProblemPids = parsedPids.pids.length > 0;
   const hasParseErrors =
@@ -94,7 +113,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
     hasProblemPids &&
     !hasParseErrors &&
     hasChanges &&
-    !updateProblemSet.isPending;
+    !isBusy;
 
   const clearError = () => setErrorMessage(null);
 
@@ -114,21 +133,6 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
         pids: parsedPids.pids,
         title: trimmedTitle,
       });
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: trpc.problemSet.list.queryKey(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: trpc.problemSet.get.queryKey({ id: problemSet.id }),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: trpc.problemSet.completions.queryKey({
-            id: problemSet.id,
-          }),
-        }),
-      ]);
-      router.push(`/problem-sets/${problemSet.id}` as Route);
     } catch {
       setErrorMessage("保存失败，请检查内容后重试。");
     }
@@ -156,7 +160,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
           <TextField
             className="gap-3"
             fullWidth
-            isDisabled={updateProblemSet.isPending}
+            isDisabled={isBusy}
             isRequired
             name="title"
             onChange={(nextTitle) => {
@@ -176,7 +180,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
           <TextField
             className="gap-3"
             fullWidth
-            isDisabled={updateProblemSet.isPending}
+            isDisabled={isBusy}
             name="descriptionMarkdown"
             onChange={(nextMarkdown) => {
               clearError();
@@ -204,7 +208,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
           <TextField
             className="gap-3"
             fullWidth
-            isDisabled={updateProblemSet.isPending}
+            isDisabled={isBusy}
             isRequired
             name="pidText"
             onChange={(nextPidText) => {
@@ -238,11 +242,7 @@ export function ProblemSetEditor({ problemSet }: { problemSet: ProblemSet }) {
           />
 
           <div className="flex justify-end">
-            <Button
-              isDisabled={!canSubmit}
-              isPending={updateProblemSet.isPending}
-              type="submit"
-            >
+            <Button isDisabled={!canSubmit} isPending={isBusy} type="submit">
               {({ isPending }) => (
                 <>
                   {isPending ? (

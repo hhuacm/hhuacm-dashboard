@@ -73,7 +73,7 @@ const loadCodeforcesResult = async (
     );
   }
 
-  const payload: unknown = await response.json();
+  const payload: unknown = JSON.parse(response.body);
   const envelope = codeforcesEnvelopeSchema.safeParse(payload);
 
   if (!envelope.success) {

@@ -9,7 +9,7 @@ import { Suspense, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { useColumnVisibility } from "@/components/column-visibility";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { AdminUserDeleteDialog } from "./_components/admin-user-delete-dialog";
 import { AdminUserEditDialog } from "./_components/admin-user-edit-dialog";
 import { AdminUsersTableSection } from "./_components/admin-users-table-section";
@@ -46,6 +46,7 @@ function AdminUsersPageFallback() {
 }
 
 function AdminUsersPageContent() {
+  const trpc = useTRPC();
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();

@@ -20,19 +20,16 @@ import {
 } from "@hhuacm-dashboard/domain";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
-import { type FormEvent, type Key, useState } from "react";
+import { type FormEvent, Fragment, type Key, useState } from "react";
 
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
 import { OjAccountDeleteDialog } from "@/components/oj-account-delete-dialog";
 import { OjAccountExternalIdField } from "@/components/oj-account-external-id-field";
 import { ProfileFieldInput } from "@/components/profile-field-input";
+import { profileFieldConfigs } from "@/utils/profile-fields";
+import { useTRPC } from "@/utils/trpc";
 import {
-  type ProfileFieldKey,
-  profileFieldConfigs,
-} from "@/utils/profile-fields";
-import { trpc } from "@/utils/trpc";
-import {
-  type AdminProfileFormValues,
+  type AdminProfileUpdateValues,
   type AdminUserOjAccount,
   type AdminUserTableRow,
   buildAdminProfileFormValues,
@@ -67,30 +64,14 @@ interface EditorMessage {
   tone: "danger" | "success";
 }
 
-const adminUsersListQueryKey = trpc.admin.users.list.queryKey();
-
-const getProfileSnapshotKey = (user: AdminUserTableRow) => {
-  const { grade, major, memberStatus, realName, studentId } = user;
-
-  return [user.id, memberStatus, grade, major, realName, studentId].join(":");
-};
-
-interface AdminProfileDraft {
-  sourceKey: string;
-  values: AdminProfileFormValues;
-}
-
 function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const profileSnapshotKey = getProfileSnapshotKey(user);
+  const adminUsersListQueryKey = trpc.admin.users.list.queryKey();
   const originalFormValues = buildAdminProfileFormValues(user);
-  const [draft, setDraft] = useState<AdminProfileDraft>({
-    sourceKey: profileSnapshotKey,
-    values: originalFormValues,
-  });
+  const [draft, setDraft] = useState<AdminProfileUpdateValues>({});
   const [message, setMessage] = useState<EditorMessage | null>(null);
-  const formValues =
-    draft.sourceKey === profileSnapshotKey ? draft.values : originalFormValues;
+  const formValues = { ...originalFormValues, ...draft };
 
   const changedValues = getChangedAdminProfileValues(
     formValues,
@@ -106,9 +87,11 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
         });
       },
       onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: adminUsersListQueryKey,
-        });
+        await queryClient.invalidateQueries(
+          { queryKey: adminUsersListQueryKey },
+          { throwOnError: true }
+        );
+        setDraft({});
         setMessage({
           text: "基础信息已保存。",
           tone: "success",
@@ -117,35 +100,23 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
     })
   );
 
-  const handleInputChange = (field: ProfileFieldKey, value: string) => {
+  const handleProfileChange = (values: AdminProfileUpdateValues) => {
     setMessage(null);
-    setDraft((currentDraft) => ({
-      sourceKey: profileSnapshotKey,
-      values: {
-        ...(currentDraft.sourceKey === profileSnapshotKey
-          ? currentDraft.values
-          : originalFormValues),
-        [field]: value,
-      },
-    }));
+    setDraft((currentDraft) =>
+      getChangedAdminProfileValues(
+        { ...originalFormValues, ...currentDraft, ...values },
+        originalFormValues
+      )
+    );
   };
   const handleStatusChange = (key: Key | null) => {
     if (!(typeof key === "string" && isMemberStatus(key))) {
       return;
     }
 
-    setMessage(null);
-    setDraft((currentDraft) => ({
-      sourceKey: profileSnapshotKey,
-      values: {
-        ...(currentDraft.sourceKey === profileSnapshotKey
-          ? currentDraft.values
-          : originalFormValues),
-        memberStatus: key,
-      },
-    }));
+    handleProfileChange({ memberStatus: key });
   };
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
 
@@ -157,7 +128,7 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
       return;
     }
 
-    await updateProfile.mutateAsync({
+    updateProfile.mutate({
       userId: user.id,
       values: changedValues,
     });
@@ -219,7 +190,9 @@ function AdminUserBasicInfoEditor({ user }: AdminUserBasicInfoEditorProps) {
               isChanged={field.key in changedValues}
               isDisabled={updateProfile.isPending}
               key={field.key}
-              onChange={(nextValue) => handleInputChange(field.key, nextValue)}
+              onChange={(nextValue) =>
+                handleProfileChange({ [field.key]: nextValue })
+              }
               value={formValues[field.key]}
             />
           ))}
@@ -252,15 +225,20 @@ function AdminUserOjAccountRow({
   platform,
   userId,
 }: AdminUserOjAccountRowProps) {
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [externalId, setExternalId] = useState(account?.externalId ?? "");
+  const adminUsersListQueryKey = trpc.admin.users.list.queryKey();
+  const [externalIdDraft, setExternalIdDraft] = useState<string | null>(null);
+  const originalExternalId = account?.externalId ?? "";
+  const externalId = externalIdDraft ?? originalExternalId;
   const [message, setMessage] = useState<EditorMessage | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const invalidateUserData = async () =>
-    await queryClient.invalidateQueries({
-      queryKey: adminUsersListQueryKey,
-    });
+    await queryClient.invalidateQueries(
+      { queryKey: adminUsersListQueryKey },
+      { throwOnError: true }
+    );
   const upsertAccount = useMutation(
     trpc.admin.users.upsertOjAccount.mutationOptions({
       onError: (error) => {
@@ -271,6 +249,7 @@ function AdminUserOjAccountRow({
       },
       onSuccess: async () => {
         await invalidateUserData();
+        setExternalIdDraft(null);
         setMessage({
           text: account ? "OJ 账号已更新。" : "OJ 账号已添加。",
           tone: "success",
@@ -288,6 +267,7 @@ function AdminUserOjAccountRow({
       },
       onSuccess: async () => {
         await invalidateUserData();
+        setExternalIdDraft(null);
         setIsDeleteDialogOpen(false);
         setMessage({
           text: "OJ 账号已删除。",
@@ -296,7 +276,7 @@ function AdminUserOjAccountRow({
       },
     })
   );
-  const isChanged = externalId !== (account?.externalId ?? "");
+  const isChanged = externalId !== originalExternalId;
   const canSave = Boolean(externalId) && isChanged;
   const isBusy = upsertAccount.isPending || deleteAccount.isPending;
   const platformLabel = ojPlatformLabels[platform];
@@ -305,7 +285,7 @@ function AdminUserOjAccountRow({
   ) : (
     <Plus className="size-4" />
   );
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
 
@@ -317,14 +297,14 @@ function AdminUserOjAccountRow({
       return;
     }
 
-    await upsertAccount.mutateAsync({
+    upsertAccount.mutate({
       externalId,
       platform,
       userId,
     });
   };
-  const handleDeleteConfirm = async () => {
-    await deleteAccount.mutateAsync({
+  const handleDeleteConfirm = () => {
+    deleteAccount.mutate({
       platform,
       userId,
     });
@@ -350,7 +330,9 @@ function AdminUserOjAccountRow({
           isDisabled={isBusy}
           onChange={(nextValue) => {
             setMessage(null);
-            setExternalId(nextValue);
+            setExternalIdDraft(
+              nextValue === originalExternalId ? null : nextValue
+            );
           }}
           platform={platform}
           value={externalId}
@@ -425,7 +407,7 @@ function AdminUserOjAccountEditor({
           return (
             <AdminUserOjAccountRow
               account={account}
-              key={`${platform}:${account?.externalId ?? ""}`}
+              key={platform}
               platform={platform}
               userId={userId}
             />
@@ -462,7 +444,7 @@ export function AdminUserEditDialog({
           </Modal.Header>
           <Modal.Body className="grid max-h-[72vh] gap-5 overflow-y-auto px-0.5 pt-3 pb-0.5">
             {user ? (
-              <>
+              <Fragment key={user.id}>
                 <div className="grid gap-2 rounded-md border border-border bg-surface p-3 text-sm sm:grid-cols-2">
                   <div>
                     <span className="text-muted">注册用户名</span>
@@ -479,7 +461,7 @@ export function AdminUserEditDialog({
                   accounts={user.ojAccounts}
                   userId={user.id}
                 />
-              </>
+              </Fragment>
             ) : null}
           </Modal.Body>
           <Modal.Footer>

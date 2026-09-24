@@ -41,27 +41,84 @@ describe("requestExternalResource", () => {
       expectedResponse,
     ]);
 
-    await expect(request.response).resolves.toBe(expectedResponse);
+    await expect(request.response).resolves.toEqual({
+      body: '{"ok":true}',
+      headers: expectedResponse.headers,
+      ok: true,
+      status: 200,
+    });
     expect(request.requests).toHaveLength(2);
   });
 
-  it("retries retryable HTTP status responses", async () => {
-    const expectedResponse = Response.json({ ok: true });
+  it("retries response body failures before returning a completed resource", async () => {
+    const interruptedBody = new ReadableStream({
+      pull(controller) {
+        controller.error(new Error("connection closed while reading body"));
+      },
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("["));
+      },
+    });
     const request = requestResource([
-      Response.json({}, { status: 429 }),
-      Response.json({}, { status: 502 }),
-      expectedResponse,
+      new Response(interruptedBody),
+      Response.json([]),
     ]);
 
-    await expect(request.response).resolves.toBe(expectedResponse);
+    await expect(request.response).resolves.toMatchObject({
+      body: "[]",
+      ok: true,
+      status: 200,
+    });
+    expect(request.requests).toHaveLength(2);
+  });
+
+  it("cancels discarded response bodies before retrying HTTP status failures", async () => {
+    const cancelledStatuses: number[] = [];
+    const failures = [429, 502].map(
+      (status) =>
+        new Response(
+          new ReadableStream({
+            cancel() {
+              cancelledStatuses.push(status);
+            },
+          }),
+          { status }
+        )
+    );
+    const expectedResponse = Response.json({ ok: true });
+    const request = requestResource([...failures, expectedResponse]);
+
+    await expect(request.response).resolves.toMatchObject({
+      body: '{"ok":true}',
+      ok: true,
+      status: 200,
+    });
+    expect(cancelledStatuses).toEqual([429, 502]);
     expect(request.requests).toHaveLength(3);
   });
 
-  it("returns non-retryable HTTP status responses without retrying", async () => {
-    const expectedResponse = Response.json({}, { status: 404 });
+  it.each([404, 302])("preserves HTTP %i and headers", async (status) => {
+    const expectedResponse = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.error(new Error("body connection failed"));
+        },
+      }),
+      {
+        headers: {
+          location: "/destination",
+          "set-cookie": "C3VK=fixture; Path=/",
+        },
+        status,
+      }
+    );
     const request = requestResource([expectedResponse]);
 
-    await expect(request.response).resolves.toBe(expectedResponse);
+    await expect(request.response).resolves.toEqual({
+      headers: expectedResponse.headers,
+      ok: false,
+      status,
+    });
     expect(request.requests).toHaveLength(1);
   });
 

@@ -143,7 +143,7 @@ export const deleteOjAccount = async (
       });
     }
 
-    await resetOjAccountStatsEffects(tx, account);
+    await resetOjAccountStatsEffects(tx, account, input.userId);
 
     return toPublicOjAccount(account);
   });

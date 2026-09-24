@@ -18,11 +18,12 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { ProblemPidPreview } from "../_components/problem-pid-preview";
 import { parseProblemPidText } from "../_model/problem-pid-text";
 
 export default function AdminProblemSetImportPage() {
+  const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
@@ -31,18 +32,26 @@ export default function AdminProblemSetImportPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const parsedPids = parseProblemPidText(pidText);
   const createProblemSet = useMutation(
-    trpc.admin.problemSets.create.mutationOptions()
+    trpc.admin.problemSets.create.mutationOptions({
+      onSuccess: async (createdProblemSet) => {
+        await queryClient.invalidateQueries({
+          queryKey: trpc.problemSet.list.queryKey(),
+        });
+        router.push(`/problem-sets/${createdProblemSet.id}` as Route);
+      },
+    })
   );
   const trimmedTitle = title.trim();
   const hasProblemPids = parsedPids.pids.length > 0;
   const hasParseErrors =
     parsedPids.invalidPids.length > 0 || parsedPids.duplicatePids.length > 0;
-  const isFormDisabled = createProblemSet.isPending;
+  const isFormDisabled =
+    createProblemSet.isPending || createProblemSet.isSuccess;
   const canSubmit =
     Boolean(trimmedTitle) &&
     hasProblemPids &&
     !hasParseErrors &&
-    !createProblemSet.isPending;
+    !isFormDisabled;
 
   const clearError = () => setErrorMessage(null);
 
@@ -56,16 +65,11 @@ export default function AdminProblemSetImportPage() {
     setErrorMessage(null);
 
     try {
-      const createdProblemSet = await createProblemSet.mutateAsync({
+      await createProblemSet.mutateAsync({
         descriptionMarkdown,
         pids: parsedPids.pids,
         title: trimmedTitle,
       });
-
-      await queryClient.invalidateQueries({
-        queryKey: trpc.problemSet.list.queryKey(),
-      });
-      router.push(`/problem-sets/${createdProblemSet.id}` as Route);
     } catch {
       setErrorMessage("导入失败，请检查内容后重试。");
     }
@@ -190,7 +194,7 @@ export default function AdminProblemSetImportPage() {
               <div className="flex justify-end">
                 <Button
                   isDisabled={!canSubmit}
-                  isPending={createProblemSet.isPending}
+                  isPending={isFormDisabled}
                   type="submit"
                 >
                   {({ isPending }) => (

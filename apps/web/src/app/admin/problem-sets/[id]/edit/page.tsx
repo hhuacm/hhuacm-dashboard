@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { use } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 import { ProblemSetEditor } from "./_components/problem-set-editor";
 
 interface AdminProblemSetEditPageProps {
@@ -20,6 +20,7 @@ interface AdminProblemSetEditPageProps {
 export default function AdminProblemSetEditPage({
   params,
 }: AdminProblemSetEditPageProps) {
+  const trpc = useTRPC();
   const router = useRouter();
   const { id } = use(params);
   const problemSetQuery = useQuery(trpc.problemSet.get.queryOptions({ id }));

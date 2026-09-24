@@ -4,6 +4,7 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 import { nowcoderSource } from "../../external/online-judge-sources/nowcoder/api";
 import { truncateRefreshError } from "../../refresh/policy";
+import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 type NowcoderRatingBasicLoader = typeof nowcoderSource.ratingBasic;
@@ -44,7 +45,7 @@ export const syncNowcoderAccountStats = async (
   ]);
   const fetchedAt = now;
 
-  await db.transaction(async (tx) => {
+  await commitOjAccountRefresh(db, account, async (tx) => {
     await tx
       .insert(nowcoderAccountStats)
       .values({
@@ -80,18 +81,20 @@ export const markNowcoderAccountStatsRefreshFailed = async (
 ) => {
   const lastError = truncateRefreshError(getErrorMessage(error));
 
-  await db
-    .insert(nowcoderAccountStats)
-    .values({
-      accountId: account.id,
-      lastError,
-    })
-    .onConflictDoUpdate({
-      set: {
+  await commitOjAccountRefresh(db, account, async (tx) => {
+    await tx
+      .insert(nowcoderAccountStats)
+      .values({
+        accountId: account.id,
         lastError,
-      },
-      target: nowcoderAccountStats.accountId,
-    });
+      })
+      .onConflictDoUpdate({
+        set: {
+          lastError,
+        },
+        target: nowcoderAccountStats.accountId,
+      });
+  });
 };
 
 export const deleteNowcoderStats = async (

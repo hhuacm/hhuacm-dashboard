@@ -27,13 +27,14 @@ export const handleUserAwardsFromLuoguRequest = async (
   const [account] = await db
     .select(luoguAccountFields)
     .from(userOjAccount)
+    .innerJoin(currentMember, eq(currentMember.userId, userOjAccount.userId))
     .where(
       and(eq(userOjAccount.id, targetId), eq(userOjAccount.platform, "luogu"))
     )
     .limit(1);
 
   if (!account) {
-    throw new Error(`Luogu account does not exist: ${targetId}`);
+    return;
   }
 
   try {

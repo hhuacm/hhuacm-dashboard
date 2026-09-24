@@ -18,6 +18,52 @@ const runMigration = async (
   }
 };
 
+describe("refresh request identity migration", () => {
+  it("preserves pending requests and never reuses a completed request ID", async () => {
+    const client = createClient({ url: ":memory:" });
+
+    try {
+      await runMigration(client, "0000_init.sql");
+      await runMigration(client, "0001_collapse-member-profile.sql");
+      await runMigration(client, "0002_drop-refresh-last-attempted-at.sql");
+      await client.execute(`
+        INSERT INTO refresh_request (kind, target_id, created_at)
+        VALUES ('atcoder.accountStats', 'first', 100),
+          ('luogu.accountStats', 'second', 200)
+      `);
+
+      await runMigration(client, "0003_identify-refresh-requests.sql");
+
+      const migrated = await client.execute(
+        "SELECT * FROM refresh_request ORDER BY created_at"
+      );
+      expect(
+        migrated.rows.map((row) => ({
+          kind: row.kind,
+          targetId: row.target_id,
+          createdAt: row.created_at,
+        }))
+      ).toEqual([
+        { kind: "atcoder.accountStats", targetId: "first", createdAt: 100 },
+        { kind: "luogu.accountStats", targetId: "second", createdAt: 200 },
+      ]);
+      const previousId = Number(migrated.rows[1]?.id);
+      await client.execute("DELETE FROM refresh_request");
+      await client.execute(
+        `INSERT INTO refresh_request (kind, target_id, created_at) VALUES ('luogu.accountStats', 'second', 200)`
+      );
+      const replacement = await client.execute(
+        "SELECT id FROM refresh_request"
+      );
+      expect(Number(replacement.rows[0]?.id)).toBeGreaterThan(previousId);
+      const foreignKeyErrors = await client.execute("pragma foreign_key_check");
+      expect(foreignKeyErrors.rows).toHaveLength(0);
+    } finally {
+      client.close();
+    }
+  });
+});
+
 describe("member profile migration", () => {
   it("moves existing profile data into user and fills missing fields", async () => {
     const client = createClient({ url: ":memory:" });

@@ -17,7 +17,7 @@ import { type FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { DirtyFieldLabel } from "@/components/dirty-field-label";
-import { trpc } from "@/utils/trpc";
+import { useTRPC } from "@/utils/trpc";
 
 interface SettingsMessage {
   text: string;
@@ -29,6 +29,7 @@ function HomeNoticeSettingsEditor({
 }: {
   initialMarkdown: string;
 }) {
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [formMarkdown, setFormMarkdown] = useState(initialMarkdown);
   const [originalMarkdown, setOriginalMarkdown] = useState(initialMarkdown);
@@ -130,6 +131,7 @@ function HomeNoticeSettingsEditor({
 }
 
 export default function AdminSettingsPage() {
+  const trpc = useTRPC();
   const router = useRouter();
   const homeNotice = useQuery(
     trpc.dashboard.homeNotice.queryOptions(undefined, {

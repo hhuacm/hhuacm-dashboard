@@ -27,8 +27,25 @@ export const requestExternalResource = async ({
     try {
       const response = await request(AbortSignal.timeout(timeoutMs));
 
-      if (response.ok || !isCommonRetryableHttpStatus(response.status)) {
-        return response;
+      if (response.ok) {
+        return {
+          body: await response.text(),
+          headers: response.headers,
+          ok: true as const,
+          status: response.status,
+        };
+      }
+
+      await response.body?.cancel().catch(() => {
+        // An unused body's failure must not replace the received HTTP status.
+      });
+
+      if (!isCommonRetryableHttpStatus(response.status)) {
+        return {
+          headers: response.headers,
+          ok: false as const,
+          status: response.status,
+        };
       }
 
       lastError = new Error(`HTTP ${response.status}`);

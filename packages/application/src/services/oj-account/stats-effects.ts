@@ -14,6 +14,7 @@ import { deleteAtcoderStats } from "../atcoder/sync";
 import { deleteCodeforcesStats } from "../codeforces/stats-cache";
 import { deleteLuoguStats } from "../luogu/sync";
 import { deleteNowcoderStats } from "../nowcoder/sync";
+import { deleteLuoguUserAwards } from "../profile-awards";
 import { listInternalOjAccountsByUserId } from "./queries";
 
 export interface AccountStatsEffectTarget {
@@ -67,9 +68,14 @@ const clearOjAccountRefreshRequests = async (
 
 export const resetOjAccountStatsEffects = async (
   db: Database | DatabaseTransaction,
-  account: AccountStatsEffectTarget
+  account: AccountStatsEffectTarget,
+  userId: string
 ) => {
   await accountStatsEffects[account.platform].clearStats(db, account.id);
+
+  if (account.platform === "luogu") {
+    await deleteLuoguUserAwards(db, userId);
+  }
 
   await clearOjAccountRefreshRequests(db, account);
 };
@@ -117,6 +123,6 @@ export const replaceOjAccountStatsEffectsIfNeeded = async (
   account: AccountStatsEffectTarget,
   userId: string
 ) => {
-  await resetOjAccountStatsEffects(db, account);
+  await resetOjAccountStatsEffects(db, account, userId);
   await requestOjAccountRefreshEffectsIfNeeded(db, account, userId);
 };
