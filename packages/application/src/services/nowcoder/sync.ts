@@ -7,18 +7,13 @@ import {
   getRefreshErrorMessage,
   truncateRefreshError,
 } from "../../refresh/policy";
+import { parseLuoguUid } from "../luogu/uid";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 type NowcoderRatingBasicLoader = typeof nowcoderSource.ratingBasic;
 type NowcoderAcceptedCountLoader =
   typeof nowcoderSource.acceptedPracticeProblemCount;
-
-const parseNowcoderExternalId = (externalId: string) => {
-  const uid = Number(externalId);
-
-  return Number.isSafeInteger(uid) && uid > 0 ? uid : null;
-};
 
 export const syncNowcoderAccountStats = async (
   db: Database,
@@ -29,7 +24,7 @@ export const syncNowcoderAccountStats = async (
     loadRatingBasic?: NowcoderRatingBasicLoader;
   } = {}
 ) => {
-  const uid = parseNowcoderExternalId(account.externalId);
+  const uid = parseLuoguUid(account.externalId);
 
   if (uid === null) {
     throw new Error("Nowcoder UID is missing");
