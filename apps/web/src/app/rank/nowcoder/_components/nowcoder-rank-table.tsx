@@ -8,18 +8,11 @@ import {
   RankDataTable,
   RankMajorCell,
   RankNameCell,
-  RelativeTimeCell,
+  RankRelativeTimeCell,
   StatusChip,
 } from "../../_components/rank-shared";
 import { getRankNameLabel } from "../../_shared/rank-config";
-import {
-  emptyText,
-  formatDateTime,
-  formatNumber,
-  formatRelativeTime,
-  isDormant,
-  statusConfig,
-} from "../../_shared/rank-utils";
+import { formatNumber, statusConfig } from "../../_shared/rank-utils";
 import {
   isRankSortColumn,
   isSortColumn,
@@ -45,15 +38,7 @@ const renderHandleCell = (row: RankRow) => (
 const rankCellRenderers = {
   acceptedProblemCount: (row) =>
     formatNumber(row.nowcoder.acceptedProblemCount),
-  fetchedAt: (row) => (
-    <RelativeTimeCell
-      emptyText={emptyText}
-      formatDateTime={formatDateTime}
-      formatRelativeTime={formatRelativeTime}
-      isDormant={isDormant}
-      value={row.nowcoder.fetchedAt}
-    />
-  ),
+  fetchedAt: (row) => <RankRelativeTimeCell value={row.nowcoder.fetchedAt} />,
   grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,

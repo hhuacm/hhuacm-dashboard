@@ -41,8 +41,12 @@ import type {
 } from "../_shared/rank-config";
 import { getRankNameLabel, getRankProfileUrl } from "../_shared/rank-config";
 import {
+  emptyText,
+  formatDateTime,
+  formatRelativeTime,
   getRankFilterOptions,
   getVisibleTableMinWidth,
+  isDormant,
   rankTableCellClassName,
   rankTableColumnClassName,
   type SortDirection,
@@ -641,4 +645,16 @@ export function RankNameCell({ row }: { row: RankMemberRowBase }) {
 
 export function RankMajorCell({ major }: { major: string }) {
   return <span className="truncate">{major}</span>;
+}
+
+export function RankRelativeTimeCell({ value }: { value: null | string }) {
+  return (
+    <RelativeTimeCell
+      emptyText={emptyText}
+      formatDateTime={formatDateTime}
+      formatRelativeTime={formatRelativeTime}
+      isDormant={isDormant}
+      value={value}
+    />
+  );
 }

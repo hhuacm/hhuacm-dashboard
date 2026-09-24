@@ -8,17 +8,13 @@ import {
   RankDataTable,
   RankMajorCell,
   RankNameCell,
-  RelativeTimeCell,
+  RankRelativeTimeCell,
   StatusChip,
 } from "../../_components/rank-shared";
 import { getRankNameLabel } from "../../_shared/rank-config";
 import {
-  emptyText,
-  formatDateTime,
   formatDecimal,
   formatNumber,
-  formatRelativeTime,
-  isDormant,
   statusConfig,
 } from "../../_shared/rank-utils";
 import {
@@ -48,15 +44,7 @@ const rankCellRenderers = {
   acceptedWeightedScore: (row) => formatNumber(row.luogu.acceptedWeightedScore),
   averageAcceptedDifficulty: (row) =>
     formatDecimal(row.luogu.averageAcceptedDifficulty),
-  fetchedAt: (row) => (
-    <RelativeTimeCell
-      emptyText={emptyText}
-      formatDateTime={formatDateTime}
-      formatRelativeTime={formatRelativeTime}
-      isDormant={isDormant}
-      value={row.luogu.fetchedAt}
-    />
-  ),
+  fetchedAt: (row) => <RankRelativeTimeCell value={row.luogu.fetchedAt} />,
   grade: (row) => row.grade,
   handle: renderHandleCell,
   index: (_row, index) => index + 1,

@@ -10,18 +10,11 @@ import {
   RankDataTable,
   RankMajorCell,
   RankNameCell,
-  RelativeTimeCell,
+  RankRelativeTimeCell,
   StatusChip,
 } from "../../_components/rank-shared";
 import { getRankNameLabel } from "../../_shared/rank-config";
-import {
-  emptyText,
-  formatDateTime,
-  formatNumber,
-  formatRelativeTime,
-  isDormant,
-  statusConfig,
-} from "../../_shared/rank-utils";
+import { formatNumber, statusConfig } from "../../_shared/rank-utils";
 import {
   isRankSortColumn,
   isSortColumn,
@@ -72,13 +65,7 @@ const rankCellRenderers = {
   handle: renderHandleCell,
   index: (_row, index) => index + 1,
   lastOnlineAt: (row) => (
-    <RelativeTimeCell
-      emptyText={emptyText}
-      formatDateTime={formatDateTime}
-      formatRelativeTime={formatRelativeTime}
-      isDormant={isDormant}
-      value={row.codeforces.lastOnlineAt}
-    />
+    <RankRelativeTimeCell value={row.codeforces.lastOnlineAt} />
   ),
   major: (row) => <RankMajorCell major={row.major} />,
   maxRating: (row) => <RatingText value={row.codeforces.maxRating} />,
