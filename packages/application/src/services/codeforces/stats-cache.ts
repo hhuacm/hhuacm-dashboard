@@ -16,8 +16,6 @@ const codeforcesStatsFields = {
   rating: codeforcesAccountStats.rating,
 } as const;
 
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
 const getCodeforcesStats = async (db: Database, accountId: string) =>
   (
     await db
@@ -35,8 +33,8 @@ const serializeCodeforcesStats = (
 ): PublicCodeforcesStats => ({
   acceptedProblemCount: stats.acceptedProblemCount,
   acceptedProblemCountInMonth: stats.acceptedProblemCountInMonth,
-  fetchedAt: toIsoString(stats.fetchedAt),
-  lastOnlineAt: toIsoString(stats.lastOnlineAt),
+  fetchedAt: stats.fetchedAt?.toISOString() ?? null,
+  lastOnlineAt: stats.lastOnlineAt?.toISOString() ?? null,
   maxRating: stats.maxRating,
   rating: stats.rating,
   syncStatus: options.syncStatus,

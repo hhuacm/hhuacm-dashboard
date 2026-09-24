@@ -20,8 +20,6 @@ const nowcoderStatsFields = {
   rating: nowcoderAccountStats.rating,
 } as const;
 
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
 const getNowcoderStats = async (db: Database, accountId: string) =>
   (
     await db
@@ -38,7 +36,7 @@ const serializeNowcoderStats = (
   }
 ): PublicNowcoderStats => ({
   acceptedProblemCount: stats.acceptedProblemCount,
-  fetchedAt: toIsoString(stats.fetchedAt),
+  fetchedAt: stats.fetchedAt?.toISOString() ?? null,
   rating: stats.rating,
   syncStatus: options.syncStatus,
 });

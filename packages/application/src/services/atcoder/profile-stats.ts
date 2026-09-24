@@ -20,8 +20,6 @@ const atcoderStatsFields = {
   recentPerformanceAverage: atcoderAccountStats.recentPerformanceAverage,
 } as const;
 
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
 const getAtcoderStats = async (db: Database, accountId: string) =>
   (
     await db
@@ -37,7 +35,7 @@ const serializeAtcoderStats = (
     syncStatus: PublicAtcoderStats["syncStatus"];
   }
 ): PublicAtcoderStats => ({
-  fetchedAt: toIsoString(stats.fetchedAt),
+  fetchedAt: stats.fetchedAt?.toISOString() ?? null,
   rating: stats.rating,
   recentPerformanceAverage: stats.recentPerformanceAverage,
   syncStatus: options.syncStatus,

@@ -66,8 +66,6 @@ const awardSyncFields = {
   userId: userAwardSync.userId,
 } as const;
 
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
 export const classifyAwardLevel = (level: string): AwardTier => {
   if (level.includes("金") || level.includes("一等")) {
     return "gold";
@@ -249,7 +247,7 @@ export const getAwardsForPublicProfile = async (
     .orderBy(asc(userAward.sortOrder));
 
   return {
-    fetchedAt: toIsoString(sync?.fetchedAt ?? null),
+    fetchedAt: sync?.fetchedAt?.toISOString() ?? null,
     items: awards.map((award) => ({
       contest: award.contest,
       event: award.event,

@@ -59,8 +59,6 @@ const summarizeLuoguDifficultyCounts = (
   }));
 };
 
-const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
 const getLuoguStats = async (db: Database, accountId: string) =>
   (
     await db
@@ -129,7 +127,7 @@ export const getLuoguStatsForProfile = async (
     acceptedWeightedScore: currentStats.acceptedWeightedScore,
     averageAcceptedDifficulty: currentStats.averageAcceptedDifficulty,
     difficultyCounts,
-    fetchedAt: toIsoString(currentStats.fetchedAt),
+    fetchedAt: currentStats.fetchedAt?.toISOString() ?? null,
     syncStatus,
   };
 };
