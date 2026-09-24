@@ -7,7 +7,10 @@ import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 import type { LuoguPracticePageData } from "../../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../../external/online-judge-sources/luogu/api";
-import { truncateRefreshError } from "../../refresh/policy";
+import {
+  getRefreshErrorMessage,
+  truncateRefreshError,
+} from "../../refresh/policy";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 import { summarizeLuoguPracticeStats } from "./summary";
@@ -32,9 +35,6 @@ const chunks = <T>(items: T[], size: number) => {
 
   return result;
 };
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown Luogu sync error";
 
 const selectLuoguPracticeStatsFields = (
   practice: LuoguPracticePageData
@@ -127,7 +127,7 @@ export const markLuoguAccountStatsRefreshFailed = async (
   account: OjAccountIdentity,
   error: unknown
 ) => {
-  const lastError = truncateRefreshError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getRefreshErrorMessage(error));
 
   await commitOjAccountRefresh(db, account, async (tx) => {
     await tx

@@ -7,7 +7,10 @@ import type {
   CodeforcesUserInfoResult,
 } from "../../external/online-judge-sources/codeforces/api";
 import { codeforcesSource } from "../../external/online-judge-sources/codeforces/api";
-import { truncateRefreshError } from "../../refresh/policy";
+import {
+  getRefreshErrorMessage,
+  truncateRefreshError,
+} from "../../refresh/policy";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import { summarizeAcceptedProblems } from "./summary";
 import type { CodeforcesAccount } from "./types";
@@ -18,9 +21,6 @@ interface CodeforcesStatsLoaders {
   loadUserInfo?: typeof codeforcesSource.userInfo;
   loadUserStatus?: typeof codeforcesSource.userStatus;
 }
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown Codeforces sync error";
 
 const selectCodeforcesUserInfo = (
   userInfoList: CodeforcesUserInfoResult,
@@ -103,7 +103,7 @@ export const markCodeforcesAccountStatsRefreshFailed = async (
   account: CodeforcesAccount,
   error: unknown
 ) => {
-  const lastError = truncateRefreshError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getRefreshErrorMessage(error));
 
   await commitOjAccountRefresh(db, account, async (tx) => {
     await tx

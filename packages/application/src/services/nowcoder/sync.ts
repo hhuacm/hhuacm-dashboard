@@ -3,16 +3,16 @@ import { nowcoderAccountStats } from "@hhuacm-dashboard/db/schema/nowcoder-accou
 import { userOjAccount } from "@hhuacm-dashboard/db/schema/oj-account";
 import { eq } from "drizzle-orm";
 import { nowcoderSource } from "../../external/online-judge-sources/nowcoder/api";
-import { truncateRefreshError } from "../../refresh/policy";
+import {
+  getRefreshErrorMessage,
+  truncateRefreshError,
+} from "../../refresh/policy";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 type NowcoderRatingBasicLoader = typeof nowcoderSource.ratingBasic;
 type NowcoderAcceptedCountLoader =
   typeof nowcoderSource.acceptedPracticeProblemCount;
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown Nowcoder sync error";
 
 const parseNowcoderExternalId = (externalId: string) => {
   const uid = Number(externalId);
@@ -79,7 +79,7 @@ export const markNowcoderAccountStatsRefreshFailed = async (
   account: OjAccountIdentity,
   error: unknown
 ) => {
-  const lastError = truncateRefreshError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getRefreshErrorMessage(error));
 
   await commitOjAccountRefresh(db, account, async (tx) => {
     await tx

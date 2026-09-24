@@ -3,15 +3,15 @@ import { atcoderAccountStats } from "@hhuacm-dashboard/db/schema/atcoder-account
 import { eq } from "drizzle-orm";
 import type { AtCoderUserHistory } from "../../external/online-judge-sources/atcoder/api";
 import { atcoderSource } from "../../external/online-judge-sources/atcoder/api";
-import { truncateRefreshError } from "../../refresh/policy";
+import {
+  getRefreshErrorMessage,
+  truncateRefreshError,
+} from "../../refresh/policy";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
 
 type AtcoderHistoryLoader = typeof atcoderSource.userHistory;
 type AtcoderHistoryItem = AtCoderUserHistory[number];
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown AtCoder sync error";
 
 const compareByEndTimeDesc = (
   left: AtcoderHistoryItem,
@@ -79,7 +79,7 @@ export const markAtcoderAccountStatsRefreshFailed = async (
   account: OjAccountIdentity,
   error: unknown
 ) => {
-  const lastError = truncateRefreshError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getRefreshErrorMessage(error));
 
   await commitOjAccountRefresh(db, account, async (tx) => {
     await tx

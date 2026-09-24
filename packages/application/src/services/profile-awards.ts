@@ -6,7 +6,10 @@ import {
 import { and, asc, eq } from "drizzle-orm";
 import type { LuoguUserPageData } from "../external/online-judge-sources/luogu/api";
 import { luoguSource } from "../external/online-judge-sources/luogu/api";
-import { truncateRefreshError } from "../refresh/policy";
+import {
+  getRefreshErrorMessage,
+  truncateRefreshError,
+} from "../refresh/policy";
 import type { RefreshSyncStatus } from "../refresh/sync-status";
 import { ensureUserAwardsFromLuoguRefresh } from "../refresh/user-awards";
 import { parseLuoguUid } from "./luogu/uid";
@@ -64,9 +67,6 @@ const awardSyncFields = {
 } as const;
 
 const toIsoString = (date: Date | null) => date?.toISOString() ?? null;
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown user award sync error";
 
 export const classifyAwardLevel = (level: string): AwardTier => {
   if (level.includes("金") || level.includes("一等")) {
@@ -167,7 +167,7 @@ export const markUserAwardsFromLuoguRefreshFailed = async (
   account: LuoguAwardAccount,
   error: unknown
 ) => {
-  const lastError = truncateRefreshError(getErrorMessage(error));
+  const lastError = truncateRefreshError(getRefreshErrorMessage(error));
 
   await commitOjAccountRefresh(db, account, async (tx) => {
     await tx

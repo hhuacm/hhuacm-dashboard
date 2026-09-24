@@ -10,6 +10,9 @@ export const refreshDefaults = {
 const isFreshByTtl = (fetchedAt: Date | null, now: Date, ttlMs: number) =>
   Boolean(fetchedAt && now.getTime() - fetchedAt.getTime() < ttlMs);
 
+export const getRefreshErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Unknown refresh error";
+
 export const truncateRefreshError = (message: string) =>
   message.slice(0, refreshDefaults.maxErrorLength);
 
