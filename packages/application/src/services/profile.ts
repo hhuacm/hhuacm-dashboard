@@ -15,9 +15,11 @@ import type { PublicLuoguStats } from "./luogu/profile-stats";
 import { getLuoguStatsForProfile } from "./luogu/profile-stats";
 import type { PublicNowcoderStats } from "./nowcoder/profile-stats";
 import { getNowcoderStatsForProfile } from "./nowcoder/profile-stats";
+import type { OjAccountIdentity } from "./oj-account/queries";
 import {
   listInternalOjAccountsByUserId,
   listOjAccountsByUserId,
+  toPublicOjAccount,
 } from "./oj-account/queries";
 import { getAwardsForPublicProfile } from "./profile-awards";
 
@@ -106,52 +108,37 @@ const getTargetUserByUsername = async (db: Database, username: string) => {
   return targetUser;
 };
 
+interface OjAccountWithPlatform extends OjAccountIdentity {
+  platform: OjPlatform;
+}
+
+const profileStatsLoaders = {
+  atcoder: getAtcoderStatsForProfile,
+  codeforces: getCodeforcesStatsForProfile,
+  luogu: getLuoguStatsForProfile,
+  nowcoder: getNowcoderStatsForProfile,
+} satisfies Record<
+  OjPlatform,
+  (db: Database, account: OjAccountWithPlatform) => Promise<unknown>
+>;
+
 const attachPublicOjAccountData = (
   db: Database,
-  accounts: Awaited<ReturnType<typeof listInternalOjAccountsByUserId>>,
+  accounts: OjAccountWithPlatform[],
   memberStatus: MemberStatus
 ): Promise<PublicOjAccount[]> => {
   const shouldAttachStats = !isStatsDisabledMemberStatus(memberStatus);
 
   return Promise.all(
-    accounts.map(async (account): Promise<PublicOjAccount> => {
-      const base: PublicOjAccount = {
-        externalId: account.externalId,
-        handle: account.handle,
-        platform: account.platform,
-      };
-
-      if (!shouldAttachStats) {
-        return base;
-      }
-
-      if (account.platform === "codeforces") {
-        return {
-          ...base,
-          codeforces: await getCodeforcesStatsForProfile(db, account),
-        };
-      }
-
-      if (account.platform === "atcoder") {
-        return {
-          ...base,
-          atcoder: await getAtcoderStatsForProfile(db, account),
-        };
-      }
-
-      if (account.platform === "luogu") {
-        return { ...base, luogu: await getLuoguStatsForProfile(db, account) };
-      }
-
-      if (account.platform === "nowcoder") {
-        return {
-          ...base,
-          nowcoder: await getNowcoderStatsForProfile(db, account),
-        };
-      }
-
-      return base;
-    })
+    accounts.map(async (account) => ({
+      ...toPublicOjAccount(account),
+      ...(shouldAttachStats && {
+        [account.platform]: await profileStatsLoaders[account.platform](
+          db,
+          account
+        ),
+      }),
+    }))
   );
 };
 
@@ -165,24 +152,25 @@ export const getPublicProfile = async (
     db,
     targetUser.id
   );
-  const canRefresh = !isStatsDisabledMemberStatus(profile.memberStatus);
-
-  const [ojAccounts, awards, currentUser] = await Promise.all([
-    attachPublicOjAccountData(db, internalOjAccounts, profile.memberStatus),
-    getAwardsForPublicProfile(db, {
-      canRefresh,
-      luoguAccountId: getLuoguAccountId(internalOjAccounts),
-      userId: targetUser.id,
-    }),
-    input.currentUserId
-      ? db
+  const ojAccounts = await attachPublicOjAccountData(
+    db,
+    internalOjAccounts,
+    profile.memberStatus
+  );
+  const awards = await getAwardsForPublicProfile(db, {
+    canRefresh: !isStatsDisabledMemberStatus(profile.memberStatus),
+    luoguAccountId: getLuoguAccountId(internalOjAccounts),
+    userId: targetUser.id,
+  });
+  const currentUser = input.currentUserId
+    ? (
+        await db
           .select({ role: user.role })
           .from(user)
           .where(eq(user.id, input.currentUserId))
           .limit(1)
-          .then((rows) => rows[0] ?? null)
-      : Promise.resolve(null),
-  ]);
+      )[0]
+    : null;
 
   return {
     awards,
