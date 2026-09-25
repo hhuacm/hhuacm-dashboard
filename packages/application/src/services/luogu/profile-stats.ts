@@ -3,6 +3,7 @@ import {
   luoguAcceptedProblem,
   luoguAccountStats,
 } from "@hhuacm-dashboard/db/schema/luogu-account-stats";
+import { luoguDifficultyLabels } from "@hhuacm-dashboard/domain";
 import { eq } from "drizzle-orm";
 import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
 import type { RefreshSyncStatus } from "../../refresh/sync-status";
@@ -27,17 +28,6 @@ export interface PublicLuoguStats {
 interface LuoguAcceptedProblemDifficultyInput {
   difficulty: null | number;
 }
-
-const luoguDifficultyLabels = [
-  "暂无评定",
-  "入门",
-  "普及-",
-  "普及/提高-",
-  "普及+/提高",
-  "提高+/省选-",
-  "省选/NOI-",
-  "NOI/NOI+/CTSC",
-] as const;
 
 const summarizeLuoguDifficultyCounts = (
   problems: LuoguAcceptedProblemDifficultyInput[]

@@ -1,8 +1,9 @@
 import type { AppRouter } from "@hhuacm-dashboard/api/routers/index";
-import type { CurrentMemberStatus } from "@hhuacm-dashboard/domain";
+import {
+  type CurrentMemberStatus,
+  getLuoguDifficultyLabel,
+} from "@hhuacm-dashboard/domain";
 import type { inferRouterOutputs } from "@trpc/server";
-
-import { getLuoguDifficultyLabel } from "@/utils/luogu-difficulty";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 

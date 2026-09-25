@@ -5,38 +5,44 @@ import {
   ojPlatforms,
 } from "@hhuacm-dashboard/domain";
 
-const ojPlatformIconConfigs = [
-  {
-    iconSrc: "/oj-icons/luogu.png",
-    key: "luogu",
-  },
-  {
-    iconSrc: "/oj-icons/codeforces.svg",
-    key: "codeforces",
-  },
-  {
+interface OjPlatformConfig {
+  iconSrc: string;
+  key: OjPlatform;
+  label: string;
+  name: string;
+}
+
+const ojPlatformConfigsByPlatform = {
+  atcoder: {
     iconSrc: "/oj-icons/atcoder.png",
-    key: "atcoder",
+    label: ojPlatformLabels.atcoder,
+    name: ojPlatformNames.atcoder,
   },
-  {
+  codeforces: {
+    iconSrc: "/oj-icons/codeforces.svg",
+    label: ojPlatformLabels.codeforces,
+    name: ojPlatformNames.codeforces,
+  },
+  luogu: {
+    iconSrc: "/oj-icons/luogu.png",
+    label: ojPlatformLabels.luogu,
+    name: ojPlatformNames.luogu,
+  },
+  nowcoder: {
     iconSrc: "/oj-icons/nowcoder.png",
-    key: "nowcoder",
+    label: ojPlatformLabels.nowcoder,
+    name: ojPlatformNames.nowcoder,
   },
-] as const satisfies { iconSrc: string; key: OjPlatform }[];
+} as const satisfies Record<OjPlatform, Omit<OjPlatformConfig, "key">>;
 
-export const ojPlatformConfigs = ojPlatforms.map((platform) => {
-  const config = ojPlatformIconConfigs.find((item) => item.key === platform);
-
-  if (!config) {
-    throw new Error(`Missing OJ platform config: ${platform}`);
-  }
-
-  return {
-    ...config,
-    label: ojPlatformLabels[platform],
-    name: ojPlatformNames[platform],
-  };
+export const getOjPlatformConfig = (
+  platform: OjPlatform
+): OjPlatformConfig => ({
+  ...ojPlatformConfigsByPlatform[platform],
+  key: platform,
 });
+
+export const ojPlatformConfigs = ojPlatforms.map(getOjPlatformConfig);
 
 export const ojAccountExternalIdPlaceholders = {
   atcoder: "AtCoder 用户名",
@@ -45,36 +51,12 @@ export const ojAccountExternalIdPlaceholders = {
   nowcoder: "牛客 UID",
 } satisfies Record<OjPlatform, string>;
 
-type OjPlatformConfig = (typeof ojPlatformConfigs)[number];
+const ojProfileUrlPrefixes = {
+  atcoder: "https://atcoder.jp/users/",
+  codeforces: "https://codeforces.com/profile/",
+  luogu: "https://www.luogu.com.cn/user/",
+  nowcoder: "https://ac.nowcoder.com/acm/contest/profile/",
+} as const satisfies Record<OjPlatform, string>;
 
-export const getOjPlatformConfig = (platform: OjPlatform): OjPlatformConfig => {
-  const config = ojPlatformConfigs.find((item) => item.key === platform);
-
-  if (!config) {
-    throw new Error(`Missing OJ platform config: ${platform}`);
-  }
-
-  return config;
-};
-
-export const buildOjProfileUrl = (platform: OjPlatform, externalId: string) => {
-  const encodedExternalId = encodeURIComponent(externalId);
-
-  if (platform === "codeforces") {
-    return `https://codeforces.com/profile/${encodedExternalId}`;
-  }
-
-  if (platform === "atcoder") {
-    return `https://atcoder.jp/users/${encodedExternalId}`;
-  }
-
-  if (platform === "luogu") {
-    return `https://www.luogu.com.cn/user/${encodedExternalId}`;
-  }
-
-  if (platform === "nowcoder") {
-    return `https://ac.nowcoder.com/acm/contest/profile/${encodedExternalId}`;
-  }
-
-  return "";
-};
+export const buildOjProfileUrl = (platform: OjPlatform, externalId: string) =>
+  `${ojProfileUrlPrefixes[platform]}${encodeURIComponent(externalId)}`;

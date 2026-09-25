@@ -122,3 +122,23 @@ export const getGradeOptionsWithCurrentValue = (
 
   return [currentValue, ...options];
 };
+
+// Luogu difficulty levels, indexed by the numeric value returned by the API.
+export const luoguDifficultyLabels = [
+  "暂无评定",
+  "入门",
+  "普及-",
+  "普及/提高-",
+  "普及+/提高",
+  "提高+/省选-",
+  "省选/NOI-",
+  "NOI/NOI+/CTSC",
+] as const;
+
+export const getLuoguDifficultyLabel = (difficulty: null | number) => {
+  if (difficulty === null) {
+    return "-";
+  }
+
+  return luoguDifficultyLabels[difficulty] ?? `难度 ${difficulty}`;
+};
