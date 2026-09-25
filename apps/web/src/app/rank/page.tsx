@@ -1,14 +1,21 @@
 "use client";
 
 import { Button, Card } from "@heroui/react";
-import { ojPlatformLabels, ojPlatforms } from "@hhuacm-dashboard/domain";
+import { type OjPlatform, ojPlatformLabels } from "@hhuacm-dashboard/domain";
 import { Trophy } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 
-const rankRoutes = ojPlatforms.map((platform) => ({
+const rankPlatformOrder = [
+  "codeforces",
+  "atcoder",
+  "luogu",
+  "nowcoder",
+] as const satisfies readonly OjPlatform[];
+
+const rankRoutes = rankPlatformOrder.map((platform) => ({
   href: `/rank/${platform}` as Route,
   label: `${ojPlatformLabels[platform]} 排行榜`,
   platform,
