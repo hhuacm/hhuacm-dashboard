@@ -13,8 +13,8 @@ import {
 } from "../../refresh/policy";
 import { commitOjAccountRefresh } from "../oj-account/commit-refresh";
 import type { OjAccountIdentity } from "../oj-account/queries";
+import { parseNumericUid } from "../oj-account/uid";
 import { summarizeLuoguPracticeStats } from "./summary";
-import { parseLuoguUid } from "./uid";
 
 type LuoguPracticeLoader = typeof luoguSource.practice;
 
@@ -79,7 +79,7 @@ export const syncLuoguAccountStats = async (
   now = new Date(),
   loadPractice: LuoguPracticeLoader = luoguSource.practice
 ) => {
-  const uid = parseLuoguUid(account.externalId);
+  const uid = parseNumericUid(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");

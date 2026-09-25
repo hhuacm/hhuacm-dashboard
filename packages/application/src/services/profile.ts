@@ -117,10 +117,12 @@ const profileStatsLoaders = {
   codeforces: getCodeforcesStatsForProfile,
   luogu: getLuoguStatsForProfile,
   nowcoder: getNowcoderStatsForProfile,
-} satisfies Record<
-  OjPlatform,
-  (db: Database, account: OjAccountWithPlatform) => Promise<unknown>
->;
+} satisfies {
+  [Platform in OjPlatform]: (
+    db: Database,
+    account: OjAccountWithPlatform
+  ) => Promise<PublicOjAccount[Platform]>;
+};
 
 const attachPublicOjAccountData = (
   db: Database,

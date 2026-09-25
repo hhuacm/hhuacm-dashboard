@@ -12,9 +12,9 @@ import {
 } from "../refresh/policy";
 import type { RefreshSyncStatus } from "../refresh/sync-status";
 import { ensureUserAwardsFromLuoguRefresh } from "../refresh/user-awards";
-import { parseLuoguUid } from "./luogu/uid";
 import { commitOjAccountRefresh } from "./oj-account/commit-refresh";
 import type { OjAccountIdentity } from "./oj-account/queries";
+import { parseNumericUid } from "./oj-account/uid";
 
 type LuoguUserLoader = typeof luoguSource.user;
 
@@ -130,7 +130,7 @@ export const syncUserAwardsFromLuogu = async (
   now = new Date(),
   loadUser: LuoguUserLoader = luoguSource.user
 ) => {
-  const uid = parseLuoguUid(account.externalId);
+  const uid = parseNumericUid(account.externalId);
 
   if (uid === null) {
     throw new Error("Luogu UID is missing");

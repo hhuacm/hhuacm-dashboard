@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { ensureAccountStatsRefresh } from "../../refresh/account-stats";
 import type { RefreshSyncStatus } from "../../refresh/sync-status";
 import type { OjAccountIdentity } from "../oj-account/queries";
-import { parseLuoguUid } from "./uid";
+import { parseNumericUid } from "../oj-account/uid";
 
 interface PublicLuoguDifficultyCount {
   count: number;
@@ -76,7 +76,7 @@ export const getLuoguStatsForProfile = async (
   db: Database,
   account: OjAccountIdentity
 ): Promise<PublicLuoguStats | null> => {
-  const uid = parseLuoguUid(account.externalId);
+  const uid = parseNumericUid(account.externalId);
   const emptyDifficultyCounts = summarizeLuoguDifficultyCounts([]);
 
   if (uid === null) {
