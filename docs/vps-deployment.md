@@ -201,15 +201,20 @@ docker compose run --rm web bun run --cwd runtime system:revoke-admin --username
 
 ## 更新版本
 
-先拉取镜像，再停止旧版本并迁移数据库。涉及不可逆迁移时，应先备份生产数据库。
+把仓库的 `scripts/deploy.sh` 复制到 VPS 部署目录。它先拉取镜像；如果两个服务已经运行该镜像，直接退出，否则停止旧版本、迁移数据库，再启动新版。迁移失败时脚本退出，服务保持停止，避免代码与表结构不一致。涉及不可逆迁移时，应先备份生产数据库。
 
 ```bash
-cd /path/to/hhuacm-dashboard-config &&
-  sudo docker compose pull &&
-  sudo docker compose down &&
-  sudo docker compose run --rm web bun run --cwd runtime db:sync &&
-  sudo docker compose up -d --no-build
+cd /path/to/hhuacm-dashboard-config
+sudo sh ./deploy.sh
 ```
+
+脚本使用 `flock` 锁住部署目录。手动更新和定时更新重叠时，后一次调用会退出。以下定时任务每 10 分钟检查一次：
+
+```cron
+*/10 * * * * (cd /path/to/hhuacm-dashboard-config && /usr/bin/sudo -n /bin/sh ./deploy.sh) 2>&1 | /usr/bin/logger -t hhuacm-dashboard-update
+```
+
+定时任务用户需要具备相应的免密 sudo 权限。通过 `journalctl -t hhuacm-dashboard-update` 查看更新日志。自动更新会执行新镜像携带的迁移，发布前需审查迁移并安排必要的备份；它不自动回滚数据库。
 
 ## 常用排查
 
