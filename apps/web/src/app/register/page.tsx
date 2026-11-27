@@ -183,7 +183,7 @@ export default function RegisterPage() {
               <Card.Title className="text-xl">创建账号</Card.Title>
             </Card.Header>
 
-            <Form className="contents" onSubmit={handleSubmit}>
+            <Form className="contents" method="post" onSubmit={handleSubmit}>
               <Card.Content>
                 <div className="flex flex-col gap-4">
                   <Controller

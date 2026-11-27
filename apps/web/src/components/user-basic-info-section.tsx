@@ -214,7 +214,11 @@ export function UserBasicInfoSection({
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-150">
             <Modal.CloseTrigger isDisabled={isSaving} />
-            <Form className="contents" onSubmit={handleSubmit}>
+            <Form
+              className="contents"
+              onSubmit={handleSubmit}
+              validationBehavior="aria"
+            >
               <Modal.Header>
                 <Modal.Icon className="bg-default">
                   <Pencil className="size-5 text-accent" />
@@ -239,14 +243,16 @@ export function UserBasicInfoSection({
                       control={control}
                       key={field.key}
                       name={field.key}
-                      render={({ field: formField }) => (
+                      render={({ field: formField, fieldState }) => (
                         <ProfileFieldInput
+                          errorMessage={fieldState.error?.message}
                           field={field}
                           isChanged={field.key in changedProfileValues}
                           isDisabled={isLoading || isSaving}
                           onChange={(value) =>
                             handleInputChange(value, formField.onChange)
                           }
+                          ref={formField.ref}
                           value={formField.value}
                         />
                       )}

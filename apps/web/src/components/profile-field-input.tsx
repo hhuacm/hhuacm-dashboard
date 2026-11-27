@@ -1,19 +1,30 @@
-import { Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import {
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { getGradeOptionsWithCurrentValue } from "@hhuacm-dashboard/domain";
 
 import type { ProfileFieldConfig } from "@/utils/profile-fields";
 import { DirtyFieldLabel } from "./dirty-field-label";
 
 interface ProfileFieldInputProps {
+  errorMessage?: string;
   field: ProfileFieldConfig;
   isChanged?: boolean;
   isDisabled?: boolean;
   onChange: (value: string) => void;
+  ref?: (element: HTMLInputElement | HTMLButtonElement | null) => void;
   value: string;
 }
 
 export function ProfileFieldInput({
+  errorMessage,
   field,
+  ref,
   isChanged,
   isDisabled = false,
   onChange,
@@ -31,6 +42,7 @@ export function ProfileFieldInput({
       <Select
         fullWidth
         isDisabled={isDisabled}
+        isInvalid={errorMessage ? true : undefined}
         onSelectionChange={(key) =>
           onChange(typeof key === "string" ? key : "")
         }
@@ -39,7 +51,7 @@ export function ProfileFieldInput({
         variant="secondary"
       >
         {label}
-        <Select.Trigger>
+        <Select.Trigger ref={ref}>
           <Select.Value />
           <Select.Indicator />
         </Select.Trigger>
@@ -53,6 +65,7 @@ export function ProfileFieldInput({
             ))}
           </ListBox>
         </Select.Popover>
+        {errorMessage && <FieldError>{errorMessage}</FieldError>}
       </Select>
     );
   }
@@ -61,6 +74,7 @@ export function ProfileFieldInput({
     <TextField
       fullWidth
       isDisabled={isDisabled}
+      isInvalid={errorMessage ? true : undefined}
       name={field.key}
       onChange={onChange}
       value={value}
@@ -69,8 +83,10 @@ export function ProfileFieldInput({
       <Input
         autoComplete={field.autoComplete}
         placeholder={`请输入${field.label}`}
+        ref={ref}
         variant="secondary"
       />
+      {errorMessage && <FieldError>{errorMessage}</FieldError>}
     </TextField>
   );
 }

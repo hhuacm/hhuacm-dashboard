@@ -43,14 +43,10 @@ export default function ProblemSetDetailPage({
   const deleteProblemSet = useMutation(
     trpc.admin.problemSets.delete.mutationOptions({
       onSuccess: async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: trpc.problemSet.list.queryKey(),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: trpc.problemSet.get.queryKey({ id }),
-          }),
-        ]);
+        await queryClient.invalidateQueries({
+          queryKey: trpc.problemSet.get.queryKey({ id }),
+          refetchType: "none",
+        });
         router.push("/problem-sets" as Route);
       },
     })

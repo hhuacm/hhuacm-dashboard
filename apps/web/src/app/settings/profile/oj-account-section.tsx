@@ -36,9 +36,8 @@ type OjAccount =
   RouterOutputs["settings"]["profile"]["get"]["ojAccounts"][number];
 
 interface OjAccountSectionProps {
-  accounts: OjAccount[];
+  accounts: OjAccount[] | undefined;
   isError: boolean;
-  isLoading: boolean;
 }
 
 interface OjAccountMessage {
@@ -155,11 +154,7 @@ function OjAccountHandle({ account }: { account: OjAccount | undefined }) {
   );
 }
 
-export function OjAccountSection({
-  accounts,
-  isError,
-  isLoading,
-}: OjAccountSectionProps) {
+export function OjAccountSection({ accounts, isError }: OjAccountSectionProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const settingsProfileQueryKey = trpc.settings.profile.get.queryKey();
@@ -183,17 +178,14 @@ export function OjAccountSection({
     ...watchedFormValues,
   };
 
-  const accountsByPlatform = new Map<OjPlatform, OjAccount>();
-
-  for (const account of accounts) {
-    accountsByPlatform.set(account.platform, account);
-  }
-
-  const availablePlatforms = ojPlatformConfigs.filter(
+  const accountsByPlatform = new Map(
+    accounts?.map((account) => [account.platform, account] as const)
+  );
+  const platforms = accounts ? ojPlatformConfigs : [];
+  const availablePlatforms = platforms.filter(
     (config) => !accountsByPlatform.has(config.key)
   );
-  const hasAvailablePlatform = availablePlatforms.length > 0;
-  const canAddAccount = hasAvailablePlatform;
+  const canAddAccount = availablePlatforms.length > 0;
 
   const invalidateAccounts = async () => {
     await queryClient.invalidateQueries({ queryKey: settingsProfileQueryKey });
@@ -374,21 +366,23 @@ export function OjAccountSection({
           </Button>
         </Card.Header>
         <Card.Content className="grid gap-4">
-          {isLoading ? (
+          {accounts || isError ? null : (
             <Alert>
               <Alert.Indicator />
               <Alert.Content>
                 <Alert.Description>正在读取 OJ 账号。</Alert.Description>
               </Alert.Content>
             </Alert>
-          ) : null}
+          )}
 
           {isError ? (
             <Alert status="danger">
               <Alert.Indicator />
               <Alert.Content>
                 <Alert.Description>
-                  OJ 账号加载失败，请刷新页面重试。
+                  {accounts
+                    ? "OJ 账号刷新失败，当前显示上次读取的记录。"
+                    : "OJ 账号加载失败，请刷新页面重试。"}
                 </Alert.Description>
               </Alert.Content>
             </Alert>
@@ -404,7 +398,7 @@ export function OjAccountSection({
           ) : null}
 
           <div className="grid gap-3">
-            {ojPlatformConfigs.map((platform) => {
+            {platforms.map((platform) => {
               const account = accountsByPlatform.get(platform.key);
               const isDeletingThisAccount =
                 deleteAccount.isPending &&

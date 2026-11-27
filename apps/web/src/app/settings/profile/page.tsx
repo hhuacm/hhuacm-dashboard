@@ -177,9 +177,8 @@ export default function ProfileSettingsPage() {
         />
 
         <OjAccountSection
-          accounts={profileQuery.data?.ojAccounts ?? []}
+          accounts={profileQuery.data?.ojAccounts}
           isError={profileQuery.isError}
-          isLoading={profileQuery.isPending}
         />
       </div>
       <PasswordChangeDialog
